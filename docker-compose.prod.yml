@@ -1,0 +1,20 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: blaue-engel-frontend:prod
+    container_name: blaue-engel-frontend
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: https://api.blaueengelhaushaltshilfe.de
+      NEXT_PUBLIC_API_BASE_URL: https://api.blaueengelhaushaltshilfe.de
+      NODE_ENV: production
+    networks:
+      - frontend_default
+    ports:
+      - "3001:3000"
+
+networks:
+  frontend_default:
+    external: true

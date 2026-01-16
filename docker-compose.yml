@@ -1,0 +1,13 @@
+services:
+  frontend:
+    image: blaue-engel-frontend-dev
+    build: .
+    container_name: blaue-engel-frontend-dev
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
