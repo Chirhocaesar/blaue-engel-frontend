@@ -22,11 +22,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Debug secrets present
-        run: |
-          echo "VPS_HOST set? -> ${{ secrets.VPS_HOST != '' }}"
-          echo "VPS_USER set? -> ${{ secrets.VPS_USER != '' }}"
-          echo "VPS_SSH_KEY set? -> ${{ secrets.VPS_SSH_KEY != '' }}"
+
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
