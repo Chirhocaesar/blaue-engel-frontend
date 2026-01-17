@@ -16,6 +16,13 @@ const API_BASE =
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
+function phoneLink(phone?: string | null) {
+  if (!phone) return null;
+  const sanitized = phone.replace(/[\s\-\(\)]/g, '');
+  if (!/^\+?\d+$/.test(sanitized)) return null;
+  return `tel:${sanitized}`;
+}
+
 
 async function apiFetch(path: string, accessToken: string) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -96,26 +103,49 @@ export default async function AssignmentDetailPage({
     </div>
   ) : null}
 
-  {navUrl ? (
-    <a
-      href={navUrl}
-      rel="noopener noreferrer"
-      style={{
-        display: "inline-block",
-        marginTop: 8,
-        padding: "10px 14px",
-        borderRadius: 10,
-        border: "1px solid #111",
-        background: "#111",
-        color: "#fff",
-        textDecoration: "none",
-        fontSize: 13,
-        fontWeight: 600,
-      }}
-    >
-      📍 Navigation öffnen
-    </a>
-  ) : null}
+  <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+    {navUrl ? (
+      <a
+        href={navUrl}
+        rel="noopener noreferrer"
+        style={{
+          display: "inline-block",
+          padding: "10px 14px",
+          borderRadius: 10,
+          border: "1px solid #111",
+          background: "#111",
+          color: "#fff",
+          textDecoration: "none",
+          fontSize: 13,
+          fontWeight: 600,
+        }}
+      >
+        📍 Navigation öffnen
+      </a>
+    ) : null}
+
+    {(() => {
+      const phoneUrl = phoneLink(assignment.customer?.phone);
+      return phoneUrl ? (
+        <a
+          href={phoneUrl}
+          style={{
+            display: "inline-block",
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid #111",
+            background: "#111",
+            color: "#fff",
+            textDecoration: "none",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          📞 Anrufen
+        </a>
+      ) : null;
+    })()}
+  </div>
 </div>
 
           <div>
