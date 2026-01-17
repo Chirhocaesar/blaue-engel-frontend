@@ -1,13 +1,57 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { getUpcomingBwHolidays } from "@/lib/holidays-bw";
 
+function monthLabel(d: Date) {
+  // de-DE to match the app language
+  return d.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+}
+
+function addMonths(date: Date, delta: number) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + delta);
+  return d;
+}
+
 export default function PlannerPage() {
-  const upcoming = getUpcomingBwHolidays(new Date(), 6);
+  const [viewMonth, setViewMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  const upcoming = useMemo(() => getUpcomingBwHolidays(new Date(), 6), []);
 
   return (
     <main className="min-h-screen p-4">
-      <h1 className="text-2xl font-semibold">Einsatzplanung</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Einsatzplanung</h1>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-md border px-3 py-2 text-sm"
+            onClick={() => setViewMonth((m) => addMonths(m, -1))}
+          >
+            ←
+          </button>
+
+          <div className="min-w-[170px] text-center text-sm font-semibold">
+            {monthLabel(viewMonth)}
+          </div>
+
+          <button
+            type="button"
+            className="rounded-md border px-3 py-2 text-sm"
+            onClick={() => setViewMonth((m) => addMonths(m, 1))}
+          >
+            →
+          </button>
+        </div>
+      </div>
+
       <p className="mt-2 text-sm text-gray-600">
-        Planungsansicht (Monat / Woche) – in Vorbereitung
+        Monat/Woche Ansicht kommt als nächstes. Aktuell: Monatsnavigation + Feiertage (BW).
       </p>
 
       <section className="mt-6 rounded-lg border p-4">
