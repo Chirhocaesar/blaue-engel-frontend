@@ -31,3 +31,7 @@ export function getUpcomingBwHolidays(from: Date, limit = 5): BwHoliday[] {
     .filter((h) => h.date >= fromIso)
     .slice(0, limit);
 }
+export function getBwHolidayLabelByIsoDate(isoDate: string): string | null {
+  const h = BW_HOLIDAYS_2026.find((x) => x.date === isoDate);
+  return h ? h.label : null;
+}
