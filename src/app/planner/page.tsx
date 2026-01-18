@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useMemo, useState, useEffect } from "react";
 import { getUpcomingBwHolidays, getBwHolidayLabelByIsoDate } from "@/lib/holidays-bw";
 
@@ -11,6 +13,12 @@ function addMonths(date: Date, delta: number) {
   const d = new Date(date);
   d.setMonth(d.getMonth() + delta);
   return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+function addWeeks(date: Date, delta: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + delta * 7);
+  return d;
 }
 
 function dayKeyLocal(d: Date) {
@@ -29,12 +37,31 @@ function startOfCalendarGrid(monthStart: Date) {
   return d;
 }
 
+function startOfWeek(d: Date) {
+  const copy = new Date(d);
+  const jsDay = copy.getDay();
+  const mondayIndex = (jsDay + 6) % 7;
+  copy.setDate(copy.getDate() - mondayIndex);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
 function buildMonthGrid(monthStart: Date) {
   const start = startOfCalendarGrid(monthStart);
   const days: Date[] = [];
   for (let i = 0; i < 42; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+function buildWeekGrid(weekStart: Date) {
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
     days.push(d);
   }
   return days;
@@ -57,8 +84,13 @@ export default function PlannerPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
+  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
+
   const upcoming = useMemo(() => getUpcomingBwHolidays(new Date(), 6), []);
-  const gridDays = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
+  const gridDays = useMemo(() => {
+    return viewMode === "month" ? buildMonthGrid(viewMonth) : buildWeekGrid(weekStart);
+  }, [viewMode, viewMonth, weekStart]);
 
   const [assignmentsByDate, setAssignmentsByDate] = useState<Record<string, Assignment[]>>({});
   const [loading, setLoading] = useState(false);
@@ -119,6 +151,32 @@ export default function PlannerPage() {
     };
   }, [gridDays, reloadKey]);
 
+  // navigation handlers that respect viewMode
+  function goPrev() {
+    if (viewMode === "month") {
+      setViewMonth((m) => addMonths(m, -1));
+    } else {
+      setWeekStart((w) => startOfWeek(addWeeks(w, -1)));
+    }
+  }
+  function goNext() {
+    if (viewMode === "month") {
+      setViewMonth((m) => addMonths(m, 1));
+    } else {
+      setWeekStart((w) => startOfWeek(addWeeks(w, 1)));
+    }
+  }
+
+  function switchToWeek() {
+    // set weekStart to Monday of currently focused date (use first day of viewMonth for consistency)
+    setWeekStart(startOfWeek(viewMode === "month" ? viewMonth : weekStart));
+    setViewMode("week");
+  }
+
+  function switchToMonth() {
+    setViewMode("month");
+  }
+
   return (
     <main className="min-h-screen p-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -137,25 +195,43 @@ export default function PlannerPage() {
           >
             {loading ? "Lade..." : "Termine laden"}
           </button>
+
+          {/* view mode toggle */}
+          <div className="ml-2 inline-flex rounded-md border bg-white">
+            <button
+              className={`px-3 py-1 text-sm ${viewMode === "month" ? "bg-gray-100 font-semibold" : ""}`}
+              onClick={switchToMonth}
+            >
+              Monat
+            </button>
+            <button
+              className={`px-3 py-1 text-sm ${viewMode === "week" ? "bg-gray-100 font-semibold" : ""}`}
+              onClick={switchToWeek}
+            >
+              Woche
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             className="rounded-md border px-3 py-2 text-sm"
-            onClick={() => setViewMonth((m) => addMonths(m, -1))}
-            aria-label="Vorheriger Monat"
+            onClick={goPrev}
+            aria-label="Vorheriger"
           >
             ←
           </button>
 
-          <div className="min-w-[170px] text-center text-sm font-semibold">{monthLabel(viewMonth)}</div>
+          <div className="min-w-[170px] text-center text-sm font-semibold">
+            {viewMode === "month" ? monthLabel(viewMonth) : `${dayKeyLocal(gridDays[0])} – ${dayKeyLocal(gridDays[6])}`}
+          </div>
 
           <button
             type="button"
             className="rounded-md border px-3 py-2 text-sm"
-            onClick={() => setViewMonth((m) => addMonths(m, 1))}
-            aria-label="Nächster Monat"
+            onClick={goNext}
+            aria-label="Nächster"
           >
             →
           </button>
@@ -163,102 +239,164 @@ export default function PlannerPage() {
       </div>
 
       <p className="mt-2 text-sm text-gray-600">
-        Monatsansicht (MVP): Kalender-Raster + Feiertage. Termine sind schreibgeschützt.
+        Monats-/Wochenansicht (MVP): Termine sind schreibgeschützt.
       </p>
 
       {/* Temporary debug: show loaded assignment keys */}
       <div className="mt-2 text-sm text-gray-700">
         <div>Assignments loaded: {assignmentsCount}</div>
-        <div>
-          Example keys: {loadedKeys.length > 0 ? loadedKeys.slice(0, 3).join(", ") : "—"}
-        </div>
+        <div>Example keys: {loadedKeys.length > 0 ? loadedKeys.slice(0, 3).join(", ") : "—"}</div>
       </div>
 
-      {/* Month Grid */}
+      {/* Month or Week Grid */}
       <section className="mt-4 rounded-lg border p-3">
-        <div className="grid grid-cols-7 text-xs font-semibold text-gray-600">
-          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-            <div key={d} className="p-2">
-              {d}
+        {viewMode === "month" ? (
+          <>
+            <div className="grid grid-cols-7 text-xs font-semibold text-gray-600">
+              {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
+                <div key={d} className="p-2">
+                  {d}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="grid grid-cols-7 gap-px bg-gray-200">
-          {gridDays.map((d) => {
-            const inMonth = d.getMonth() === viewMonth.getMonth();
-            const jsDay = d.getDay(); // 0 Sun, 6 Sat
-            const isWeekend = jsDay === 0 || jsDay === 6;
+            <div className="grid grid-cols-7 gap-px bg-gray-200">
+              {gridDays.map((d) => {
+                const inMonth = d.getMonth() === viewMonth.getMonth();
+                const jsDay = d.getDay(); // 0 Sun, 6 Sat
+                const isWeekend = jsDay === 0 || jsDay === 6;
 
-            const iso = dayKeyLocal(d);
-            const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+                const iso = dayKeyLocal(d);
+                const holidayLabel = getBwHolidayLabelByIsoDate(iso);
 
-            const dayAssignments = assignmentsByDate[iso] || [];
+                const dayAssignments = assignmentsByDate[iso] || [];
 
-            return (
-              <div
-                key={iso}
-                className={[
-                  "min-h-[72px] bg-white p-2",
-                  !inMonth ? "opacity-50" : "",
-                  isWeekend ? "bg-gray-50" : "",
-                ].join(" ")}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="text-sm font-semibold">{d.getDate()}</div>
-                  {holidayLabel ? (
-                    <span
-                      className="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-                      title={holidayLabel}
-                    >
-                      Feiertag
-                    </span>
-                  ) : null}
-                </div>
+                return (
+                  <div
+                    key={iso}
+                    className={[
+                      "min-h-[72px] bg-white p-2",
+                      !inMonth ? "opacity-50" : "",
+                      isWeekend ? "bg-gray-50" : "",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="text-sm font-semibold">{d.getDate()}</div>
+                      {holidayLabel ? (
+                        <span
+                          className="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                          title={holidayLabel}
+                        >
+                          Feiertag
+                        </span>
+                      ) : null}
+                    </div>
 
-                <div className="mt-1">
-                  {dayAssignments.length > 0 ? (
-                    <div className="space-y-1">
-                      {dayAssignments.slice(0, 3).map((a) => {
-                        const start = new Date(a.startAt).toLocaleTimeString("de-DE", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
-                        const end = new Date(a.endAt).toLocaleTimeString("de-DE", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
-                        const customerName =
-                          a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
-                        return (
-                          <div
-                            key={a.id}
-                            className="truncate rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-800"
-                            title={`${start}–${end} ${customerName}`}
-                          >
-                            {`${start}–${end} ${customerName}`}
-                          </div>
-                        );
-                      })}
+                    <div className="mt-1">
+                      {dayAssignments.length > 0 ? (
+                        <div className="space-y-1">
+                          {dayAssignments.slice(0, 3).map((a) => {
+                            const start = new Date(a.startAt).toLocaleTimeString("de-DE", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+                            const end = new Date(a.endAt).toLocaleTimeString("de-DE", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+                            const customerName =
+                              a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+                            return (
+                              <div
+                                key={a.id}
+                                className="truncate rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-800"
+                                title={`${start}–${end} ${customerName}`}
+                              >
+                                {`${start}–${end} ${customerName}`}
+                              </div>
+                            );
+                          })}
 
-                      {dayAssignments.length > 3 && (
-                        <div className="text-[11px] text-gray-600">+{dayAssignments.length - 3} mehr</div>
+                          {dayAssignments.length > 3 && (
+                            <div className="text-[11px] text-gray-600">+{dayAssignments.length - 3} mehr</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-gray-400">—</div>
                       )}
-                    </div>
-                  ) : (
-                    <div className="text-[11px] text-gray-400">—</div>
-                  )}
 
-                  {holidayLabel ? (
-                    <div className="mt-1 text-[11px] text-gray-700" title={holidayLabel}>
-                      {holidayLabel}
+                      {holidayLabel ? (
+                        <div className="mt-1 text-[11px] text-gray-700" title={holidayLabel}>
+                          {holidayLabel}
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          // Week view: columns Mon..Sun
+          <div className="grid grid-cols-7 gap-px bg-gray-200">
+            {gridDays.map((d) => {
+              const iso = dayKeyLocal(d);
+              const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+              const dayAssignments = assignmentsByDate[iso] || [];
+
+              return (
+                <div key={iso} className="min-h-[220px] bg-white p-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold">
+                      <div>{d.toLocaleDateString("de-DE", { weekday: "short" })}</div>
+                      <div className="text-xs text-gray-600">{d.getDate()}</div>
+                    </div>
+
+                    {holidayLabel ? (
+                      <div className="text-[10px] rounded-full border px-2 py-0.5" title={holidayLabel}>
+                        Feiertag
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-2 space-y-1">
+                    {dayAssignments.length > 0 ? (
+                      <>
+                        {dayAssignments.slice(0, 3).map((a) => {
+                          const start = new Date(a.startAt).toLocaleTimeString("de-DE", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                          const end = new Date(a.endAt).toLocaleTimeString("de-DE", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                          const customerName =
+                            a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+                          return (
+                            <div
+                              key={a.id}
+                              className="truncate rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-800"
+                              title={`${start}–${end} ${customerName}`}
+                            >
+                              {`${start}–${end} ${customerName}`}
+                            </div>
+                          );
+                        })}
+
+                        {dayAssignments.length > 3 && (
+                          <div className="text-[11px] text-gray-600">+{dayAssignments.length - 3} mehr</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-[11px] text-gray-400">—</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Holiday list (kept for now) */}
