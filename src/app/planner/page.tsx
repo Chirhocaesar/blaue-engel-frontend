@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { getUpcomingBwHolidays, getBwHolidayLabelByIsoDate } from "@/lib/holidays-bw";
 
 function monthLabel(d: Date) {
@@ -41,6 +41,17 @@ function buildMonthGrid(monthStart: Date) {
   return days;
 }
 
+type Assignment = {
+  id: string;
+  startAt: string;
+  endAt: string;
+  customer?: {
+    name?: string;
+    companyName?: string;
+  };
+  customerName?: string;
+};
+
 export default function PlannerPage() {
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
@@ -50,10 +61,79 @@ export default function PlannerPage() {
   const upcoming = useMemo(() => getUpcomingBwHolidays(new Date(), 6), []);
   const gridDays = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
 
+  const [assignmentsByDate, setAssignmentsByDate] = useState<Record<string, Assignment[]>>({});
+  const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // total assignments count for visible grid
+  const assignmentsCount = useMemo(
+    () => Object.values(assignmentsByDate).reduce((sum, arr) => sum + arr.length, 0),
+    [assignmentsByDate]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!gridDays || gridDays.length === 0) return;
+    const start = isoDateLocal(gridDays[0]);
+    const end = isoDateLocal(gridDays[gridDays.length - 1]);
+
+    const controller = new AbortController();
+    setLoading(true);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/planner/assignments?start=${start}&end=${end}`, {
+          signal: controller.signal,
+        });
+        const data: Assignment[] = res.ok ? await res.json() : [];
+        if (cancelled) return;
+        const map: Record<string, Assignment[]> = {};
+        (data || []).forEach((a) => {
+          // group by local date of startAt
+          const d = new Date(a.startAt);
+          const iso = isoDateLocal(d);
+          if (!map[iso]) map[iso] = [];
+          map[iso].push(a);
+        });
+        // sort assignments by start time per day
+        Object.values(map).forEach((arr) =>
+          arr.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+        );
+        setAssignmentsByDate(map);
+      } catch (err: any) {
+        if (err.name !== "AbortError" && !cancelled) {
+          setAssignmentsByDate({});
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [gridDays, reloadKey]);
+
   return (
     <main className="min-h-screen p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Einsatzplanung</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">Einsatzplanung</h1>
+
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Termine:</span> <span>{assignmentsCount}</span>
+          </div>
+
+          <button
+            type="button"
+            className="ml-2 rounded-md border px-2 py-1 text-sm text-gray-700"
+            onClick={() => setReloadKey((k) => k + 1)}
+            aria-label="Termine laden"
+          >
+            {loading ? "Lade..." : "Termine laden"}
+          </button>
+        </div>
 
         <div className="flex items-center gap-2">
           <button
@@ -65,9 +145,7 @@ export default function PlannerPage() {
             ←
           </button>
 
-          <div className="min-w-[170px] text-center text-sm font-semibold">
-            {monthLabel(viewMonth)}
-          </div>
+          <div className="min-w-[170px] text-center text-sm font-semibold">{monthLabel(viewMonth)}</div>
 
           <button
             type="button"
@@ -81,7 +159,7 @@ export default function PlannerPage() {
       </div>
 
       <p className="mt-2 text-sm text-gray-600">
-        Monatsansicht (MVP): Kalender-Raster + Feiertage. Termine kommen als nächstes.
+        Monatsansicht (MVP): Kalender-Raster + Feiertage. Termine sind schreibgeschützt.
       </p>
 
       {/* Month Grid */}
@@ -102,6 +180,8 @@ export default function PlannerPage() {
 
             const iso = isoDateLocal(d);
             const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+
+            const dayAssignments = assignmentsByDate[iso] || [];
 
             return (
               <div
@@ -124,13 +204,45 @@ export default function PlannerPage() {
                   ) : null}
                 </div>
 
-                {holidayLabel ? (
-                  <div className="mt-1 text-[11px] text-gray-700" title={holidayLabel}>
-                    {holidayLabel}
-                  </div>
-                ) : (
-                  <div className="mt-1 text-[11px] text-gray-400">—</div>
-                )}
+                <div className="mt-1">
+                  {dayAssignments.length > 0 ? (
+                    <div className="space-y-1">
+                      {dayAssignments.slice(0, 3).map((a) => {
+                        const start = new Date(a.startAt).toLocaleTimeString("de-DE", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                        const end = new Date(a.endAt).toLocaleTimeString("de-DE", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                        const customerName =
+                          a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+                        return (
+                          <div
+                            key={a.id}
+                            className="truncate rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-800"
+                            title={`${start}–${end} ${customerName}`}
+                          >
+                            {`${start}–${end} ${customerName}`}
+                          </div>
+                        );
+                      })}
+
+                      {dayAssignments.length > 3 && (
+                        <div className="text-[11px] text-gray-600">+{dayAssignments.length - 3} mehr</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-gray-400">—</div>
+                  )}
+
+                  {holidayLabel ? (
+                    <div className="mt-1 text-[11px] text-gray-700" title={holidayLabel}>
+                      {holidayLabel}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             );
           })}
@@ -140,9 +252,7 @@ export default function PlannerPage() {
       {/* Holiday list (kept for now) */}
       <section className="mt-6 rounded-lg border p-4">
         <h2 className="text-base font-semibold">Feiertage (Baden-Württemberg)</h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Nur visuelle Markierung (MVP). Später direkt im Kalender.
-        </p>
+        <p className="mt-1 text-sm text-gray-600">Nur visuelle Markierung (MVP). Später direkt im Kalender.</p>
 
         {upcoming.length === 0 ? (
           <p className="mt-3 text-sm">Keine weiteren Feiertage gefunden.</p>
