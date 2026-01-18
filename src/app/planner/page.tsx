@@ -86,7 +86,10 @@ export default function PlannerPage() {
         const res = await fetch(`/api/planner/assignments?start=${start}&end=${end}`, {
           signal: controller.signal,
         });
-        const data: Assignment[] = res.ok ? await res.json() : [];
+        const raw = res.ok ? await res.json() : [];
+        // support both array responses and object { items, nextCursor }
+        const data: Assignment[] = Array.isArray(raw) ? raw : raw?.items ?? [];
+
         if (cancelled) return;
         const map: Record<string, Assignment[]> = {};
         (data || []).forEach((a) => {
