@@ -13,8 +13,7 @@ function addMonths(date: Date, delta: number) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
-function isoDateLocal(d: Date) {
-  // Build YYYY-MM-DD in local time (avoid timezone shifting)
+function dayKeyLocal(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -71,11 +70,13 @@ export default function PlannerPage() {
     [assignmentsByDate]
   );
 
+  const loadedKeys = useMemo(() => Object.keys(assignmentsByDate), [assignmentsByDate]);
+
   useEffect(() => {
     let cancelled = false;
     if (!gridDays || gridDays.length === 0) return;
-    const start = isoDateLocal(gridDays[0]);
-    const end = isoDateLocal(gridDays[gridDays.length - 1]);
+    const start = dayKeyLocal(gridDays[0]);
+    const end = dayKeyLocal(gridDays[gridDays.length - 1]);
 
     const controller = new AbortController();
     setLoading(true);
@@ -89,11 +90,11 @@ export default function PlannerPage() {
         if (cancelled) return;
         const map: Record<string, Assignment[]> = {};
         (data || []).forEach((a) => {
-          // group by local date of startAt
+          // group by local date of startAt using local day key (matches calendar cells)
           const d = new Date(a.startAt);
-          const iso = isoDateLocal(d);
-          if (!map[iso]) map[iso] = [];
-          map[iso].push(a);
+          const key = dayKeyLocal(d);
+          if (!map[key]) map[key] = [];
+          map[key].push(a);
         });
         // sort assignments by start time per day
         Object.values(map).forEach((arr) =>
@@ -162,6 +163,14 @@ export default function PlannerPage() {
         Monatsansicht (MVP): Kalender-Raster + Feiertage. Termine sind schreibgeschützt.
       </p>
 
+      {/* Temporary debug: show loaded assignment keys */}
+      <div className="mt-2 text-sm text-gray-700">
+        <div>Assignments loaded: {assignmentsCount}</div>
+        <div>
+          Example keys: {loadedKeys.length > 0 ? loadedKeys.slice(0, 3).join(", ") : "—"}
+        </div>
+      </div>
+
       {/* Month Grid */}
       <section className="mt-4 rounded-lg border p-3">
         <div className="grid grid-cols-7 text-xs font-semibold text-gray-600">
@@ -178,7 +187,7 @@ export default function PlannerPage() {
             const jsDay = d.getDay(); // 0 Sun, 6 Sat
             const isWeekend = jsDay === 0 || jsDay === 6;
 
-            const iso = isoDateLocal(d);
+            const iso = dayKeyLocal(d);
             const holidayLabel = getBwHolidayLabelByIsoDate(iso);
 
             const dayAssignments = assignmentsByDate[iso] || [];
