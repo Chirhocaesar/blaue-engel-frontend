@@ -4,6 +4,8 @@ export const dynamic = "force-dynamic";
 
 import { useMemo, useState, useEffect } from "react";
 import { getUpcomingBwHolidays, getBwHolidayLabelByIsoDate } from "@/lib/holidays-bw";
+import Link from "next/link";
+
 
 function monthLabel(d: Date) {
   return d.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
@@ -76,7 +78,14 @@ type Assignment = {
     companyName?: string;
   };
   customerName?: string;
+  // status may be present in various shapes; handled defensively
+  status?: any;
+  state?: any;
 };
+
+const ROW_H = 28; // px per 30 minutes
+const START_HOUR = 6;
+const END_HOUR = 20;
 
 export default function PlannerPage() {
   const [viewMonth, setViewMonth] = useState(() => {
@@ -101,8 +110,6 @@ export default function PlannerPage() {
     () => Object.values(assignmentsByDate).reduce((sum, arr) => sum + arr.length, 0),
     [assignmentsByDate]
   );
-
-  const loadedKeys = useMemo(() => Object.keys(assignmentsByDate), [assignmentsByDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,6 +184,33 @@ export default function PlannerPage() {
     setViewMode("month");
   }
 
+  // helpers for time-raster
+  const totalRows = (END_HOUR - START_HOUR) * 2;
+  const totalHeight = totalRows * ROW_H; // px
+
+  function minutesSinceStartOfDayLocal(d: Date) {
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  function getStatusString(a: Assignment) {
+    const st = (a as any).status ?? (a as any).state;
+    if (!st) return "ASSIGNED";
+    if (typeof st === "string") return st;
+    return st.type ?? st.status ?? "ASSIGNED";
+  }
+
+  function classesForStatus(status: string) {
+    switch ((status || "").toUpperCase()) {
+      case "CONFIRMED":
+        return "bg-blue-200 border-blue-400 text-blue-800";
+      case "COMPLETED":
+        return "bg-green-200 border-green-400 text-green-800";
+      case "ASSIGNED":
+      default:
+        return "bg-yellow-200 border-yellow-400 text-yellow-800";
+    }
+  }
+
   return (
     <main className="min-h-screen p-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -242,12 +276,6 @@ export default function PlannerPage() {
         Monats-/Wochenansicht (MVP): Termine sind schreibgeschützt.
       </p>
 
-      {/* Temporary debug: show loaded assignment keys */}
-      <div className="mt-2 text-sm text-gray-700">
-        <div>Assignments loaded: {assignmentsCount}</div>
-        <div>Example keys: {loadedKeys.length > 0 ? loadedKeys.slice(0, 3).join(", ") : "—"}</div>
-      </div>
-
       {/* Month or Week Grid */}
       <section className="mt-4 rounded-lg border p-3">
         {viewMode === "month" ? (
@@ -307,13 +335,14 @@ export default function PlannerPage() {
                             const customerName =
                               a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
                             return (
-                              <div
+                              <Link
                                 key={a.id}
-                                className="truncate rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-800"
+                                href={`/assignments/${a.id}`}
+                                className="truncate rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-800 hover:bg-gray-200"
                                 title={`${start}–${end} ${customerName}`}
                               >
                                 {`${start}–${end} ${customerName}`}
-                              </div>
+                              </Link>
                             );
                           })}
 
@@ -337,64 +366,114 @@ export default function PlannerPage() {
             </div>
           </>
         ) : (
-          // Week view: columns Mon..Sun
-          <div className="grid grid-cols-7 gap-px bg-gray-200">
-            {gridDays.map((d) => {
-              const iso = dayKeyLocal(d);
-              const holidayLabel = getBwHolidayLabelByIsoDate(iso);
-              const dayAssignments = assignmentsByDate[iso] || [];
-
-              return (
-                <div key={iso} className="min-h-[220px] bg-white p-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold">
-                      <div>{d.toLocaleDateString("de-DE", { weekday: "short" })}</div>
-                      <div className="text-xs text-gray-600">{d.getDate()}</div>
+          // Week view: time-raster grid with labels on the left, scrollable vertically
+          <div className="flex">
+            {/* Time labels column */}
+            <div className="w-16 shrink-0 pr-2">
+              <div className="relative" style={{ height: totalHeight }}>
+                {Array.from({ length: totalRows + 1 }).map((_, idx) => {
+                  const minutes = START_HOUR * 60 + idx * 30;
+                  const hour = Math.floor(minutes / 60);
+                  const minute = minutes % 60;
+                  const label = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute left-0 text-xs text-gray-600"
+                      style={{ top: idx * ROW_H - 8, height: ROW_H }}
+                    >
+                      {label}
                     </div>
+                  );
+                })}
+              </div>
+            </div>
 
-                    {holidayLabel ? (
-                      <div className="text-[10px] rounded-full border px-2 py-0.5" title={holidayLabel}>
-                        Feiertag
+            {/* Scrollable grid area */}
+            <div className="flex-1 overflow-y-auto" style={{ maxHeight: 560 }}>
+              <div className="grid grid-cols-7 gap-px bg-gray-200" style={{ height: totalHeight }}>
+                {gridDays.map((d) => {
+                  const iso = dayKeyLocal(d);
+                  const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+                  const dayAssignments = assignmentsByDate[iso] || [];
+
+                  return (
+                    <div key={iso} className="relative bg-white">
+                      {/* day header inside column */}
+                      <div className="sticky top-0 z-10 bg-white border-b px-2 py-1 text-sm flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">{d.toLocaleDateString("de-DE", { weekday: "short" })}</div>
+                          <div className="text-xs text-gray-600">{d.getDate()}</div>
+                        </div>
+                        {holidayLabel ? (
+                          <div className="text-[10px] rounded-full border px-2 py-0.5" title={holidayLabel}>
+                            Feiertag
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
 
-                  <div className="mt-2 space-y-1">
-                    {dayAssignments.length > 0 ? (
-                      <>
-                        {dayAssignments.slice(0, 3).map((a) => {
-                          const start = new Date(a.startAt).toLocaleTimeString("de-DE", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          });
-                          const end = new Date(a.endAt).toLocaleTimeString("de-DE", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          });
+                      {/* timeline area */}
+                      <div className="relative" style={{ height: totalHeight }}>
+                        {/* horizontal grid lines */}
+                        {Array.from({ length: totalRows + 1 }).map((_, ri) => (
+                          <div
+                            key={ri}
+                            className="absolute left-0 right-0 bg-gray-100"
+                            style={{ top: ri * ROW_H - 1, height: 1 }}
+                          />
+                        ))}
+
+                        {/* assignments positioned absolutely */}
+                        {dayAssignments.map((a) => {
+                          const startDate = new Date(a.startAt);
+                          const endDate = new Date(a.endAt);
+
+                          const startMinutes = minutesSinceStartOfDayLocal(startDate);
+                          const endMinutes = minutesSinceStartOfDayLocal(endDate);
+
+                          const visibleStart = Math.max(startMinutes, START_HOUR * 60);
+                          const visibleEnd = Math.min(endMinutes, END_HOUR * 60);
+                          if (visibleEnd <= visibleStart) return null;
+
+                          const topPx = ((visibleStart - START_HOUR * 60) / 30) * ROW_H;
+                          const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
+
+                          const status = getStatusString(a);
+                          const colorCls = classesForStatus(status);
+
                           const customerName =
                             a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+
+                          const startLabel = startDate.toLocaleTimeString("de-DE", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                          const endLabel = endDate.toLocaleTimeString("de-DE", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+
                           return (
-                            <div
+                            <Link
                               key={a.id}
-                              className="truncate rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-800"
-                              title={`${start}–${end} ${customerName}`}
+                              href={`/assignments/${a.id}`}
+                              className={`absolute left-1 right-1 rounded border px-1 text-xs overflow-hidden ${colorCls} hover:bg-gray-200`}
+                              style={{
+                                top: topPx,
+                                height: Math.max(20, heightPx),
+                              }}
+                              title={`${startLabel}–${endLabel} ${customerName}`}
                             >
-                              {`${start}–${end} ${customerName}`}
-                            </div>
+                              <div className="truncate">{`${startLabel}–${endLabel} ${customerName}`}</div>
+                            </Link>
                           );
                         })}
-
-                        {dayAssignments.length > 3 && (
-                          <div className="text-[11px] text-gray-600">+{dayAssignments.length - 3} mehr</div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-[11px] text-gray-400">—</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </section>

@@ -11,10 +11,10 @@ services:
       NEXT_PUBLIC_API_BASE_URL: https://api.blaueengelhaushaltshilfe.de
       NODE_ENV: production
     networks:
-      - frontend_default
+      - proxy
     ports:
       - "3001:3000"
 
 networks:
-  frontend_default:
+  proxy:
     external: true

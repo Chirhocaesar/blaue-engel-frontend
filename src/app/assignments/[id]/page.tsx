@@ -1,358 +1,117 @@
+"use client";
+
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
-import { cookies } from "next/headers";
 import Link from "next/link";
-import { redirect, notFound } from "next/navigation";
-import { EmployeeActions } from "./EmployeeActions";
-import { TimeEntriesBox } from "./TimeEntriesBox";
+import { useEffect, useMemo, useState } from "react";
 
-const API_BASE =
-  process.env.API_BASE_URL ?? "https://api.blaueengelhaushaltshilfe.de";
+function sanitizeTel(phone?: string | null) {
+  if (!phone) return "";
+  return phone.replace(/[^\d+]/g, "");
+}
 
-  function mapsLink(address?: string | null) {
-  if (!address) return null;
+function mapsUrl(address?: string | null) {
+  if (!address) return "";
   const q = encodeURIComponent(address);
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
-function phoneLink(phone?: string | null) {
-  if (!phone) return null;
-  const sanitized = phone.replace(/[\s\-\(\)]/g, '');
-  if (!/^\+?\d+$/.test(sanitized)) return null;
-  return `tel:${sanitized}`;
+function fmtTime(iso?: string) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 }
 
-
-async function apiFetch(path: string, accessToken: string) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
+function fmtDate(iso?: string) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("de-DE", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
-
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`API error ${res.status} for ${path}`);
-
-  return res.json();
 }
 
-export default async function AssignmentDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }> | { id: string };
-}) {
-  const resolvedParams = await Promise.resolve(params);
-  const id = resolvedParams?.id;
-  if (!id) notFound();
+export default function AssignmentDetailPage({ params }: { params: { id: string } }) {
+  const [data, setData] = useState<any>(null);
+  const [err, setErr] = useState<string>("");
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("be_access")?.value;
-  if (!token) redirect("/login");
+  useEffect(() => {
+    let cancelled = false;
 
-  const me = await apiFetch("/users/me", token);
-  if (!me) notFound();
+    (async () => {
+      setErr("");
+      try {
+        const res = await fetch(`/api/me/assignments/${params.id}`, { cache: "no-store" });
+        const json = await res.json().catch(() => ({}));
 
-  const assignment =
-    me.role === "ADMIN"
-      ? await apiFetch(`/assignments/${id}`, token)
-      : await apiFetch(`/me/assignments/${id}`, token);
+        if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
+        if (!cancelled) setData(json);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.message || "Fehler beim Laden");
+      }
+    })();
 
-  if (!assignment) notFound();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
-  const navUrl = mapsLink(assignment?.customer?.address ?? null);
+  const customer = data?.customer;
+  const phoneRaw = customer?.phone || "";
+  const phone = useMemo(() => sanitizeTel(phoneRaw), [phoneRaw]);
+  const address = customer?.address || "";
+  const gmaps = useMemo(() => mapsUrl(address), [address]);
 
-  return (
-    <div style={{ padding: 16, maxWidth: 900, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>Assignment</h1>
-          <div style={{ opacity: 0.7, fontSize: 14 }}>{assignment.id}</div>
-        </div>
-        <Link href="/assignments" style={{ textDecoration: "underline" }}>
-          Back to list
-        </Link>
-      </div>
-
-      <div
-        style={{
-          marginTop: 16,
-          padding: 16,
-          border: "1px solid #ddd",
-          borderRadius: 12,
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: 600 }}>Status</div>
-            <div>{assignment.status}</div>
-          </div>
-
-          <div>
-  <div style={{ fontWeight: 600 }}>Customer</div>
-  <div>{assignment.customer?.name ?? "—"}</div>
-
-  {assignment.customer?.address ? (
-    <div style={{ fontSize: 13, opacity: 0.8, marginTop: 2 }}>
-      {assignment.customer.address}
-    </div>
-  ) : null}
-
-  <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-    {navUrl ? (
-      <a
-        href={navUrl}
-        rel="noopener noreferrer"
-        style={{
-          display: "inline-block",
-          padding: "10px 14px",
-          borderRadius: 10,
-          border: "1px solid #111",
-          background: "#111",
-          color: "#fff",
-          textDecoration: "none",
-          fontSize: 13,
-          fontWeight: 600,
-        }}
-      >
-        📍 Navigation öffnen
-      </a>
-    ) : null}
-
-    {(() => {
-      const phoneUrl = phoneLink(assignment.customer?.phone);
-      return phoneUrl ? (
-        <a
-          href={phoneUrl}
-          style={{
-            display: "inline-block",
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #111",
-            background: "#111",
-            color: "#fff",
-            textDecoration: "none",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          📞 Anrufen
-        </a>
-      ) : null;
-    })()}
-  </div>
-</div>
-
-          <div>
-            <div style={{ fontWeight: 600 }}>Start</div>
-            <div>{new Date(assignment.startAt).toLocaleString()}</div>
-          </div>
-
-          <div>
-            <div style={{ fontWeight: 600 }}>End</div>
-            <div>{new Date(assignment.endAt).toLocaleString()}</div>
-          </div>
-        </div>
-
-        {assignment.notes ? (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 600 }}>Notes</div>
-            <div style={{ whiteSpace: "pre-wrap" }}>{assignment.notes}</div>
-          </div>
-        ) : null}
-      </div>
-
-      {me.role === "ADMIN" ? (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 16,
-            border: "1px solid #ddd",
-            borderRadius: 12,
-          }}
-        >
-          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
-            Zeiteinträge
-          </h2>
-          <div style={{ fontSize: 13, opacity: 0.75 }}>
-            Admin view – Zeiteinträge für dieses Assignment.
-          </div>
-
-          <TimeEntriesAdmin assignmentId={assignment.id} />
-        </div>
-      ) : null}
-
-
-      {me.role === "ADMIN" ? (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 16,
-            border: "1px solid #ddd",
-            borderRadius: 12,
-          }}
-        >
-          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
-            Signatures
-          </h2>
-          <div style={{ fontSize: 13, opacity: 0.75 }}>
-            Admin view – stored signatures for this assignment.
-          </div>
-
-          <SignaturesAdmin assignmentId={assignment.id} />
-        </div>
-      ) : null}
-
-      {me.role === "EMPLOYEE" ? (
-        <TimeEntriesBox
-          assignmentId={assignment.id}
-          defaultDateISO={assignment.startAt}
-          assignmentStatus={assignment.status}
-        />
-      ) : null}
-
-      {me.role === "EMPLOYEE" ? (
-        <EmployeeActions assignmentId={assignment.id} status={assignment.status} />
-      ) : null}
-    </div>
-  );
-}
-
-async function SignaturesAdmin({ assignmentId }: { assignmentId: string }) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("be_access")?.value;
-  if (!token) return <div>Nicht angemeldet.</div>;
-
-  const res = await fetch(`${API_BASE}/assignments/${assignmentId}/signatures`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
+  if (err) {
     return (
-      <pre style={{ marginTop: 10, whiteSpace: "pre-wrap" }}>
-        {JSON.stringify({ status: res.status, data }, null, 2)}
-      </pre>
+      <main className="min-h-screen p-4">
+        <Link href="/planner" className="text-sm underline">← Zurück zum Planer</Link>
+        <div className="mt-4 rounded border p-4">{err}</div>
+      </main>
     );
   }
 
-  const items: any[] = Array.isArray(data) ? data : [];
-  if (items.length === 0) {
-    return <div style={{ marginTop: 10 }}>Keine Unterschriften vorhanden.</div>;
-  }
-
-  return (
-    <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-      {items.map((s) => (
-        <div
-          key={s.id}
-          style={{
-            border: "1px solid #eee",
-            borderRadius: 12,
-            padding: 12,
-          }}
-        >
-          <div style={{ fontSize: 12, opacity: 0.7, wordBreak: "break-all" }}>
-            <div>
-              <b>ID:</b> {s.id}
-            </div>
-            {s.createdAt ? (
-              <div>
-                <b>Created:</b> {new Date(s.createdAt).toLocaleString("de-DE")}
-              </div>
-            ) : null}
-          </div>
-
-          {typeof s.signatureData === "string" && s.signatureData.startsWith("data:image") ? (
-            <div style={{ marginTop: 10 }}>
-              <img
-                src={s.signatureData}
-                alt="Signature"
-                style={{
-                  width: "100%",
-                  maxWidth: 520,
-                  border: "1px solid #ddd",
-                  borderRadius: 10,
-                  background: "white",
-                }}
-              />
-            </div>
-          ) : (
-            <div style={{ marginTop: 10, fontSize: 13, opacity: 0.75 }}>
-              Signature data is not an image data URL.
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-async function TimeEntriesAdmin({ assignmentId }: { assignmentId: string }) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("be_access")?.value;
-  if (!token) return <div>Nicht angemeldet.</div>;
-
-  const url = `${API_BASE}/admin/time-entries?assignmentId=${encodeURIComponent(
-    assignmentId
-  )}&limit=100`;
-
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
+  if (!data) {
     return (
-      <pre style={{ marginTop: 10, whiteSpace: "pre-wrap" }}>
-        {JSON.stringify({ status: res.status, data }, null, 2)}
-      </pre>
+      <main className="min-h-screen p-4">
+        <Link href="/planner" className="text-sm underline">← Zurück zum Planer</Link>
+        <div className="mt-4 text-sm text-gray-600">Lade…</div>
+      </main>
     );
   }
 
-  const items: any[] = Array.isArray(data?.items) ? data.items : [];
-  if (items.length === 0) {
-    return <div style={{ marginTop: 10 }}>Keine Zeiteinträge vorhanden.</div>;
-  }
-
   return (
-    <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-      {items.map((t) => (
-        <div
-          key={t.id}
-          style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 700 }}>
-            {new Date(t.date).toLocaleDateString("de-DE")} – {t.minutes} min
-          </div>
+    <main className="min-h-screen p-4">
+      <Link href="/planner" className="text-sm underline">← Zurück zum Planer</Link>
 
-          {(t.startTime || t.endTime) ? (
-            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
-              {t.startTime ? `Start: ${t.startTime}` : null}
-              {t.startTime && t.endTime ? " · " : null}
-              {t.endTime ? `Ende: ${t.endTime}` : null}
-            </div>
-          ) : null}
+      <h1 className="mt-2 text-2xl font-semibold">Einsatz-Details</h1>
 
-          {t.user ? (
-            <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
-              <b>Mitarbeiter:</b> {t.user.fullName ?? "—"} ({t.user.email})
-            </div>
-          ) : null}
-
-          <div style={{ fontSize: 11, opacity: 0.6, marginTop: 6, wordBreak: "break-all" }}>
-            {t.id}
-          </div>
+      <section className="mt-4 rounded border p-4">
+        <div className="text-lg font-semibold">
+          {customer?.companyName || customer?.name || "Kunde"}
         </div>
-      ))}
-    </div>
+
+        {address && (
+          <div className="mt-2 text-sm">
+            <div>{address}</div>
+            <a href={gmaps} target="_blank" className="underline">🗺️ Navigation öffnen</a>
+          </div>
+        )}
+
+        {phone && (
+          <div className="mt-3">
+            <a href={`tel:${phone}`} className="underline">📞 Anrufen</a>
+            <div className="text-xs text-gray-500">{phoneRaw}</div>
+          </div>
+        )}
+      </section>
+
+      <section className="mt-4 rounded border p-4 text-sm">
+        <div><b>Datum:</b> {fmtDate(data.startAt)}</div>
+        <div><b>Zeit:</b> {fmtTime(data.startAt)}–{fmtTime(data.endAt)}</div>
+        <div><b>Status:</b> {data.status || "—"}</div>
+        {data.notes && <div className="mt-2"><b>Notiz:</b> {data.notes}</div>}
+      </section>
+    </main>
   );
 }
