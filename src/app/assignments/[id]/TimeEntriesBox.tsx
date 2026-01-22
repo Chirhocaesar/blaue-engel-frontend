@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatDate, formatMinutes } from "@/lib/format";
 
 type TimeEntry = {
   id: string;
@@ -56,10 +57,10 @@ export function TimeEntriesBox({
         { cache: "no-store" }
       );
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message ?? `Load failed (${res.status})`);
+      if (!res.ok) throw new Error(data?.message ?? `Laden fehlgeschlagen (${res.status})`);
       setItems(Array.isArray(data?.items) ? data.items : []);
     } catch (e: any) {
-      setError(e?.message ?? "Failed to load");
+      setError(e?.message ?? "Konnte Zeiteinträge nicht laden");
     } finally {
       setLoading(false);
     }
@@ -96,12 +97,12 @@ export function TimeEntriesBox({
       });
 
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message ?? `Create failed (${res.status})`);
+      if (!res.ok) throw new Error(data?.message ?? `Erstellen fehlgeschlagen (${res.status})`);
 
       // refresh list
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Create failed");
+      setError(e?.message ?? "Erstellen fehlgeschlagen");
     } finally {
       setSubmitting(false);
     }
@@ -116,11 +117,11 @@ export function TimeEntriesBox({
       });
 
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message ?? `Delete failed (${res.status})`);
+      if (!res.ok) throw new Error(data?.message ?? `Löschen fehlgeschlagen (${res.status})`);
 
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Delete failed");
+      setError(e?.message ?? "Löschen fehlgeschlagen");
     } finally {
       setSubmitting(false);
     }
@@ -128,11 +129,15 @@ export function TimeEntriesBox({
 
   const canAdd = assignmentStatus === "CONFIRMED" || assignmentStatus === "DONE";
 
+  const totalMinutes = useMemo(() => {
+    return items.reduce((sum, t) => sum + (Number.isFinite(t.minutes) ? t.minutes : 0), 0);
+  }, [items]);
+
   return (
     <section style={{ marginTop: 16, padding: 16, border: "1px solid #ddd", borderRadius: 12 }}>
       <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Zeiteinträge</h2>
       <div style={{ fontSize: 13, opacity: 0.75 }}>
-        Diese Einträge sind direkt mit dem Assignment verbunden.
+        Diese Einträge sind direkt mit dem Einsatz verbunden.
       </div>
 
       {error ? (
@@ -145,7 +150,7 @@ export function TimeEntriesBox({
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #eee", borderRadius: 12 }}>
           <div style={{ fontWeight: 700 }}>Zeiteintrag aktuell nicht möglich</div>
           <div style={{ marginTop: 6, fontSize: 13, opacity: 0.75 }}>
-            Bitte zuerst das Assignment bestätigen (Status: CONFIRMED) oder abschließen (Status: DONE).
+            Bitte zuerst den Einsatz bestätigen (Status: CONFIRMED) oder abschließen (Status: DONE).
           </div>
         </div>
       ) : (
@@ -210,7 +215,10 @@ export function TimeEntriesBox({
 
 
       <div style={{ marginTop: 16 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>Vorhandene Einträge</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+          <div style={{ fontWeight: 700 }}>Vorhandene Einträge</div>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>Gesamt: {formatMinutes(totalMinutes)}</div>
+        </div>
 
         {loading ? (
           <div style={{ opacity: 0.7 }}>Lade…</div>
@@ -224,8 +232,8 @@ export function TimeEntriesBox({
                 style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}
               >
                 <div style={{ fontSize: 13 }}>
-                  <b>{new Date(t.date).toLocaleDateString("de-DE")}</b>{" "}
-                  – {t.minutes} min
+                  <b>{t.date ? formatDate(t.date) : "—"}</b>{" "}
+                  – {formatMinutes(Number.isFinite(t.minutes) ? t.minutes : 0)}
                 </div>
 
                 {(t.startTime || t.endTime) ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -11,6 +11,28 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/users/me", { cache: "no-store" });
+        if (!res.ok) return;
+        const me = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (me?.role === "ADMIN") {
+          router.replace("/admin");
+        } else {
+          router.replace("/dashboard");
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,7 +55,13 @@ export default function LoginPage() {
       }
 
       // cookie is set by the server route handler
-      router.push("/dashboard");
+      const meRes = await fetch("/api/users/me", { cache: "no-store" });
+      const me = await meRes.json().catch(() => ({}));
+      if (me?.role === "ADMIN") {
+        router.replace("/admin");
+      } else {
+        router.replace("/dashboard");
+      }
     } catch (err: any) {
       setError(err?.message ?? "Network error");
     } finally {

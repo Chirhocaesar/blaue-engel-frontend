@@ -39,6 +39,11 @@ export default async function DashboardPage() {
 
       <div className="space-y-3">
         <CardLink
+          href="/planner"
+          title="Dienstplan"
+          desc="Zum Dienstplan wechseln."
+        />
+        <CardLink
           href="/assignments"
           title="Einsätze"
           desc="Deine geplanten Einsätze ansehen und bestätigen."

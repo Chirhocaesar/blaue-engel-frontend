@@ -2,7 +2,7 @@ services:
   frontend:
     image: blaue-engel-frontend-dev
     build: .
-    container_name: blaue-engel-frontend-dev
+    container_name: blaue-engel-frontend
     restart: unless-stopped
     env_file:
       - .env.local
@@ -11,3 +11,9 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

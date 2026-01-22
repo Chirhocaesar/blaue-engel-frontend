@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { apiGet, ApiError } from "@/lib/api";
+import { formatDateTime } from "@/lib/format";
 
 type AssignmentStatus = "PLANNED" | "ASSIGNED" | "CONFIRMED" | "DONE" | "CANCELLED";
 
@@ -33,19 +34,6 @@ type AssignmentsResponse = {
   items: Assignment[];
   nextCursor: string | null;
 };
-
-function formatDateTime(iso: string) {
-  // Server-side safe formatting without relying on client locale APIs too hard
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("de-DE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function customerLabel(c?: Customer | null) {
   if (!c) return "Unbekannter Kunde";
@@ -105,7 +93,7 @@ export default async function AssignmentsPage({
       return (
         <div className="p-4 pb-24">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Assignments</h1>
+            <h1 className="text-xl font-semibold">Einsätze</h1>
             <Link className="text-sm underline" href="/dashboard">
               Dashboard
             </Link>
@@ -130,14 +118,14 @@ export default async function AssignmentsPage({
     return (
       <div className="p-4 pb-24">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Assignments</h1>
+          <h1 className="text-xl font-semibold">Einsätze</h1>
           <Link className="text-sm underline" href="/dashboard">
             Dashboard
           </Link>
         </div>
 
         <div className="mt-4 rounded-xl border p-4">
-          <p className="font-medium">Konnte Assignments nicht laden.</p>
+          <p className="font-medium">Konnte Einsätze nicht laden.</p>
           <p className="mt-2 text-sm opacity-80">{err?.message ?? "Unbekannter Fehler"}</p>
         </div>
       </div>
@@ -153,7 +141,7 @@ export default async function AssignmentsPage({
   return (
     <div className="p-4 pb-24">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Assignments</h1>
+        <h1 className="text-xl font-semibold">Einsätze</h1>
         <Link className="text-sm underline" href="/dashboard">
           Dashboard
         </Link>
@@ -164,55 +152,55 @@ export default async function AssignmentsPage({
       </p>
 
       <div className="mt-4 space-y-3">
-  {items.length === 0 ? (
-    <div className="rounded-xl border p-4">
-      <p className="font-medium">Keine Assignments gefunden.</p>
-      <p className="mt-1 text-sm opacity-80">
-        Tipp: Es gibt Filter (status, employeeId, customerId, from/to).
-      </p>
-    </div>
-  ) : (
-    items.map((a) => (
-      <Link
-        key={a.id}
-        href={`/assignments/${a.id}`}
-        className="block rounded-2xl border p-4 shadow-sm hover:bg-gray-50 transition"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">
-              {customerLabel(a.customer)}
-            </p>
-
+        {items.length === 0 ? (
+          <div className="rounded-xl border p-4">
+            <p className="font-medium">Keine Einsätze gefunden.</p>
             <p className="mt-1 text-sm opacity-80">
-              <span className="font-medium">Start:</span>{" "}
-              {formatDateTime(a.startAt)}
-            </p>
-
-            {a.endAt ? (
-              <p className="text-sm opacity-80">
-                <span className="font-medium">Ende:</span>{" "}
-                {formatDateTime(a.endAt)}
-              </p>
-            ) : null}
-
-            <div className="mt-2 inline-flex items-center rounded-full border px-3 py-1 text-xs">
-              {a.status}
-            </div>
-
-            <p className="mt-2 break-all font-mono text-xs opacity-70">
-              {a.id}
-            </p>
-
-            <p className="mt-3 text-sm underline">
-              Details öffnen
+              Tipp: Es gibt Filter (status, employeeId, customerId, from/to).
             </p>
           </div>
-        </div>
-      </Link>
-    ))
-  )}
-</div>
+        ) : (
+          items.map((a) => (
+            <Link
+              key={a.id}
+              href={`/assignments/${a.id}`}
+              className="block rounded-2xl border p-4 shadow-sm hover:bg-gray-50 transition"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">
+                    {customerLabel(a.customer)}
+                  </p>
+
+                  <p className="mt-1 text-sm opacity-80">
+                    <span className="font-medium">Start:</span>{" "}
+                    {formatDateTime(a.startAt)}
+                  </p>
+
+                  {a.endAt ? (
+                    <p className="text-sm opacity-80">
+                      <span className="font-medium">Ende:</span>{" "}
+                      {formatDateTime(a.endAt)}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-2 inline-flex items-center rounded-full border px-3 py-1 text-xs">
+                    {a.status}
+                  </div>
+
+                  <p className="mt-2 break-all font-mono text-xs opacity-70">
+                    {a.id}
+                  </p>
+
+                  <p className="mt-3 text-sm underline">
+                    Details öffnen
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
 
 
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-4">
