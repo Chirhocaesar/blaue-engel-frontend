@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { deDateToIso, isoToDeDate, makeTimeOptions } from "@/lib/datetime-de";
+import { useNativePickers } from "@/lib/useNativePickers";
 
 type Employee = {
   id: string;
@@ -39,9 +41,12 @@ export default function AdminAssignmentNewClient() {
   const [customerId, setCustomerId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [date, setDate] = useState("");
+  const [dateDe, setDateDe] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [notes, setNotes] = useState("");
+  const showNativeInputs = useNativePickers();
+  const timeOptions = useMemo(() => makeTimeOptions(30), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,12 +173,12 @@ export default function AdminAssignmentNewClient() {
             </select>
           </label>
 
-          <label className="grid gap-1">
+          <label className="grid gap-1 min-w-0">
             <span className="text-sm text-gray-700">Mitarbeiter</span>
             <select
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              className="rounded border px-3 py-2 text-sm"
+              className="rounded border px-3 py-2 text-sm w-full min-w-0"
             >
               <option value="">Bitte wählen…</option>
               {employees.map((e) => (
@@ -186,36 +191,86 @@ export default function AdminAssignmentNewClient() {
 
           <label className="grid gap-1">
             <span className="text-sm text-gray-700">Datum</span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded border px-3 py-2 text-sm"
-            />
+            {showNativeInputs ? (
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => {
+                  const nextIso = e.target.value;
+                  setDate(nextIso);
+                  setDateDe(isoToDeDate(nextIso));
+                }}
+                className="rounded border px-3 py-2 text-sm"
+              />
+            ) : (
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="TT.MM.JJJJ"
+                value={dateDe}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setDateDe(next);
+                  const nextIso = deDateToIso(next);
+                  setDate(nextIso || "");
+                }}
+                className="rounded border px-3 py-2 text-sm"
+              />
+            )}
           </label>
 
           <label className="grid gap-1">
             <span className="text-sm text-gray-700">Startzeit</span>
-            <input
-              type="time"
-              lang="de-DE"
-              step={60}
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="rounded border px-3 py-2 text-sm"
-            />
+            {showNativeInputs ? (
+              <input
+                type="time"
+                lang="de-DE"
+                step={60}
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="rounded border px-3 py-2 text-sm"
+              />
+            ) : (
+              <select
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="rounded border px-3 py-2 text-sm"
+              >
+                <option value="">Bitte wählen…</option>
+                {timeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
 
           <label className="grid gap-1">
             <span className="text-sm text-gray-700">Endzeit</span>
-            <input
-              type="time"
-              lang="de-DE"
-              step={60}
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="rounded border px-3 py-2 text-sm"
-            />
+            {showNativeInputs ? (
+              <input
+                type="time"
+                lang="de-DE"
+                step={60}
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="rounded border px-3 py-2 text-sm"
+              />
+            ) : (
+              <select
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="rounded border px-3 py-2 text-sm"
+              >
+                <option value="">Bitte wählen…</option>
+                {timeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
 
           <label className="grid gap-1 sm:col-span-2">

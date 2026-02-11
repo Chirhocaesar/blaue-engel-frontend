@@ -13,6 +13,9 @@ import {
   formatTime,
   formatWeekdayShort,
 } from "@/lib/format";
+import { deDateToIso, makeTimeOptions, normalizeDeTime } from "@/lib/datetime-de";
+import { useNativePickers } from "@/lib/useNativePickers";
+import StatusPill from "@/components/StatusPill";
 
 type Customer = {
   id?: string;
@@ -59,6 +62,7 @@ type Assignment = {
   status?: string;
   customer?: Customer;
   customerName?: string;
+  employee?: { id?: string; fullName?: string | null; email?: string | null } | null;
 
   signatures?: Signature[];
   timeEntries?: TimeEntry[];
@@ -136,8 +140,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   // add time entry form
   const [teStart, setTeStart] = useState<string>("");
   const [teEnd, setTeEnd] = useState<string>("");
+  const [teDateDe, setTeDateDe] = useState<string>("");
+  const [teStartTime, setTeStartTime] = useState<string>("");
+  const [teEndTime, setTeEndTime] = useState<string>("");
   const [teNotes, setTeNotes] = useState<string>("");
   const [teSaving, setTeSaving] = useState(false);
+  const timeOptions = useMemo(() => makeTimeOptions(15), []);
+  const showNativeInputs = useNativePickers();
 
   // signature
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -169,6 +178,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     const c = data?.customer;
     return c?.companyName || c?.name || data?.customerName || "Kunde";
   }, [data]);
+
+  const employeeName = useMemo(() => {
+    const emp = data?.employee;
+    return emp?.fullName || emp?.email || "";
+  }, [data?.employee]);
 
   const customerAddress = useMemo(() => data?.customer?.address || "", [data]);
   const customerPhone = useMemo(() => data?.customer?.phone || "", [data]);
@@ -210,7 +224,18 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     }, 0);
   }, [timeEntries]);
 
-  const totals = data?.totals ?? null;
+  const summary = useMemo(() => {
+    const t = data?.totals;
+    return {
+      planned: t?.plannedMinutes ?? 0,
+      recorded: t?.recordedMinutes ?? 0,
+      adjustments: t?.adjustedMinutes ?? 0,
+      final: t?.finalMinutes ?? 0,
+      kmRecorded: t?.kmRecorded ?? null,
+      kmAdjustments: t?.kmAdjusted ?? 0,
+      kmFinal: t?.kmFinal ?? null,
+    };
+  }, [data?.totals]);
 
   const kmDate = useMemo(() => {
     if (!data?.startAt) return "";
@@ -444,8 +469,33 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       return;
     }
 
-    const startIso = fromLocalDateTimeInput(teStart);
-    const endIso = fromLocalDateTimeInput(teEnd);
+    let startIso = "";
+    let endIso = "";
+
+    if (showNativeInputs) {
+      if (!teStart || !teEnd) {
+        setTeErr("Bitte Start- und Endzeit angeben.");
+        return;
+      }
+      startIso = fromLocalDateTimeInput(teStart);
+      endIso = fromLocalDateTimeInput(teEnd);
+    } else {
+      const dateIso = deDateToIso(teDateDe);
+      if (!dateIso) {
+        setTeErr("Bitte Datum im Format TT.MM.JJJJ angeben.");
+        return;
+      }
+
+      const startNormalized = normalizeDeTime(teStartTime);
+      const endNormalized = normalizeDeTime(teEndTime);
+      if (!startNormalized || !endNormalized) {
+        setTeErr("Bitte Start- und Endzeit angeben.");
+        return;
+      }
+
+      startIso = new Date(`${dateIso}T${startNormalized}`).toISOString();
+      endIso = new Date(`${dateIso}T${endNormalized}`).toISOString();
+    }
 
     if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
       setTeErr("Endzeit muss nach der Startzeit liegen.");
@@ -484,19 +534,68 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   }
 
   // signature canvas helpers
+  useEffect(() => {
+    function initCanvas() {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.max(1, window.devicePixelRatio || 1);
+      const width = rect.width || canvas.clientWidth || 700;
+      const height = rect.height || canvas.clientHeight || 220;
+
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.lineWidth = 2 * ratio;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#111";
+    }
+
+    initCanvas();
+
+    const canvas = canvasRef.current;
+    const ro = canvas ? new ResizeObserver(() => initCanvas()) : null;
+    if (canvas && ro) ro.observe(canvas);
+
+    window.addEventListener("resize", initCanvas);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", initCanvas);
+      window.visualViewport.addEventListener("scroll", initCanvas);
+    }
+
+    return () => {
+      window.removeEventListener("resize", initCanvas);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", initCanvas);
+        window.visualViewport.removeEventListener("scroll", initCanvas);
+      }
+      if (ro && canvas) ro.unobserve(canvas);
+    };
+  }, []);
+
   function getPos(e: any) {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    const touch = e.touches?.[0];
-    const clientX = touch ? touch.clientX : e.clientX;
-    const clientY = touch ? touch.clientY : e.clientY;
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.clientX ?? (e.touches && e.touches[0]?.clientX);
+    const clientY = e.clientY ?? (e.touches && e.touches[0]?.clientY);
+    const x = ((clientX ?? 0) - rect.left) * scaleX;
+    const y = ((clientY ?? 0) - rect.top) * scaleY;
     return { x, y };
   }
 
   function startDraw(e: any) {
     if (!canvasRef.current) return;
+    e.preventDefault?.();
+    if (e?.currentTarget?.setPointerCapture && e?.pointerId != null) {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
     drawing.current = true;
     last.current = getPos(e);
     setSigOk("");
@@ -513,10 +612,6 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
     const pos = getPos(e);
     const prev = last.current;
-
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#111";
 
     ctx.beginPath();
     if (prev) ctx.moveTo(prev.x, prev.y);
@@ -711,6 +806,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         <div>
           <h1 className="text-xl font-semibold">{customerName}</h1>
           {customerAddress ? <div className="text-sm text-gray-700">{customerAddress}</div> : null}
+          {employeeName ? <div className="text-sm text-gray-700">{employeeName}</div> : null}
         </div>
 
         <div className="flex gap-2 flex-wrap">
@@ -770,7 +866,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           <div>
             <div className="text-gray-600">Status</div>
             <div className="font-medium flex items-center gap-2 flex-wrap">
-              <span>{data.status || "—"}</span>
+              <StatusPill status={data.status} />
               {isLocked ? (
                 <span className="rounded border px-2 py-0.5 text-xs font-semibold text-red-700 border-red-300">
                   LOCKED
@@ -821,58 +917,46 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       </section>
 
       {/* TOTALS */}
-      <section className="mt-4 rounded border p-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h2 className="text-base font-semibold">Summen</h2>
-        </div>
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="text-gray-600">Geplant</div>
-            <div className="font-medium">
-              {totals ? formatMinutes(totals.plannedMinutes) : "—"}
-            </div>
-          </div>
-          <div>
-            <div className="text-gray-600">Erfasst</div>
-            <div className="font-medium">
-              {totals ? formatMinutes(totals.recordedMinutes) : "—"}
-            </div>
-          </div>
-          <div>
-            <div className="text-gray-600">Korrektur</div>
-            <div className="font-medium">
-              {totals ? formatSignedMinutes(totals.adjustedMinutes) : "—"}
-            </div>
-          </div>
-          <div>
-            <div className="text-gray-600">Final</div>
-            <div className="font-medium">
-              {totals ? formatMinutes(totals.finalMinutes) : "—"}
-            </div>
-          </div>
-        </div>
+      <div className="rounded border p-4">
+        <h2 className="text-base font-semibold mb-3">Summen</h2>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-          <div>
-            <div className="text-gray-600">KM erfasst</div>
-            <div className="font-medium">
-              {totals ? formatKm(totals.kmRecorded) : "—"}
-            </div>
+        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+          <div className="col-span-2 flex items-baseline justify-between">
+            <div className="text-gray-600">Geplant</div>
+            <div className="font-medium">{formatMinutes(summary.planned)}</div>
           </div>
-          <div>
+
+          <div className="flex items-baseline justify-between">
+            <div className="text-gray-600">Erfasst</div>
+            <div className="font-medium">{formatMinutes(summary.recorded)}</div>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <div className="text-gray-600">KM erfasst</div>
+            <div className="font-medium">{summary.kmRecorded ?? 0}</div>
+          </div>
+
+          <div className="flex items-baseline justify-between">
+            <div className="text-gray-600">Korrektur</div>
+            <div className="font-medium">{formatSignedMinutes(summary.adjustments)}</div>
+          </div>
+          <div className="flex items-baseline justify-between">
             <div className="text-gray-600">KM Korrektur</div>
             <div className="font-medium">
-              {totals ? (totals.kmAdjusted ? `${totals.kmAdjusted > 0 ? "+" : ""}${formatKm(totals.kmAdjusted)}` : "0") : "—"}
+              {(summary.kmAdjustments ?? 0) >= 0 ? "+" : ""}
+              {summary.kmAdjustments ?? 0}
             </div>
           </div>
-          <div>
+
+          <div className="flex items-baseline justify-between">
+            <div className="text-gray-600">Final</div>
+            <div className="font-semibold">{formatMinutes(summary.final)}</div>
+          </div>
+          <div className="flex items-baseline justify-between">
             <div className="text-gray-600">KM final</div>
-            <div className="font-medium">
-              {totals ? formatKm(totals.kmFinal) : "—"}
-            </div>
+            <div className="font-semibold">{summary.kmFinal ?? summary.kmRecorded ?? 0}</div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* KM PER DAY */}
       <section className="mt-4 rounded border p-4">
@@ -948,15 +1032,16 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           )}
         </div>
 
-        {isSigned ? (
-          <div className="mt-2 text-sm text-gray-600">
-            Gesperrt nach Unterschrift: Kilometer (tagesbasiert) und Zeiteinträge sind nach jeder Unterschrift an diesem Tag gesperrt. Änderungen nur via Admin-Korrektur. Bitte Admin kontaktieren: <Link href="/admin/corrections" className="underline">Admin → Korrekturen → Tag</Link>.
-          </div>
-        ) : null}
-
         {isLocked || isKmLockedBySignature ? (
           <div className="mt-2 text-sm text-gray-600">
-            Gesperrt nach Unterschrift: Kilometer (tagesbasiert) und Zeiteinträge sind nach jeder Unterschrift an diesem Tag gesperrt. Änderungen nur via Admin-Korrektur. Bitte Admin kontaktieren: <Link href="/admin/corrections" className="underline">Admin → Korrekturen → Tag</Link>.
+            Gesperrt nach Unterschrift: Kilometer (tagesbasiert) und Zeiteinträge sind nach jeder Unterschrift an diesem Tag gesperrt. Änderungen nur via Admin-Korrektur.{" "}
+            {isAdmin ? (
+              <>
+                Bitte Admin kontaktieren: <Link href="/admin/corrections" className="underline">Admin → Korrekturen → Tag</Link>.
+              </>
+            ) : (
+              <>Bitte Admin kontaktieren.</>
+            )}
           </div>
         ) : null}
 
@@ -989,42 +1074,101 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
         {!isAdmin && !isReceiptMode && !isAssigned ? (
           <>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div>
-                <label className="text-xs text-gray-600">Start</label>
-                <input
-                  type="datetime-local"
-                  lang="de-DE"
-                  step={60}
-                  value={teStart}
-                  onChange={(e) => setTeStart(e.target.value)}
-                  className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                  disabled={teSaving || isSigned}
-                />
+            {showNativeInputs ? (
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="text-xs text-gray-600">Start</label>
+                  <input
+                    type="datetime-local"
+                    lang="de-DE"
+                    step={60}
+                    value={teStart}
+                    onChange={(e) => setTeStart(e.target.value)}
+                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                    disabled={teSaving || isSigned}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600">Ende</label>
+                  <input
+                    type="datetime-local"
+                    lang="de-DE"
+                    step={60}
+                    value={teEnd}
+                    onChange={(e) => setTeEnd(e.target.value)}
+                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                    disabled={teSaving || isSigned}
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddTimeEntry}
+                    disabled={teSaving || isSigned}
+                    className={`w-full rounded border px-3 py-2 text-sm hover:bg-gray-50 ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                  >
+                    {teSaving ? "Speichern…" : "Zeit hinzufügen"}
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-gray-600">Ende</label>
-                <input
-                  type="datetime-local"
-                  lang="de-DE"
-                  step={60}
-                  value={teEnd}
-                  onChange={(e) => setTeEnd(e.target.value)}
-                  className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                  disabled={teSaving || isSigned}
-                />
+            ) : (
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <div>
+                  <label className="text-xs text-gray-600">Datum</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="TT.MM.JJJJ"
+                    value={teDateDe}
+                    onChange={(e) => setTeDateDe(e.target.value)}
+                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                    disabled={teSaving || isSigned}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600">Start</label>
+                  <select
+                    value={teStartTime}
+                    onChange={(e) => setTeStartTime(e.target.value)}
+                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                    disabled={teSaving || isSigned}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {timeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600">Ende</label>
+                  <select
+                    value={teEndTime}
+                    onChange={(e) => setTeEndTime(e.target.value)}
+                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                    disabled={teSaving || isSigned}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {timeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddTimeEntry}
+                    disabled={teSaving || isSigned}
+                    className={`w-full rounded border px-3 py-2 text-sm hover:bg-gray-50 ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                  >
+                    {teSaving ? "Speichern…" : "Zeit hinzufügen"}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddTimeEntry}
-                  disabled={teSaving || isSigned}
-                  className={`w-full rounded border px-3 py-2 text-sm hover:bg-gray-50 ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                >
-                  {teSaving ? "Speichern…" : "Zeit hinzufügen"}
-                </button>
-              </div>
-            </div>
+            )}
 
             <div className="mt-2">
               <label className="text-xs text-gray-600">Notiz (optional)</label>
@@ -1057,7 +1201,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
         {isSigned ? (
           <div className="mt-2 text-sm text-gray-600">
-            Gesperrt nach Unterschrift: Kilometer (tagesbasiert) und Zeiteinträge sind nach jeder Unterschrift an diesem Tag gesperrt. Änderungen nur via Admin-Korrektur. Bitte Admin kontaktieren: <Link href="/admin/corrections" className="underline">Admin → Korrekturen → Tag</Link>.
+            Gesperrt nach Unterschrift: Kilometer (tagesbasiert) und Zeiteinträge sind nach jeder Unterschrift an diesem Tag gesperrt. Änderungen nur via Admin-Korrektur. Bitte Admin kontaktieren.
           </div>
         ) : null}
 
@@ -1074,7 +1218,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
                 if (typeof t.minutes === "number") {
                   mins = Math.max(0, Math.round(t.minutes));
-                  leftLabel = `Datum: ${t.date ?? "—"}`;
+                  leftLabel = `Datum: ${t.date ? formatDate(t.date) : "—"}`;
                 } else if (t.startAt && t.endAt) {
                   mins = durationMinutes(t.startAt, t.endAt);
                   const s = formatTime(t.startAt);
@@ -1141,13 +1285,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                         width={700}
                         height={220}
                         className="w-full h-[160px] touch-none"
-                        onMouseDown={startDraw}
-                        onMouseMove={moveDraw}
-                        onMouseUp={endDraw}
-                        onMouseLeave={endDraw}
-                        onTouchStart={startDraw}
-                        onTouchMove={moveDraw}
-                        onTouchEnd={endDraw}
+                        onPointerDown={startDraw}
+                        onPointerMove={moveDraw}
+                        onPointerUp={endDraw}
+                        onPointerLeave={endDraw}
+                        onPointerCancel={endDraw}
                       />
                     </div>
 

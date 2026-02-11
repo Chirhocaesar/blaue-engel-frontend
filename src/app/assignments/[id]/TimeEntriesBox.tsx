@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatDate, formatMinutes } from "@/lib/format";
+import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
+import { useNativePickers } from "@/lib/useNativePickers";
 
 type TimeEntry = {
   id: string;
@@ -40,12 +42,15 @@ export function TimeEntriesBox({
   }, [defaultDateISO]);
 
   const [date, setDate] = useState("");
+  const [dateDe, setDateDe] = useState("");
   const [minutes, setMinutes] = useState("60");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const showNativeInputs = useNativePickers();
 
   useEffect(() => {
     setDate(defaultDate);
+    setDateDe(isoToDeDate(defaultDate));
   }, [defaultDate]);
 
   async function load() {
@@ -75,7 +80,13 @@ export function TimeEntriesBox({
     setError(null);
 
     const m = parseInt(minutes, 10);
-    if (!date) return setError("Bitte Datum wählen.");
+    if (showNativeInputs) {
+      if (!date) return setError("Bitte Datum wählen.");
+    } else {
+      const parsed = deDateToIso(dateDe);
+      if (!parsed) return setError("Bitte Datum im Format TT.MM.JJJJ angeben.");
+      if (parsed !== date) setDate(parsed);
+    }
     if (!Number.isFinite(m) || m <= 0) return setError("Minuten müssen > 0 sein.");
 
     setSubmitting(true);
@@ -158,13 +169,34 @@ export function TimeEntriesBox({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Datum</span>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #ccc" }}
-                disabled={submitting}
-              />
+              {showNativeInputs ? (
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => {
+                    const nextIso = e.target.value;
+                    setDate(nextIso);
+                    setDateDe(isoToDeDate(nextIso));
+                  }}
+                  style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #ccc" }}
+                  disabled={submitting}
+                />
+              ) : (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="TT.MM.JJJJ"
+                  value={dateDe}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setDateDe(next);
+                    const nextIso = deDateToIso(next);
+                    setDate(nextIso || "");
+                  }}
+                  style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #ccc" }}
+                  disabled={submitting}
+                />
+              )}
             </label>
 
             <label style={{ display: "grid", gap: 6 }}>

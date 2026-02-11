@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { apiGet, ApiError } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
+import StatusPill from "@/components/StatusPill";
 
 type AssignmentStatus = "PLANNED" | "ASSIGNED" | "CONFIRMED" | "DONE" | "CANCELLED";
 
@@ -64,6 +65,7 @@ export default async function AssignmentsPage({
 
   const me = await apiGet<Me>("/users/me", token);
   const basePath = me.role === "ADMIN" ? "/assignments" : "/me/assignments";
+  const dashboardPath = me.role === "ADMIN" ? "/admin" : "/dashboard";
 
   // Backend contract:
   // GET /assignments?cursor=&limit=&from=&to=&employeeId=&customerId=&status=
@@ -94,7 +96,7 @@ export default async function AssignmentsPage({
         <div className="p-4 pb-24">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Einsätze</h1>
-            <Link className="text-sm underline" href="/dashboard">
+            <Link className="text-sm underline" href={dashboardPath}>
               Dashboard
             </Link>
           </div>
@@ -107,7 +109,7 @@ export default async function AssignmentsPage({
           </div>
 
           <div className="mt-4">
-            <Link className="underline" href="/dashboard">
+            <Link className="underline" href={dashboardPath}>
               Zurück zum Dashboard
             </Link>
           </div>
@@ -119,7 +121,7 @@ export default async function AssignmentsPage({
       <div className="p-4 pb-24">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">Einsätze</h1>
-          <Link className="text-sm underline" href="/dashboard">
+          <Link className="text-sm underline" href={dashboardPath}>
             Dashboard
           </Link>
         </div>
@@ -142,7 +144,7 @@ export default async function AssignmentsPage({
     <div className="p-4 pb-24">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Einsätze</h1>
-        <Link className="text-sm underline" href="/dashboard">
+        <Link className="text-sm underline" href={dashboardPath}>
           Dashboard
         </Link>
       </div>
@@ -184,9 +186,7 @@ export default async function AssignmentsPage({
                     </p>
                   ) : null}
 
-                  <div className="mt-2 inline-flex items-center rounded-full border px-3 py-1 text-xs">
-                    {a.status}
-                  </div>
+                  <StatusPill status={a.status} className="px-3 py-1" />
 
                   <p className="mt-2 break-all font-mono text-xs opacity-70">
                     {a.id}
@@ -205,7 +205,7 @@ export default async function AssignmentsPage({
 
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-4">
         <div className="mx-auto flex max-w-xl items-center justify-between">
-          <Link className="text-sm underline" href="/dashboard">
+          <Link className="text-sm underline" href={dashboardPath}>
             Zurück
           </Link>
 

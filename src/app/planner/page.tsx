@@ -6,6 +6,10 @@ import { useMemo, useState, useEffect } from "react";
 import { getUpcomingBwHolidays, getBwHolidayLabelByIsoDate } from "@/lib/holidays-bw";
 import Link from "next/link";
 import { formatDate, formatDayMonth, formatMonthYear, formatTime, formatWeekdayShort } from "@/lib/format";
+import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
+import { useNativePickers } from "@/lib/useNativePickers";
+import { statusPillClass } from "@/lib/status";
+import StatusPill from "@/components/StatusPill";
 
 function monthLabel(d: Date) {
   return formatMonthYear(d);
@@ -129,9 +133,11 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const showNativeInputs = useNativePickers();
 
   // km today mini-form state
   const [kmDate, setKmDate] = useState<string>(() => isoTodayLocal());
+  const [kmDateDe, setKmDateDe] = useState<string>(() => isoToDeDate(isoTodayLocal()) || "");
   const [kmValue, setKmValue] = useState<string>("");
   const [kmSaving, setKmSaving] = useState<boolean>(false);
   const [kmSavedAt, setKmSavedAt] = useState<number | null>(null);
@@ -141,6 +147,13 @@ export default function PlannerPage() {
     () => Object.values(assignmentsByDate).reduce((sum, arr) => sum + arr.length, 0),
     [assignmentsByDate]
   );
+
+  useEffect(() => {
+    const next = isoToDeDate(kmDate);
+    if (next && next !== kmDateDe) setKmDateDe(next);
+    if (!next && kmDateDe) setKmDateDe("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kmDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -277,19 +290,6 @@ export default function PlannerPage() {
     return st.type ?? st.status ?? "ASSIGNED";
   }
 
-  function classesForStatus(status: string) {
-    switch ((status || "").toUpperCase()) {
-      case "CONFIRMED":
-        return "bg-blue-200 border-blue-400 text-blue-800";
-      case "DONE":
-      case "COMPLETED":
-        return "bg-green-200 border-green-400 text-green-800";
-      case "ASSIGNED":
-      default:
-        return "bg-yellow-200 border-yellow-400 text-yellow-800";
-    }
-  }
-
   async function handleKmSave() {
     setKmError(null);
     setKmSavedAt(null);
@@ -340,15 +340,6 @@ export default function PlannerPage() {
               </Link>
             ) : null}
 
-            <button
-              type="button"
-              className="rounded-md border px-2 py-2 text-sm text-gray-700"
-              onClick={() => setReloadKey((k) => k + 1)}
-              aria-label="Termine laden"
-            >
-              {loading ? "Lade..." : "Termine laden"}
-            </button>
-
             <div className="text-sm text-gray-600">
               <span className="font-medium">Termine:</span> <span>{assignmentsCount}</span>
             </div>
@@ -379,76 +370,44 @@ export default function PlannerPage() {
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
               <span className="font-medium">Status:</span>
-              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${classesForStatus("ASSIGNED")}`}>
-                ASSIGNED
-              </span>
-              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${classesForStatus("CONFIRMED")}`}>
-                CONFIRMED
-              </span>
-              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${classesForStatus("DONE")}`}>
-                DONE
-              </span>
+              <StatusPill status="ASSIGNED" />
+              <StatusPill status="CONFIRMED" />
+              <StatusPill status="DONE" />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={goPrev} aria-label="Vorheriger">
-              ←
-            </button>
-
-            <div className="min-w-[170px] text-center text-sm font-semibold">
-              {viewMode === "month"
-                ? monthLabel(viewMonth)
-                : viewMode === "day"
-                  ? `${formatWeekdayShort(gridDays[0])}, ${formatDate(gridDays[0])}`
-                  : `${formatDate(gridDays[0])} – ${formatDate(gridDays[6])}`}
-            </div>
-
-            <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={goNext} aria-label="Nächster">
-              →
-            </button>
-          </div>
-        </div>
-
-        {/* Second row: KM form (separate so it never hides toggle) */}
-        <div className="rounded border px-3 py-2 text-sm bg-white flex items-center gap-2 flex-wrap">
-          {hasDoneAssignmentForKmDate ? (
-            <>
-              <div className="text-xs font-medium mr-1">Kilometer heute</div>
-              <input
-                type="date"
-                value={kmDate}
-                onChange={(e) => setKmDate(e.target.value)}
-                className="text-sm rounded border px-1 py-1"
-              />
-              <input
-                type="number"
-                min={0}
-                max={1000}
-                step={1}
-                value={kmValue}
-                onChange={(e) => setKmValue(e.target.value)}
-                className="text-sm rounded border px-2 py-1 w-20"
-                aria-label="Kilometer"
-              />
+          <div className="flex items-center justify-center self-start sm:self-auto w-full sm:w-auto">
+            <div className="inline-flex items-center gap-2 rounded-lg border bg-white px-2 py-1 shadow-sm">
               <button
                 type="button"
-                onClick={handleKmSave}
-                disabled={kmSaving}
-                className="rounded border px-2 py-1 text-sm bg-white"
+                className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                onClick={goPrev}
+                aria-label="Vorheriger"
               >
-                {kmSaving ? "Speichern..." : "Speichern"}
+                ←
               </button>
-              {kmSavedAt ? <div className="text-sm text-green-600 ml-2">Gespeichert ✓</div> : null}
-              {kmError ? <div className="w-full text-red-600 text-xs mt-1">{kmError}</div> : null}
-            </>
-          ) : (
-            <div className="w-full text-sm text-gray-700">Kilometer können erst nach Abschluss eines Einsatzes erfasst werden.</div>
-          )}
-        </div>
-      </div>
 
-      <p className="mt-2 text-sm text-gray-600">Monats-/Wochenansicht (MVP): Termine sind schreibgeschützt.</p>
+              <div className="min-w-[170px] text-center text-sm font-semibold">
+                {viewMode === "month"
+                  ? monthLabel(viewMonth)
+                  : viewMode === "day"
+                    ? `${formatWeekdayShort(gridDays[0])}, ${formatDate(gridDays[0])}`
+                    : `${formatDate(gridDays[0])} – ${formatDate(gridDays[6])}`}
+              </div>
+
+              <button
+                type="button"
+                className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                onClick={goNext}
+                aria-label="Nächster"
+              >
+                →
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
       {/* Month or Week Grid */}
       <section className="mt-4 rounded-lg border p-3">
@@ -503,7 +462,7 @@ export default function PlannerPage() {
 
                             const customerAddress = (a as any).customerAddress || (a as any).address || (a.customer as any)?.address || "";
                             const status = getStatusString(a);
-                            const colorCls = classesForStatus(status);
+                            const colorCls = statusPillClass(status);
                             return (
                               <Link
                                 key={a.id}
@@ -602,7 +561,7 @@ export default function PlannerPage() {
                           const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
 
                           const status = getStatusString(a);
-                          const colorCls = classesForStatus(status);
+                          const colorCls = statusPillClass(status);
 
                           const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
                           const customerAddressLine = (a as any).customerAddressLine || (a as any).address || (a.customer as any)?.address || "";
@@ -699,7 +658,7 @@ export default function PlannerPage() {
                           const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
 
                           const status = getStatusString(a);
-                          const colorCls = classesForStatus(status);
+                          const colorCls = statusPillClass(status);
 
                           const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
                             const customerAddress = (a as any).customerAddress || (a as any).address || (a.customer as any)?.address || "";

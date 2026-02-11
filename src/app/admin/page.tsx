@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { apiGet, ApiError } from "@/lib/api";
 import { formatDate, formatDateTimeRange } from "@/lib/format";
+import StatusPill from "@/components/StatusPill";
 
 export const dynamic = "force-dynamic";
 
@@ -44,26 +45,6 @@ function ymdLocal(d: Date) {
 function shortId(id?: string | null) {
   if (!id) return "—";
   return `…${id.slice(-6)}`;
-}
-
-function statusLabel(status?: string | null) {
-  return (status || "—").toUpperCase();
-}
-
-function statusPillClass(status?: string | null) {
-  switch ((status || "").toUpperCase()) {
-    case "ASSIGNED":
-      return "bg-yellow-100 text-yellow-800 border-yellow-300";
-    case "CONFIRMED":
-      return "bg-blue-100 text-blue-800 border-blue-300";
-    case "DONE":
-      return "bg-green-100 text-green-800 border-green-300";
-    case "CANCELLED":
-      return "bg-gray-100 text-gray-700 border-gray-300";
-    case "PLANNED":
-    default:
-      return "bg-slate-100 text-slate-700 border-slate-300";
-  }
 }
 
 function getItems(data: AssignmentsResponse): Assignment[] {
@@ -227,13 +208,7 @@ export default async function AdminDashboardPage() {
                         {formatDateTimeRange(a.startAt, a.endAt)}
                       </td>
                       <td className="p-2 border">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${statusPillClass(
-                            a.status,
-                          )}`}
-                        >
-                          {statusLabel(a.status)}
-                        </span>
+                        <StatusPill status={a.status} />
                       </td>
                       <td className="p-2 border text-right">
                         <div className="flex items-center justify-end gap-2">

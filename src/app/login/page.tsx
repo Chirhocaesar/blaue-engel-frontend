@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -21,9 +18,9 @@ export default function LoginPage() {
         const me = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (me?.role === "ADMIN") {
-          router.replace("/admin");
+          window.location.href = "/admin";
         } else {
-          router.replace("/dashboard");
+          window.location.href = "/dashboard";
         }
       } catch {
         // ignore
@@ -32,7 +29,7 @@ export default function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,9 +55,9 @@ export default function LoginPage() {
       const meRes = await fetch("/api/users/me", { cache: "no-store" });
       const me = await meRes.json().catch(() => ({}));
       if (me?.role === "ADMIN") {
-        router.replace("/admin");
+        window.location.href = "/admin";
       } else {
-        router.replace("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (err: any) {
       setError(err?.message ?? "Network error");

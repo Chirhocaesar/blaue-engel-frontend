@@ -18,13 +18,16 @@ export default async function RootLayout({
     <html lang="de">
       <body>
         <header className="border-b">
-          <div className="mx-auto max-w-md px-4 py-3 flex items-center justify-between gap-3">
+          <div className="mx-auto max-w-md px-4 py-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-lg font-semibold">Blaue Engel Haushaltshilfe J.P.</div>
               <div className="text-sm text-gray-600">Mitarbeiter-App</div>
             </div>
             {isLoggedIn ? (
-              <a href="/logout" className="text-sm font-semibold underline">
+              <a
+                href="/logout"
+                className="inline-flex items-center justify-center rounded border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
+              >
                 Abmelden
               </a>
             ) : null}

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatDate, formatDateTime, formatDateTimeRange, formatKm, formatMinutes, formatSignedMinutes } from "@/lib/format";
+import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
+import { useNativePickers } from "@/lib/useNativePickers";
 
 type Employee = {
   id: string;
@@ -80,6 +82,7 @@ export default function CorrectionsClient() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeId, setEmployeeId] = useState("");
   const [date, setDate] = useState("");
+  const [dateDe, setDateDe] = useState("");
   const [highlightAID, setHighlightAID] = useState("");
   const [assignmentIdParam, setAssignmentIdParam] = useState("");
   const [bundle, setBundle] = useState<DayBundle | null>(null);
@@ -98,7 +101,9 @@ export default function CorrectionsClient() {
   const [kmSubmitting, setKmSubmitting] = useState(false);
   const [kmSavedAt, setKmSavedAt] = useState<number | null>(null);
 
-  const canFetch = employeeId && date;
+  const showNativeInputs = useNativePickers();
+  const dateIso = date;
+  const canFetch = employeeId && dateIso;
   const requestIdRef = useRef(0);
   const isLocked = Boolean(
     bundle?.lockedAfterSignature || (bundle as DayBundle | null)?.locked || (bundle as DayBundle | null)?.lockBadge
@@ -120,11 +125,20 @@ export default function CorrectionsClient() {
       (sum, a) => sum + (a.deltaMinutes ?? 0),
       0
     );
+    const kmRecorded = bundle?.kmEntry?.km ?? null;
+    const kmAdjustments = (bundle?.kmAdjustments ?? []).reduce(
+      (sum, a) => sum + (a.deltaKm ?? 0),
+      0
+    );
+    const kmFinal = (kmRecorded ?? 0) + kmAdjustments;
     return {
       planned,
       recorded,
       adjustments,
       final: recorded + adjustments,
+      kmRecorded,
+      kmAdjustments,
+      kmFinal,
     };
   }, [bundle]);
 
@@ -162,7 +176,7 @@ export default function CorrectionsClient() {
     setLoadError(null);
     try {
       const res = await fetch(
-        `/api/admin/corrections/day?employeeId=${encodeURIComponent(employeeId)}&date=${encodeURIComponent(date)}`,
+        `/api/admin/corrections/day?employeeId=${encodeURIComponent(employeeId)}&date=${encodeURIComponent(dateIso)}`,
         { cache: "no-store" }
       );
       const json = await res.json().catch(() => ({}));
@@ -193,7 +207,10 @@ export default function CorrectionsClient() {
     const qDate = searchParams.get("date") ?? "";
     const qAid = searchParams.get("aid") ?? "";
     if (qEmp && qEmp !== employeeId) setEmployeeId(qEmp);
-    if (qDate && qDate !== date) setDate(qDate);
+    if (qDate && qDate !== date) {
+      setDate(qDate);
+      setDateDe(isoToDeDate(qDate));
+    }
     if (qAid && qAid !== highlightAID) setHighlightAID(qAid);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -211,7 +228,10 @@ export default function CorrectionsClient() {
         const empId = json?.employeeId || json?.employee?.id || "";
         const day = ymdLocal(json?.startAt);
         if (empId && empId !== employeeId) setEmployeeId(empId);
-        if (day && day !== date) setDate(day);
+        if (day && day !== date) {
+          setDate(day);
+          setDateDe(isoToDeDate(day));
+        }
       } catch {
         // ignore
       }
@@ -222,7 +242,7 @@ export default function CorrectionsClient() {
   useEffect(() => {
     if (canFetch) loadBundle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId, date]);
+  }, [employeeId, dateIso]);
 
   useEffect(() => {
     if (!bundle?.employeeId || !bundle?.date) return;
@@ -264,7 +284,8 @@ export default function CorrectionsClient() {
         body: JSON.stringify({
           assignmentId,
           userId: employeeId,
-          date,
+          date: dateIso,
+          effectiveDate: dateIso,
           deltaMinutes: delta,
           reason: timeReason.trim(),
         }),
@@ -297,7 +318,8 @@ export default function CorrectionsClient() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           userId: employeeId,
-          date,
+          date: dateIso,
+          effectiveDate: dateIso,
           deltaKm: delta,
           reason: kmReason.trim(),
         }),
@@ -329,19 +351,19 @@ export default function CorrectionsClient() {
       </div>
       {DEBUG ? (
         <div className="text-xs text-gray-600">
-          {`employeeId=${employeeId || "—"} · date=${date || "—"} · loading=${loading} · canFetch=${Boolean(
+          {`employeeId=${employeeId || "—"} · date=${dateIso || "—"} · loading=${loading} · canFetch=${Boolean(
             canFetch
           )} · disableInputs=${disableInputs} · requestId=${requestIdRef.current}`}
         </div>
       ) : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-        <label className="grid gap-1">
+        <label className="grid gap-1 min-w-0">
           <span>Mitarbeiter</span>
           <select
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
-            className="rounded border px-2 py-2"
+            className="rounded border px-2 py-2 w-full min-w-0"
           >
             <option value="">Bitte wählen…</option>
             {employees.map((emp) => (
@@ -351,14 +373,34 @@ export default function CorrectionsClient() {
             ))}
           </select>
         </label>
-        <label className="grid gap-1">
+        <label className="grid gap-1 min-w-0">
           <span>Datum</span>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded border px-2 py-2"
-          />
+          {showNativeInputs ? (
+            <input
+              type="date"
+              value={dateIso}
+              onChange={(e) => {
+                const nextIso = e.target.value;
+                setDate(nextIso);
+                setDateDe(isoToDeDate(nextIso));
+              }}
+              className="rounded border px-2 py-2 w-full min-w-0"
+            />
+          ) : (
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="TT.MM.JJJJ"
+              value={dateDe}
+              onChange={(e) => {
+                const next = e.target.value;
+                setDateDe(next);
+                const nextIso = deDateToIso(next);
+                setDate(nextIso || "");
+              }}
+              className="rounded border px-2 py-2 w-full min-w-0"
+            />
+          )}
         </label>
       </div>
 
@@ -372,7 +414,7 @@ export default function CorrectionsClient() {
                   ? employees.find((e) => e.id === employeeId)?.fullName ||
                     employees.find((e) => e.id === employeeId)?.email ||
                     "—"
-                  : "—"} · {formatDate(date)}
+                  : "—"} · {formatDate(dateIso)}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -383,13 +425,46 @@ export default function CorrectionsClient() {
               ) : null}
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-gray-700">
-            <div>Geplant: {formatMinutes(summary.planned)}</div>
-            <div>Erfasst: {formatMinutes(summary.recorded)}</div>
-            <div>Korrektur: {formatSignedMinutes(summary.adjustments)}</div>
-            <div>Final: {formatMinutes(summary.final)}</div>
+          <div className="rounded border p-4">
+            <h2 className="text-base font-semibold mb-3">Summen</h2>
+
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+              <div className="col-span-2 flex items-baseline justify-between">
+                <div className="text-gray-600">Geplant</div>
+                <div className="font-medium">{formatMinutes(summary.planned)}</div>
+              </div>
+
+              <div className="flex items-baseline justify-between">
+                <div className="text-gray-600">Erfasst</div>
+                <div className="font-medium">{formatMinutes(summary.recorded)}</div>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-gray-600">KM erfasst</div>
+                <div className="font-medium">{summary.kmRecorded ?? 0}</div>
+              </div>
+
+              <div className="flex items-baseline justify-between">
+                <div className="text-gray-600">Korrektur</div>
+                <div className="font-medium">{formatSignedMinutes(summary.adjustments)}</div>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-gray-600">KM Korrektur</div>
+                <div className="font-medium">
+                  {(summary.kmAdjustments ?? 0) >= 0 ? "+" : ""}
+                  {summary.kmAdjustments ?? 0}
+                </div>
+              </div>
+
+              <div className="flex items-baseline justify-between">
+                <div className="text-gray-600">Final</div>
+                <div className="font-semibold">{formatMinutes(summary.final)}</div>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="text-gray-600">KM final</div>
+                <div className="font-semibold">{summary.kmFinal ?? summary.kmRecorded ?? 0}</div>
+              </div>
+            </div>
           </div>
-          <div className="text-gray-700">KM: {formatKm(bundle?.kmEntry?.km ?? null)} km</div>
           {isLocked ? (
             <div className="text-xs text-gray-600">
               Tag ist nach Unterschrift gesperrt (für Mitarbeiter). Admin-Korrekturen sind weiterhin möglich.
@@ -674,6 +749,9 @@ export default function CorrectionsClient() {
 
           <section className="rounded border p-4 space-y-3">
             <h2 className="text-base font-semibold">Audit-Protokoll</h2>
+            {(() => {
+              const logs = Array.isArray(bundle?.auditLogs) ? bundle.auditLogs : [];
+              return (
             <div className="overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
@@ -685,14 +763,14 @@ export default function CorrectionsClient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {bundle.auditLogs.length === 0 ? (
+                  {logs.length === 0 ? (
                     <tr>
                       <td className="p-2" colSpan={4}>
                         Keine Logs.
                       </td>
                     </tr>
                   ) : (
-                    bundle.auditLogs.map((log) => (
+                    logs.map((log) => (
                       <tr key={log.id}>
                         <td className="p-2 border">{formatDateTime(log.createdAt)}</td>
                         <td className="p-2 border">{log.action}</td>
@@ -704,6 +782,8 @@ export default function CorrectionsClient() {
                 </tbody>
               </table>
             </div>
+              );
+            })()}
           </section>
         </>
       ) : null}
