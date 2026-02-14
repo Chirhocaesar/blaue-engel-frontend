@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 const API_BASE =
-  process.env.API_BASE_URL ?? "https://api.blaueengelhaushaltshilfe.de";
+  process.env.API_BASE ?? "https://api.blaueengelhaushaltshilfe.de";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null);
 
-  const upstreamRes = await fetch(`${API_BASE}/assignments`, {
+  const upstreamRes = await fetch(`${API_BASE}/admin/assignments/series`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,
