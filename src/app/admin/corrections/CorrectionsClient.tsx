@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { formatDate, formatDateTime, formatDateTimeRange, formatKm, formatMinutes, formatSignedMinutes } from "@/lib/format";
 import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
+import { Alert } from "@/components/ui";
 
 type Employee = {
   id: string;
@@ -78,7 +79,7 @@ function ymdLocal(iso?: string | null) {
 }
 
 export default function CorrectionsClient() {
-  const DEBUG = true;
+  const DEBUG = false;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeId, setEmployeeId] = useState("");
   const [date, setDate] = useState("");
@@ -349,14 +350,6 @@ export default function CorrectionsClient() {
           Zum Dienstplan
         </Link>
       </div>
-      {DEBUG ? (
-        <div className="text-xs text-gray-600">
-          {`employeeId=${employeeId || "—"} · date=${dateIso || "—"} · loading=${loading} · canFetch=${Boolean(
-            canFetch
-          )} · disableInputs=${disableInputs} · requestId=${requestIdRef.current}`}
-        </div>
-      ) : null}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <label className="grid gap-1 min-w-0">
           <span>Mitarbeiter</span>
@@ -473,7 +466,7 @@ export default function CorrectionsClient() {
         </section>
       ) : null}
 
-      {loadError ? <div className="text-sm text-red-600">{loadError}</div> : null}
+      {loadError ? <Alert variant="error">{loadError}</Alert> : null}
       {loadError ? (
         <div>
           <button
@@ -485,9 +478,9 @@ export default function CorrectionsClient() {
           </button>
         </div>
       ) : null}
-      {loading ? <div className="text-sm text-gray-600">Lade…</div> : null}
+      {loading ? <Alert variant="info">Lade…</Alert> : null}
       {!loading && !loadError && bundle && !hasAnyData ? (
-        <div className="text-sm text-gray-600">Keine Einsätze, Zeit- oder KM-Daten für diesen Tag.</div>
+        <Alert variant="info">Keine Einsätze, Zeit- oder KM-Daten für diesen Tag.</Alert>
       ) : null}
 
       {bundle ? (
@@ -641,7 +634,11 @@ export default function CorrectionsClient() {
                   className="rounded border px-2 py-2"
                   rows={3}
                 />
-                {timeFormError ? <div className="text-xs text-red-600">{timeFormError}</div> : null}
+                {timeFormError ? (
+                  <Alert variant="error" className="mt-2 text-xs">
+                    {timeFormError}
+                  </Alert>
+                ) : null}
               </label>
             </div>
             {isLocked ? (
@@ -725,7 +722,11 @@ export default function CorrectionsClient() {
                   className="rounded border px-2 py-2"
                   rows={3}
                 />
-                {kmFormError ? <div className="text-xs text-red-600">{kmFormError}</div> : null}
+                {kmFormError ? (
+                  <Alert variant="error" className="mt-2 text-xs">
+                    {kmFormError}
+                  </Alert>
+                ) : null}
               </label>
             </div>
             {isLocked ? (
