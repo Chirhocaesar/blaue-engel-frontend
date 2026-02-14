@@ -11,6 +11,7 @@ import { useNativePickers } from "@/lib/useNativePickers";
 import { statusPillClass } from "@/lib/status";
 import StatusPill from "@/components/StatusPill";
 import { Alert, Button, Card } from "@/components/ui";
+import { cn } from "@/components/ui/cn";
 
 function monthLabel(d: Date) {
   return formatMonthYear(d);
@@ -188,6 +189,14 @@ export default function PlannerPage() {
   const [createSaved, setCreateSaved] = useState(false);
   const [createCustomerOptions, setCreateCustomerOptions] = useState<CustomerOption[]>([]);
   const [createCustomerLoading, setCreateCustomerLoading] = useState(false);
+
+  const segBtn = (key: "month" | "week" | "day") =>
+    cn(
+      "flex-1 rounded-none border transition-colors",
+      viewMode === key
+        ? "bg-slate-900 text-white border-slate-900 hover:bg-slate-900"
+        : "bg-white text-slate-900 hover:bg-slate-100"
+    );
 
   // km today mini-form state
   const [kmDate, setKmDate] = useState<string>(() => isoTodayLocal());
@@ -575,33 +584,15 @@ export default function PlannerPage() {
             </div>
 
             <div className="flex w-full overflow-hidden rounded-lg border">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={`flex-1 rounded-none transition whitespace-nowrap ${viewMode === "month" ? "bg-gray-900 text-white hover:bg-gray-900" : "bg-white text-gray-800"}`}
-                onClick={switchToMonth}
-              >
+              <button type="button" className={segBtn("month")} onClick={switchToMonth}>
                 Monat
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={`flex-1 rounded-none transition whitespace-nowrap ${viewMode === "week" ? "bg-gray-900 text-white hover:bg-gray-900" : "bg-white text-gray-800"}`}
-                onClick={switchToWeek}
-              >
+              </button>
+              <button type="button" className={segBtn("week")} onClick={switchToWeek}>
                 Woche
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={`flex-1 rounded-none transition whitespace-nowrap ${viewMode === "day" ? "bg-gray-900 text-white hover:bg-gray-900" : "bg-white text-gray-800"}`}
-                onClick={switchToDay}
-              >
+              </button>
+              <button type="button" className={segBtn("day")} onClick={switchToDay}>
                 Tag
-              </Button>
+              </button>
             </div>
 
             <div className="flex flex-col items-center gap-2 text-center">
