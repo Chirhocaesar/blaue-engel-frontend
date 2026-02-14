@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     : 50;
   const limit = String(safeLimit);
 
-  const upstreamRes = await fetch(`${API_BASE}/customers?limit=${encodeURIComponent(limit)}`, {
+  const upstreamRes = await fetch(`${API_BASE}/admin/customers?limit=${encodeURIComponent(limit)}`, {
     headers: { Authorization: `Bearer ${auth.token}` },
     cache: "no-store",
   });
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
 
-  const upstreamRes = await fetch(`${API_BASE}/customers`, {
+  const upstreamRes = await fetch(`${API_BASE}/admin/customers`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,
