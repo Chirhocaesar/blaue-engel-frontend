@@ -36,6 +36,8 @@ type UsersResponse = AdminUser[] | { items?: AdminUser[] };
 
 type CustomersResponse = { items?: Customer[] } | Customer[];
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function normalizeBirthDate(value?: string | null) {
   const trimmed = (value ?? "").trim();
   if (!trimmed) return null;
@@ -112,6 +114,14 @@ export default function MasterdataPage() {
   const [resetSaving, setResetSaving] = useState(false);
   const [resetSaved, setResetSaved] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+
+  const [showEmployeeEditModal, setShowEmployeeEditModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<AdminUser | null>(null);
+  const [editEmpName, setEditEmpName] = useState("");
+  const [editEmpEmail, setEditEmpEmail] = useState("");
+  const [editEmpSaving, setEditEmpSaving] = useState(false);
+  const [editEmpError, setEditEmpError] = useState<string | null>(null);
+  const [editEmpSaved, setEditEmpSaved] = useState(false);
 
   async function loadUsers() {
     setUsersLoading(true);
@@ -193,6 +203,12 @@ export default function MasterdataPage() {
     const t = setTimeout(() => setResetSaved(false), 2000);
     return () => clearTimeout(t);
   }, [resetSaved]);
+
+  useEffect(() => {
+    if (!editEmpSaved) return;
+    const t = setTimeout(() => setEditEmpSaved(false), 2000);
+    return () => clearTimeout(t);
+  }, [editEmpSaved]);
 
   const userRows = useMemo(() => {
     return users.map((u) => ({
@@ -470,6 +486,52 @@ export default function MasterdataPage() {
     }
   }
 
+  function openEmployeeEdit(user: AdminUser) {
+    setEditEmpError(null);
+    setEditingEmployee(user);
+    setEditEmpName(user.fullName || "");
+    setEditEmpEmail(user.email || "");
+    setShowEmployeeEditModal(true);
+  }
+
+  async function submitEmployeeEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingEmployee || editEmpSaving) return;
+    setEditEmpError(null);
+
+    const name = editEmpName.trim();
+    const email = editEmpEmail.trim();
+
+    if (!name) {
+      setEditEmpError("Bitte einen Namen angeben.");
+      return;
+    }
+    if (!email || !emailPattern.test(email)) {
+      setEditEmpError("Bitte eine gueltige E-Mail angeben.");
+      return;
+    }
+
+    setEditEmpSaving(true);
+    try {
+      const res = await fetch(`/api/admin/employees/${editingEmployee.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: name, email }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
+
+      setShowEmployeeEditModal(false);
+      setEditingEmployee(null);
+      setEditEmpSaved(true);
+      await loadUsers();
+    } catch (e: any) {
+      setEditEmpError(e?.message || "Speichern fehlgeschlagen.");
+    } finally {
+      setEditEmpSaving(false);
+    }
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -507,6 +569,7 @@ export default function MasterdataPage() {
             <div className="flex items-center gap-2 flex-wrap">
               {empSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
               {resetSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
+              {editEmpSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
               <button
                 type="button"
                 className="rounded-md border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
@@ -550,6 +613,15 @@ export default function MasterdataPage() {
                       variant="outline"
                       size="sm"
                       className="w-full"
+                      onClick={() => openEmployeeEdit(u.raw)}
+                    >
+                      Bearbeiten
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
                       onClick={() => {
                         setResetError(null);
                         setResetUser(u.raw);
@@ -577,18 +649,27 @@ export default function MasterdataPage() {
                         <td className="p-2">{u.name}</td>
                         <td className="p-2">{u.email}</td>
                         <td className="p-2">
-                          <button
-                            type="button"
-                            className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
-                            onClick={() => {
-                              setResetError(null);
-                              setResetUser(u.raw);
-                              setResetPassword("");
-                              setResetConfirm("");
-                            }}
-                          >
-                            Passwort zurücksetzen
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                              onClick={() => openEmployeeEdit(u.raw)}
+                            >
+                              Bearbeiten
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                              onClick={() => {
+                                setResetError(null);
+                                setResetUser(u.raw);
+                                setResetPassword("");
+                                setResetConfirm("");
+                              }}
+                            >
+                              Passwort zurücksetzen
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -763,6 +844,72 @@ export default function MasterdataPage() {
                   disabled={empSaving || !empFormValid}
                 >
                   {empSaving ? "Speichern…" : "Speichern"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {showEmployeeEditModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold">Mitarbeiter bearbeiten</h3>
+              <button
+                type="button"
+                className="text-sm text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowEmployeeEditModal(false);
+                  setEditingEmployee(null);
+                }}
+              >
+                Schliessen
+              </button>
+            </div>
+
+            {editEmpError ? (
+              <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
+                {editEmpError}
+              </div>
+            ) : null}
+
+            <form className="mt-3 space-y-3" onSubmit={submitEmployeeEdit}>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Name</label>
+                <Input
+                  value={editEmpName}
+                  onChange={(e) => setEditEmpName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">E-Mail</label>
+                <Input
+                  type="email"
+                  required
+                  value={editEmpEmail}
+                  onChange={(e) => setEditEmpEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-md border px-3 py-2 text-sm"
+                  onClick={() => {
+                    setShowEmployeeEditModal(false);
+                    setEditingEmployee(null);
+                  }}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white"
+                  disabled={editEmpSaving}
+                >
+                  {editEmpSaving ? "Speichern…" : "Speichern"}
                 </button>
               </div>
             </form>
