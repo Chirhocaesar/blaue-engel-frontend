@@ -390,8 +390,11 @@ export default function MasterdataPage() {
     }
   }
 
-  async function submitEmergencyContact(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitEmergencyContact(e?: React.SyntheticEvent) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const targetId = editingCustomer?.id || createdCustomerId;
     if (!targetId) return;
     setEcError(null);
@@ -417,10 +420,26 @@ export default function MasterdataPage() {
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+      const nextContact = json && typeof json === "object" && !Array.isArray(json) ? json : null;
+      if (Array.isArray(json)) {
+        setEmergencyContacts(json as EmergencyContact[]);
+      } else if (nextContact?.id) {
+        setEmergencyContacts((prev) => [
+          ...prev,
+          {
+            id: String(nextContact.id),
+            name: String(nextContact.name ?? name),
+            phone: String(nextContact.phone ?? phone),
+            relation: nextContact.relation ?? (ecRelation.trim() || undefined),
+          },
+        ]);
+      } else {
+        await loadEmergencyContacts(targetId);
+      }
       setEcName("");
       setEcPhone("");
       setEcRelation("");
-      await loadEmergencyContacts(targetId);
+      setTab("customers");
       setEcSaved(true);
     } catch (e: any) {
       setEcError(e?.message ?? "Notfallkontakt konnte nicht gespeichert werden.");
@@ -1035,7 +1054,7 @@ export default function MasterdataPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2">
+              <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-white px-4 py-3">
                 <button
                   type="button"
                   className="rounded-md border px-3 py-2 text-sm"
@@ -1088,7 +1107,7 @@ export default function MasterdataPage() {
                   </div>
                 )}
 
-                <form className="grid grid-cols-1 sm:grid-cols-3 gap-2" onSubmit={submitEmergencyContact}>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Input
                     className="text-sm"
                     placeholder="Name"
@@ -1112,14 +1131,30 @@ export default function MasterdataPage() {
                   />
                   <div className="sm:col-span-3">
                     <button
-                      type="submit"
+                      type="button"
                       className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
                       disabled={ecSaving}
+                      onClick={(event) => submitEmergencyContact(event)}
                     >
                       {ecSaving ? "Speichern…" : "Kontakt hinzufügen"}
                     </button>
                   </div>
-                </form>
+                </div>
+                <div className="flex items-center justify-end">
+                  <button
+                    type="button"
+                    className="rounded-md border px-3 py-2 text-sm"
+                    onClick={() => {
+                      setShowCustomerModal(false);
+                      setCreatedCustomerId(null);
+                      setCreatedCustomerName("");
+                      setEmergencyContacts([]);
+                      setEcError(null);
+                    }}
+                  >
+                    Fertig
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>
@@ -1314,7 +1349,7 @@ export default function MasterdataPage() {
                     </div>
                   )}
 
-                  <form className="grid grid-cols-1 sm:grid-cols-3 gap-2" onSubmit={submitEmergencyContact}>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Input
                       className="text-sm"
                       placeholder="Name"
@@ -1338,17 +1373,18 @@ export default function MasterdataPage() {
                     />
                     <div className="sm:col-span-3">
                       <button
-                        type="submit"
+                        type="button"
                         className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
                         disabled={ecSaving}
+                        onClick={(event) => submitEmergencyContact(event)}
                       >
                         {ecSaving ? "Speichern…" : "Kontakt hinzufügen"}
                       </button>
                     </div>
-                  </form>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2">
+                <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-white px-4 py-3">
                   <button
                     type="button"
                     className="rounded-md border px-3 py-2 text-sm"

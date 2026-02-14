@@ -334,11 +334,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const isAssigned = statusU === "ASSIGNED";
   const canSign = isConfirmed || isDone;
 
-  async function loadAssignment(mode: "admin" | "me") {
+  async function loadAssignment() {
     setLoading(true);
     setErr("");
     try {
-      const endpoint = mode === "admin" ? `/api/admin/assignments/${id}` : `/api/me/assignments/${id}`;
+      const endpoint = `/api/assignments/${id}`;
       const res = await fetch(endpoint, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
@@ -526,7 +526,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         throw new Error(json?.message || `HTTP ${res.status}`);
       }
       setEditSaved(true);
-      await loadAssignment("admin");
+      await loadAssignment();
     } catch (e: any) {
       setEditError(e?.message || "Speichern fehlgeschlagen.");
     } finally {
@@ -556,7 +556,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         throw new Error(json?.message || `HTTP ${res.status}`);
       }
       setCancelSaved(true);
-      await loadAssignment("admin");
+      await loadAssignment();
     } catch (e: any) {
       setEditError(e?.message || "Absagen fehlgeschlagen.");
     } finally {
@@ -578,7 +578,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
       if (!cancelled) setIsAdmin(admin);
 
-      const assignment = await loadAssignment(admin ? "admin" : "me");
+      const assignment = await loadAssignment();
       if (!cancelled) {
         if (Array.isArray(assignment?.timeEntries)) {
           const items: TimeEntry[] = assignment.timeEntries.map((t: any) => ({
@@ -770,9 +770,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   useEffect(() => {
     if (!customerId) return;
     let cancelled = false;
-    const endpoint = isAdmin
-      ? `/api/admin/customers/${customerId}/emergency-contacts`
-      : `/api/me/customers/${customerId}/emergency-contacts`;
+    const endpoint = `/api/customers/${customerId}/emergency-contacts`;
     setEcLoading(true);
     setEcError("");
     (async () => {
@@ -1164,7 +1162,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               <StatusPill status={data.status} />
               {isLocked ? (
                 <span
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-gray-100 text-gray-700 border-gray-300"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-amber-100 text-amber-800 border-amber-300"
                   aria-label="Gesperrt"
                   title="Gesperrt"
                 >
