@@ -888,7 +888,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       if (!res.ok) throw new Error(json?.message || "Fehler beim Speichern der Unterschrift");
 
       setSigOk("Unterschrift gespeichert ✓");
-      await loadAssignment(isAdmin ? "admin" : "me");
+      await loadAssignment();
     } catch (e: any) {
       setSigErr(e?.message || "Fehler beim Speichern der Unterschrift");
     } finally {
@@ -907,7 +907,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
-      await loadAssignment(isAdmin ? "admin" : "me");
+      await loadAssignment();
     } catch (e: any) {
       setAckErr(e?.message || "Fehler beim Bestätigen");
     } finally {
@@ -924,7 +924,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
-      await loadAssignment(isAdmin ? "admin" : "me");
+      await loadAssignment();
     } catch (e: any) {
       setDoneErr(e?.message || "Fehler beim Abschließen");
     } finally {
@@ -983,7 +983,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       } else {
         setKmErr(msg);
       }
-      await loadAssignment(isAdmin ? "admin" : "me");
+      await loadAssignment();
     } finally {
       setKmSaving(false);
     }
