@@ -16,6 +16,8 @@ import {
 import { deDateToIso, makeTimeOptions, normalizeDeTime } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
 import StatusPill from "@/components/StatusPill";
+import { Lock } from "lucide-react";
+import { Alert, Button, Card, Pill } from "@/components/ui";
 
 type Customer = {
   id?: string;
@@ -37,6 +39,15 @@ type LatestSignature = {
   id: string;
   signedAt?: string;
   imageUrl?: string | null;
+};
+
+type EmergencyContact = {
+  id: string;
+  name: string;
+  phone: string;
+  relation?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 type TimeEntry = {
@@ -85,6 +96,17 @@ type Assignment = {
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
+type AdminEmployee = {
+  id: string;
+  email?: string | null;
+  fullName?: string | null;
+};
+
+type AdminCustomer = {
+  id: string;
+  name?: string | null;
+  companyName?: string | null;
+};
 
 // local datetime-local value from ISO string
 function toLocalDateTimeInput(iso: string) {
@@ -164,6 +186,32 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const [doneErr, setDoneErr] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [emergencyOpen, setEmergencyOpen] = useState(false);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [ecLoading, setEcLoading] = useState(false);
+  const [ecError, setEcError] = useState<string>("");
+
+  // admin edit
+  const [editMode, setEditMode] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSaved, setEditSaved] = useState(false);
+  const [editLocked, setEditLocked] = useState(false);
+  const [cancelSaving, setCancelSaving] = useState(false);
+  const [cancelSaved, setCancelSaved] = useState(false);
+
+  const [adminCustomers, setAdminCustomers] = useState<AdminCustomer[]>([]);
+  const [adminEmployees, setAdminEmployees] = useState<AdminEmployee[]>([]);
+  const [adminListsLoading, setAdminListsLoading] = useState(false);
+  const [adminListsError, setAdminListsError] = useState("");
+
+  const [editCustomerId, setEditCustomerId] = useState("");
+  const [editEmployeeId, setEditEmployeeId] = useState("");
+  const [editStartAt, setEditStartAt] = useState("");
+  const [editEndAt, setEditEndAt] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+
   // km per day (new truth)
   const [kmValue, setKmValue] = useState<string>("");
   const [kmSaving, setKmSaving] = useState(false);
@@ -186,6 +234,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
   const customerAddress = useMemo(() => data?.customer?.address || "", [data]);
   const customerPhone = useMemo(() => data?.customer?.phone || "", [data]);
+  const customerId = useMemo(() => data?.customerId || data?.customer?.id || "", [data]);
 
   const mapsHref = useMemo(() => {
     if (!customerAddress) return "";
@@ -280,15 +329,17 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
   const statusU = String(data?.status || "").toUpperCase();
   const isDone = statusU === "DONE";
+  const isCancelled = statusU === "CANCELLED";
   const isConfirmed = statusU === "CONFIRMED";
   const isAssigned = statusU === "ASSIGNED";
   const canSign = isConfirmed || isDone;
 
-  async function loadAssignment() {
+  async function loadAssignment(mode: "admin" | "me") {
     setLoading(true);
     setErr("");
     try {
-      const res = await fetch(`/api/me/assignments/${id}`, { cache: "no-store" });
+      const endpoint = mode === "admin" ? `/api/admin/assignments/${id}` : `/api/me/assignments/${id}`;
+      const res = await fetch(endpoint, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
       setData(json);
@@ -381,10 +432,153 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     }
   }
 
+  async function loadAdminLists() {
+    if (adminListsLoading) return;
+    setAdminListsLoading(true);
+    setAdminListsError("");
+    try {
+      const [empRes, custRes] = await Promise.all([
+        fetch("/api/admin/employees", { cache: "no-store" }),
+        fetch("/api/admin/customers?limit=50", { cache: "no-store" }),
+      ]);
+      const empJson = await empRes.json().catch(() => []);
+      const custJson = await custRes.json().catch(() => ({}));
+      if (!empRes.ok) throw new Error(empJson?.message || `HTTP ${empRes.status}`);
+      if (!custRes.ok) throw new Error(custJson?.message || `HTTP ${custRes.status}`);
+
+      setAdminEmployees(Array.isArray(empJson) ? empJson : []);
+      const customers = Array.isArray(custJson)
+        ? custJson
+        : Array.isArray(custJson?.items)
+          ? custJson.items
+          : [];
+      setAdminCustomers(customers);
+    } catch (e: any) {
+      setAdminListsError(e?.message || "Listen konnten nicht geladen werden.");
+      setAdminEmployees([]);
+      setAdminCustomers([]);
+    } finally {
+      setAdminListsLoading(false);
+    }
+  }
+
+  function openEditForm() {
+    if (!data) return;
+    setEditMode(true);
+    setEditError("");
+    setEditLocked(false);
+    setEditCustomerId(data.customerId || data.customer?.id || "");
+    setEditEmployeeId(data.employeeId || data.employee?.id || "");
+    setEditStartAt(data.startAt ? toLocalDateTimeInput(data.startAt) : "");
+    setEditEndAt(data.endAt ? toLocalDateTimeInput(data.endAt) : "");
+    setEditNotes(data.notes || "");
+    setEditStatus(String(data.status || "").toUpperCase());
+    if (adminCustomers.length === 0 || adminEmployees.length === 0) {
+      void loadAdminLists();
+    }
+  }
+
+  function closeEditForm() {
+    setEditMode(false);
+    setEditError("");
+    setEditLocked(false);
+  }
+
+  async function submitAdminEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (editSaving) return;
+    setEditError("");
+    setEditLocked(false);
+
+    if (!editCustomerId || !editEmployeeId || !editStartAt || !editEndAt) {
+      setEditError("Bitte alle Pflichtfelder ausfüllen.");
+      return;
+    }
+
+    const startIso = fromLocalDateTimeInput(editStartAt);
+    const endIso = fromLocalDateTimeInput(editEndAt);
+    if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
+      setEditError("Endzeit muss nach der Startzeit liegen.");
+      return;
+    }
+
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/admin/assignments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: editCustomerId,
+          employeeId: editEmployeeId,
+          startAt: startIso,
+          endAt: endIso,
+          notes: editNotes.trim() || null,
+          status: editStatus || undefined,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 403 && String(json?.message || "").includes("LOCKED_AFTER_SIGNATURE")) {
+          setEditLocked(true);
+          setEditError("Gesperrt nach Unterschrift – nur Admin-Korrektur möglich.");
+          return;
+        }
+        throw new Error(json?.message || `HTTP ${res.status}`);
+      }
+      setEditSaved(true);
+      await loadAssignment("admin");
+    } catch (e: any) {
+      setEditError(e?.message || "Speichern fehlgeschlagen.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleAdminCancel() {
+    if (cancelSaving || editSaving) return;
+    if (!confirm("Termin wirklich absagen?")) return;
+    setEditError("");
+    setEditLocked(false);
+    setCancelSaving(true);
+    try {
+      const res = await fetch(`/api/admin/assignments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CANCELLED" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 403 && String(json?.message || "").includes("LOCKED_AFTER_SIGNATURE")) {
+          setEditLocked(true);
+          setEditError("Gesperrt nach Unterschrift – nur Admin-Korrektur möglich.");
+          return;
+        }
+        throw new Error(json?.message || `HTTP ${res.status}`);
+      }
+      setCancelSaved(true);
+      await loadAssignment("admin");
+    } catch (e: any) {
+      setEditError(e?.message || "Absagen fehlgeschlagen.");
+    } finally {
+      setCancelSaving(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const assignment = await loadAssignment();
+      let admin = false;
+      try {
+        const meRes = await fetch("/api/users/me", { cache: "no-store" });
+        const meJson = await meRes.json().catch(() => ({}));
+        admin = meRes.ok && meJson?.role === "ADMIN";
+      } catch {
+        admin = false;
+      }
+
+      if (!cancelled) setIsAdmin(admin);
+
+      const assignment = await loadAssignment(admin ? "admin" : "me");
       if (!cancelled) {
         if (Array.isArray(assignment?.timeEntries)) {
           const items: TimeEntry[] = assignment.timeEntries.map((t: any) => ({
@@ -422,21 +616,16 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   }, [searchParams]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/users/me", { cache: "no-store" });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) return;
-        if (!cancelled) setIsAdmin(json?.role === "ADMIN");
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!editSaved) return;
+    const t = window.setTimeout(() => setEditSaved(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [editSaved]);
+
+  useEffect(() => {
+    if (!cancelSaved) return;
+    const t = window.setTimeout(() => setCancelSaved(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [cancelSaved]);
 
   useEffect(() => {
     if (!kmDate) return;
@@ -578,6 +767,37 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!customerId) return;
+    let cancelled = false;
+    const endpoint = isAdmin
+      ? `/api/admin/customers/${customerId}/emergency-contacts`
+      : `/api/me/customers/${customerId}/emergency-contacts`;
+    setEcLoading(true);
+    setEcError("");
+    (async () => {
+      try {
+        const res = await fetch(endpoint, { cache: "no-store" });
+        const json = await res.json().catch(() => ([]));
+        if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
+        const items = Array.isArray(json) ? json : [];
+        if (!cancelled) {
+          setEmergencyContacts(items);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setEmergencyContacts([]);
+          setEcError(e?.message || "Notfallkontakte konnten nicht geladen werden.");
+        }
+      } finally {
+        if (!cancelled) setEcLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, customerId]);
+
   function getPos(e: any) {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
@@ -670,7 +890,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       if (!res.ok) throw new Error(json?.message || "Fehler beim Speichern der Unterschrift");
 
       setSigOk("Unterschrift gespeichert ✓");
-      await loadAssignment();
+      await loadAssignment(isAdmin ? "admin" : "me");
     } catch (e: any) {
       setSigErr(e?.message || "Fehler beim Speichern der Unterschrift");
     } finally {
@@ -689,7 +909,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
-      await loadAssignment();
+      await loadAssignment(isAdmin ? "admin" : "me");
     } catch (e: any) {
       setAckErr(e?.message || "Fehler beim Bestätigen");
     } finally {
@@ -706,7 +926,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
-      await loadAssignment();
+      await loadAssignment(isAdmin ? "admin" : "me");
     } catch (e: any) {
       setDoneErr(e?.message || "Fehler beim Abschließen");
     } finally {
@@ -765,7 +985,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       } else {
         setKmErr(msg);
       }
-      await loadAssignment();
+      await loadAssignment(isAdmin ? "admin" : "me");
     } finally {
       setKmSaving(false);
     }
@@ -782,7 +1002,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   if (err || !data) {
     return (
       <main className="min-h-screen p-4">
-        <div className="rounded border p-4">
+        <Card>
           <div className="font-semibold">Fehler</div>
           <div className="mt-1 text-sm text-gray-700">{err || "Nicht gefunden"}</div>
           <div className="mt-4">
@@ -790,22 +1010,24 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               ← Zur Planung
             </Link>
           </div>
-        </div>
+        </Card>
       </main>
     );
   }
 
   return (
     <main className="min-h-screen p-4">
-      {showCreated ? (
-        <div className="mb-3 rounded border border-green-300 bg-green-50 p-3 text-sm text-green-700">
-          Gespeichert ✓
-        </div>
-      ) : null}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className="space-y-6">
+        {showCreated ? (
+          <Alert variant="success">
+            Gespeichert ✓
+          </Alert>
+        ) : null}
+        <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold">{customerName}</h1>
           {customerAddress ? <div className="text-sm text-gray-700">{customerAddress}</div> : null}
+          {customerPhone ? <div className="text-sm text-gray-700">{customerPhone}</div> : null}
           {employeeName ? <div className="text-sm text-gray-700">{employeeName}</div> : null}
         </div>
 
@@ -843,10 +1065,83 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         </div>
       </div>
 
-      {customerPhone ? <div className="mt-2 text-sm text-gray-700">{customerPhone}</div> : null}
+      <Card variant="subtle" className="mt-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-800">Notfallkontakte</h3>
+          <div className="flex items-center">
+            <Pill className="ml-2">
+              {ecLoading ? "…" : emergencyContacts.length}
+            </Pill>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="ml-2 rounded-md"
+              onClick={() => setEmergencyOpen((prev) => !prev)}
+              disabled={!customerId || (!ecLoading && emergencyContacts.length === 0)}
+              aria-label={emergencyOpen ? "Ausblenden" : "Anzeigen"}
+              title={emergencyOpen ? "Ausblenden" : "Anzeigen"}
+            >
+              <span
+                className={`inline-flex h-4 w-4 items-center justify-center transition-transform ${emergencyOpen ? "rotate-180" : ""}`}
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </span>
+            </Button>
+          </div>
+        </div>
+
+        {ecError ? <div className="mt-2 text-xs text-red-600">{ecError}</div> : null}
+        {ecLoading ? <div className="mt-2 text-sm text-gray-600">Lade…</div> : null}
+
+        {!ecLoading && !emergencyOpen && emergencyContacts.length === 1 ? (
+          <div className="mt-1 text-xs text-gray-600">1 Kontakt vorhanden</div>
+        ) : null}
+
+        {!ecLoading && emergencyContacts.length === 0 ? (
+          <div className="mt-2 text-sm text-gray-600">Keine Notfallkontakte hinterlegt.</div>
+        ) : null}
+
+        {emergencyOpen && emergencyContacts.length > 0 ? (
+          <div className="mt-2 space-y-2">
+            {emergencyContacts.map((c) => {
+              const tel = c.phone?.replace(/[^\d+]/g, "");
+              return (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 rounded border bg-white px-2 py-2 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{c.name}</div>
+                    {c.relation ? (
+                      <div className="text-xs text-gray-600">{c.relation}</div>
+                    ) : null}
+                    <div className="text-xs text-gray-600">{c.phone}</div>
+                  </div>
+                  {tel ? (
+                    <a
+                      className="inline-flex h-8 w-8 items-center justify-center rounded border text-gray-700 hover:bg-gray-50"
+                      href={`tel:${tel}`}
+                      aria-label="Anrufen"
+                      title="Anrufen"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9a16 16 0 0 0 7 7l.7-1.1a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6a2 2 0 0 1 1.7 2z" />
+                      </svg>
+                    </a>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </Card>
 
       {/* TOP META + ACTIONS */}
-      <section className="mt-4 rounded border p-4">
+      <Card className="mt-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div>
             <div className="text-gray-600">Datum</div>
@@ -868,8 +1163,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             <div className="font-medium flex items-center gap-2 flex-wrap">
               <StatusPill status={data.status} />
               {isLocked ? (
-                <span className="rounded border px-2 py-0.5 text-xs font-semibold text-red-700 border-red-300">
-                  LOCKED
+                <span
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-gray-100 text-gray-700 border-gray-300"
+                  aria-label="Gesperrt"
+                  title="Gesperrt"
+                >
+                  <Lock className="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
               ) : null}
             </div>
@@ -888,36 +1187,183 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           </div>
         ) : null}
 
+        {isAdmin ? (
+          <Card className="mt-4 p-3" variant="subtle">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="text-sm font-semibold">Admin bearbeiten</div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={editMode ? closeEditForm : openEditForm}
+              >
+                {editMode ? "Schließen" : "Bearbeiten"}
+              </Button>
+            </div>
+
+            {editSaved ? <div className="mt-2 text-xs text-green-700">Gespeichert ✓</div> : null}
+            {cancelSaved ? <div className="mt-2 text-xs text-green-700">Termin abgesagt ✓</div> : null}
+            {editError ? (
+              <Alert variant="error" className="mt-2 text-xs">
+                {editError}
+              </Alert>
+            ) : null}
+            {adminListsError ? (
+              <Alert variant="error" className="mt-2 text-xs">
+                {adminListsError}
+              </Alert>
+            ) : null}
+            {isLocked ? (
+              <div className="mt-2 text-xs text-gray-600">
+                Gesperrt nach Unterschrift – nur Admin-Korrektur moeglich.
+              </div>
+            ) : null}
+
+            {editMode ? (
+              <form className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={submitAdminEdit}>
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-600">Kunde</span>
+                  <select
+                    value={editCustomerId}
+                    onChange={(e) => setEditCustomerId(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked || adminListsLoading}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {adminCustomers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.companyName || c.name || c.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-600">Mitarbeiter</span>
+                  <select
+                    value={editEmployeeId}
+                    onChange={(e) => setEditEmployeeId(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked || adminListsLoading}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {adminEmployees.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {(e.fullName ? `${e.fullName} · ` : "") + (e.email || e.id)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-600">Start</span>
+                  <input
+                    type="datetime-local"
+                    lang="de-DE"
+                    step={60}
+                    value={editStartAt}
+                    onChange={(e) => setEditStartAt(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked}
+                  />
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-600">Ende</span>
+                  <input
+                    type="datetime-local"
+                    lang="de-DE"
+                    step={60}
+                    value={editEndAt}
+                    onChange={(e) => setEditEndAt(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked}
+                  />
+                </label>
+
+                <label className="grid gap-1 sm:col-span-2">
+                  <span className="text-xs text-gray-600">Notiz</span>
+                  <textarea
+                    rows={2}
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked}
+                  />
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-600">Status</span>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked}
+                  >
+                    <option value="PLANNED">PLANNED</option>
+                    <option value="ASSIGNED">ASSIGNED</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="DONE">DONE</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
+                </label>
+
+                <div className="sm:col-span-2 sticky bottom-0 -mx-3 mt-2 border-t bg-white px-3 pt-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={closeEditForm}
+                    >
+                      Schließen
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAdminCancel}
+                      disabled={cancelSaving || editSaving || editLocked || isLocked || isCancelled || isDone}
+                    >
+                      {cancelSaving ? "Sage ab…" : "Termin absagen"}
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      disabled={editSaving || editLocked || isLocked}
+                    >
+                      {editSaving ? "Speichern…" : "Speichern"}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            ) : null}
+          </Card>
+        ) : null}
+
         <div className="mt-4 flex items-center gap-2 flex-wrap">
           {String(data?.status || "").toUpperCase() === "ASSIGNED" ? (
-            <button
+            <Button
               type="button"
               onClick={handleAcknowledge}
               disabled={ackLoading}
-              className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+              variant="outline"
+              size="sm"
             >
               {ackLoading ? "Bestätige…" : "Termin bestätigen"}
-            </button>
-          ) : null}
-
-          {String(data?.status || "").toUpperCase() === "CONFIRMED" ? (
-            <button
-              type="button"
-              onClick={handleMarkDone}
-              disabled={doneLoading}
-              className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-            >
-              {doneLoading ? "Abschließen…" : "Abschließen"}
-            </button>
+            </Button>
           ) : null}
 
           {ackErr ? <div className="text-sm text-red-600">{ackErr}</div> : null}
           {doneErr ? <div className="text-sm text-red-600">{doneErr}</div> : null}
         </div>
-      </section>
+      </Card>
 
       {/* TOTALS */}
-      <div className="rounded border p-4">
+      <Card className="mt-4">
         <h2 className="text-base font-semibold mb-3">Summen</h2>
 
         <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
@@ -956,12 +1402,19 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             <div className="font-semibold">{summary.kmFinal ?? summary.kmRecorded ?? 0}</div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* KM PER DAY */}
-      <section className="mt-4 rounded border p-4">
+      <Card className="mt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h2 className="text-base font-semibold">Kilometer (Tag){lockAfterSignatureActive ? " 🔒" : ""}</h2>
+          <h2 className="text-base font-semibold">
+            Kilometer (Tag)
+            {lockAfterSignatureActive ? (
+              <span className="ml-1 inline-flex items-center text-gray-600" aria-label="Gesperrt" title="Gesperrt">
+                <span aria-hidden="true">🔒</span>
+              </span>
+            ) : null}
+          </h2>
           {isAdmin ? (
             <span className="rounded border px-2 py-0.5 text-xs text-gray-600">Nur Anzeige</span>
           ) : null}
@@ -1007,14 +1460,16 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               )}
 
               {kmLoadState !== "error" ? (
-                <button
+                <Button
                   type="button"
                   onClick={handleKmSave}
                   disabled={kmSaving || isAssigned || isLocked || isKmLockedBySignature || kmLocked}
-                  className={`rounded border px-3 py-2 text-sm hover:bg-gray-50 ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                  variant="outline"
+                  size="sm"
+                  className={lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}
                 >
                   {kmSaving ? "Speichern…" : "Speichern"}
-                </button>
+                </Button>
               ) : null}
               {kmLocked ? (
                 <div className="mt-2 text-sm text-red-600">
@@ -1055,12 +1510,19 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         ) : null}
 
         {kmErr ? <div className="mt-2 text-sm text-red-600">{kmErr}</div> : null}
-      </section>
+      </Card>
 
       {/* TIME ENTRIES */}
-      <section className="mt-4 rounded border p-4">
+      <Card className="mt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h2 className="text-base font-semibold">Zeiteinträge{lockAfterSignatureActive ? " 🔒" : ""}</h2>
+          <h2 className="text-base font-semibold">
+            Zeiteinträge
+            {lockAfterSignatureActive ? (
+              <span className="ml-1 inline-flex items-center text-gray-600" aria-label="Gesperrt" title="Gesperrt">
+                <span aria-hidden="true">🔒</span>
+              </span>
+            ) : null}
+          </h2>
           {isAdmin ? (
             <span className="rounded border px-2 py-0.5 text-xs text-gray-600">Nur Anzeige</span>
           ) : null}
@@ -1101,14 +1563,16 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                   />
                 </div>
                 <div className="flex items-end gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={handleAddTimeEntry}
                     disabled={teSaving || isSigned}
-                    className={`w-full rounded border px-3 py-2 text-sm hover:bg-gray-50 ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                    variant="outline"
+                    size="sm"
+                    className={`w-full ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
                   >
                     {teSaving ? "Speichern…" : "Zeit hinzufügen"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -1158,14 +1622,16 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                   </select>
                 </div>
                 <div className="flex items-end gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={handleAddTimeEntry}
                     disabled={teSaving || isSigned}
-                    className={`w-full rounded border px-3 py-2 text-sm hover:bg-gray-50 ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                    variant="outline"
+                    size="sm"
+                    className={`w-full ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
                   >
                     {teSaving ? "Speichern…" : "Zeit hinzufügen"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -1239,10 +1705,10 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             </ul>
           )}
         </div>
-      </section>
+      </Card>
 
       {/* SIGNATURE */}
-      <section className="mt-4 rounded border p-4">
+      <Card className="mt-4">
         <h2 className="text-base font-semibold">Unterschrift</h2>
         <p className="mt-1 text-sm text-red-600">
           Achtung: Nach dem Speichern der Unterschrift werden Zeiteinträge und Kilometer für diesen Tag gesperrt und können nicht mehr geändert werden.
@@ -1274,49 +1740,53 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           </div>
         ) : null}
 
-          <div className="mt-3">
-            {!hasSignature ? (
-              <>
-                {canSign ? (
-                  <>
-                    <div className="rounded border overflow-hidden bg-white">
-                      <canvas
-                        ref={canvasRef}
-                        width={700}
-                        height={220}
-                        className="w-full h-[160px] touch-none"
-                        onPointerDown={startDraw}
-                        onPointerMove={moveDraw}
-                        onPointerUp={endDraw}
-                        onPointerLeave={endDraw}
-                        onPointerCancel={endDraw}
-                      />
-                    </div>
+        <div className="mt-3">
+          {!hasSignature ? (
+            <>
+              {canSign ? (
+                <>
+                  <div className="rounded border overflow-hidden bg-white">
+                    <canvas
+                      ref={canvasRef}
+                      width={700}
+                      height={220}
+                      className="w-full h-[160px] touch-none"
+                      onPointerDown={startDraw}
+                      onPointerMove={moveDraw}
+                      onPointerUp={endDraw}
+                      onPointerLeave={endDraw}
+                      onPointerCancel={endDraw}
+                    />
+                  </div>
 
-                    <div className="mt-2 flex gap-2 flex-wrap">
-                      <button type="button" onClick={clearSig} className="rounded border px-3 py-2 text-sm hover:bg-gray-50">
-                        Löschen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={submitSig}
-                        disabled={sigSaving}
-                        className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                      >
-                        {sigSaving ? "Speichere…" : "Unterschrift speichern"}
-                      </button>
-                      {sigOk ? <div className="text-sm text-green-700 flex items-center">{sigOk}</div> : null}
-                    </div>
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    <Button type="button" variant="outline" size="sm" onClick={clearSig}>
+                      Löschen
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={submitSig}
+                      disabled={sigSaving}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {sigSaving ? "Speichere…" : "Unterschrift speichern"}
+                    </Button>
+                    {sigOk ? <div className="text-sm text-green-700 flex items-center">{sigOk}</div> : null}
+                  </div>
 
-                    {sigErr ? <div className="mt-2 text-sm text-red-600">{sigErr}</div> : null}
-                  </>
-                ) : (
-                  <div className="mt-2 text-sm text-gray-600">Unterschrift ist möglich, sobald der Termin bestätigt wurde.</div>
-                )}
-              </>
-            ) : null}
-          </div>
-      </section>
+                  {sigErr ? <div className="mt-2 text-sm text-red-600">{sigErr}</div> : null}
+                </>
+              ) : (
+                <div className="mt-2 text-sm text-gray-600">
+                  Unterschrift ist möglich, sobald der Termin bestätigt wurde.
+                </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      </Card>
+    </div>
     </main>
   );
 }

@@ -10,6 +10,7 @@ import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
 import { statusPillClass } from "@/lib/status";
 import StatusPill from "@/components/StatusPill";
+import { Alert, Button, Card } from "@/components/ui";
 
 function monthLabel(d: Date) {
   return formatMonthYear(d);
@@ -98,6 +99,7 @@ type Assignment = {
   startAt: string;
   endAt: string;
   customer?: {
+    id?: string;
     name?: string;
     companyName?: string;
     address?: string;
@@ -107,6 +109,42 @@ type Assignment = {
   status?: any;
   state?: any;
 };
+
+type CustomerOption = {
+  id: string;
+  label: string;
+};
+
+type CustomerMinimal = {
+  id: string;
+  name?: string | null;
+  address?: string | null;
+};
+
+function buildCustomerOptions(assignments: Assignment[]) {
+  const map = new Map<string, CustomerOption>();
+  assignments.forEach((a) => {
+    const id = a.customer?.id;
+    if (!id) return;
+    const name = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+    const address = a.customer?.address || "";
+    const label = address ? `${name} - ${address}` : name;
+    if (!map.has(id)) map.set(id, { id, label });
+  });
+  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function buildCustomerOptionsFromCustomers(customers: CustomerMinimal[]) {
+  const map = new Map<string, CustomerOption>();
+  customers.forEach((c) => {
+    if (!c?.id) return;
+    const name = c.name || "Kunde";
+    const address = c.address || "";
+    const label = address ? `${name} - ${address}` : name;
+    if (!map.has(c.id)) map.set(c.id, { id: c.id, label });
+  });
+  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+}
 
 const ROW_H = 28; // px per 30 minutes
 const START_HOUR = 6;
@@ -131,9 +169,25 @@ export default function PlannerPage() {
 
   const [assignmentsByDate, setAssignmentsByDate] = useState<Record<string, Assignment[]>>({});
   const [loading, setLoading] = useState(false);
+  const [plannerError, setPlannerError] = useState<string>("");
   const [reloadKey, setReloadKey] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const showNativeInputs = useNativePickers();
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createCustomerId, setCreateCustomerId] = useState("");
+  const [createDate, setCreateDate] = useState("");
+  const [createStartTime, setCreateStartTime] = useState("");
+  const [createEndTime, setCreateEndTime] = useState("");
+  const [createNotes, setCreateNotes] = useState("");
+  const [createRecurring, setCreateRecurring] = useState(false);
+  const [createFrequency, setCreateFrequency] = useState<"WEEKLY" | "BIWEEKLY">("WEEKLY");
+  const [createRepeatUntil, setCreateRepeatUntil] = useState("");
+  const [createSaving, setCreateSaving] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [createSaved, setCreateSaved] = useState(false);
+  const [createCustomerOptions, setCreateCustomerOptions] = useState<CustomerOption[]>([]);
+  const [createCustomerLoading, setCreateCustomerLoading] = useState(false);
 
   // km today mini-form state
   const [kmDate, setKmDate] = useState<string>(() => isoTodayLocal());
@@ -148,6 +202,49 @@ export default function PlannerPage() {
     [assignmentsByDate]
   );
 
+  const customerOptions = useMemo(() => {
+    const all: Assignment[] = [];
+    Object.values(assignmentsByDate).forEach((arr) => all.push(...arr));
+    return buildCustomerOptions(all);
+  }, [assignmentsByDate]);
+
+  async function openCreateModal() {
+    const baseDate = gridDays?.[0] ?? new Date();
+    const dateIso = dayKeyLocal(baseDate);
+    setCreateDate(dateIso);
+    setCreateStartTime("09:00");
+    setCreateEndTime("12:00");
+    setCreateNotes("");
+    setCreateRecurring(false);
+    setCreateFrequency("WEEKLY");
+    setCreateRepeatUntil(dayKeyLocal(addDays(baseDate, 14)));
+    setCreateError("");
+    setCreateCustomerId("");
+    setCreateCustomerOptions(customerOptions);
+    setCreateCustomerLoading(true);
+    setShowCreateModal(true);
+
+    try {
+      const res = await fetch("/api/me/customers", { cache: "no-store" });
+      const raw = res.ok ? await res.json() : [];
+      const items: CustomerMinimal[] = Array.isArray(raw) ? raw : raw?.items ?? [];
+      if (res.ok) {
+        setCreateCustomerOptions(buildCustomerOptionsFromCustomers(items));
+      } else {
+        setCreateCustomerOptions(customerOptions);
+      }
+    } catch {
+      setCreateCustomerOptions(customerOptions);
+    } finally {
+      setCreateCustomerLoading(false);
+    }
+  }
+
+  function closeCreateModal() {
+    setShowCreateModal(false);
+    setCreateError("");
+  }
+
   useEffect(() => {
     const next = isoToDeDate(kmDate);
     if (next && next !== kmDateDe) setKmDateDe(next);
@@ -159,7 +256,9 @@ export default function PlannerPage() {
     let cancelled = false;
     if (!gridDays || gridDays.length === 0) return;
     const start = dayKeyLocal(gridDays[0]);
-    const end = dayKeyLocal(gridDays[gridDays.length - 1]);
+    const end = viewMode === "day"
+      ? dayKeyLocal(addDays(gridDays[0], 1))
+      : dayKeyLocal(gridDays[gridDays.length - 1]);
 
     const controller = new AbortController();
     setLoading(true);
@@ -169,10 +268,23 @@ export default function PlannerPage() {
         const res = await fetch(`/api/planner/assignments?start=${start}&end=${end}`, {
           signal: controller.signal,
         });
-        const raw = res.ok ? await res.json() : [];
+        if (!res.ok) {
+          const bodyText = await res.text().catch(() => "");
+          console.error("Planner assignments fetch failed:", res.status, bodyText);
+          if (!cancelled) {
+            setAssignmentsByDate({});
+            setPlannerError(
+              `Fehler beim Laden der Termine (Status ${res.status}). Bitte neu anmelden.`
+            );
+          }
+          return;
+        }
+
+        const raw = await res.json().catch(() => ([]));
         const data: Assignment[] = Array.isArray(raw) ? raw : raw?.items ?? [];
 
         if (cancelled) return;
+        setPlannerError("");
         const map: Record<string, Assignment[]> = {};
         (data || []).forEach((a) => {
           const d = new Date(a.startAt);
@@ -187,6 +299,7 @@ export default function PlannerPage() {
       } catch (err: any) {
         if (err.name !== "AbortError" && !cancelled) {
           setAssignmentsByDate({});
+          setPlannerError("Fehler beim Laden der Termine. Bitte neu anmelden.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -215,6 +328,87 @@ export default function PlannerPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!createSaved) return;
+    const t = window.setTimeout(() => setCreateSaved(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [createSaved]);
+
+  async function handleCreateAssignment(e: React.FormEvent) {
+    e.preventDefault();
+    if (createSaving) return;
+    setCreateError("");
+
+    if (!createCustomerId) {
+      setCreateError("Bitte einen Kunden auswählen.");
+      return;
+    }
+    if (!createDate || !createStartTime || !createEndTime) {
+      setCreateError("Bitte Datum und Uhrzeiten angeben.");
+      return;
+    }
+
+    const startIso = new Date(`${createDate}T${createStartTime}`).toISOString();
+    const endIso = new Date(`${createDate}T${createEndTime}`).toISOString();
+    if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
+      setCreateError("Endzeit muss nach der Startzeit liegen.");
+      return;
+    }
+
+    const payload: any = {
+      customerId: createCustomerId,
+      startAt: startIso,
+      endAt: endIso,
+      notes: createNotes.trim() || undefined,
+    };
+
+    if (createRecurring) {
+      if (!createRepeatUntil) {
+        setCreateError("Bitte Wiederholen bis Datum angeben.");
+        return;
+      }
+      const startDay = new Date(`${createDate}T00:00:00`);
+      const repeatEnd = new Date(`${createRepeatUntil}T23:59:59.999`);
+      const diffMs = repeatEnd.getTime() - startDay.getTime();
+      if (Number.isNaN(diffMs) || diffMs < 0) {
+        setCreateError("Wiederholen bis muss nach dem Start liegen.");
+        return;
+      }
+      const rangeDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (rangeDays > 90) {
+        setCreateError("Serienzeitraum ist auf 90 Tage begrenzt.");
+        return;
+      }
+      const intervalDays = createFrequency === "BIWEEKLY" ? 14 : 7;
+      const recurringCount = Math.floor(rangeDays / intervalDays) + 1;
+      if (recurringCount < 1 || recurringCount > 52) {
+        setCreateError("Serienlänge ist ungültig (max 52 Termine).");
+        return;
+      }
+      payload.isRecurring = true;
+      payload.recurringIntervalDays = intervalDays;
+      payload.recurringCount = recurringCount;
+    }
+
+    setCreateSaving(true);
+    try {
+      const res = await fetch("/api/me/assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
+      setCreateSaved(true);
+      setShowCreateModal(false);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      setCreateError(e?.message || "Termin konnte nicht erstellt werden.");
+    } finally {
+      setCreateSaving(false);
+    }
+  }
 
   // fetch km entry for kmDate on mount and when kmDate changes
   useEffect(() => {
@@ -327,90 +521,180 @@ export default function PlannerPage() {
   return (
     <main className="min-h-screen p-4">
       <div className="mx-auto flex flex-col gap-3 max-w-4xl">
-        <h1 className="text-2xl font-semibold">Einsatzplanung</h1>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            {isAdmin ? (
-              <Link
-                href="/admin/assignments/new"
-                className="rounded-md border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
-              >
-                Neuen Termin erstellen
-              </Link>
-            ) : null}
-
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">Termine:</span> <span>{assignmentsCount}</span>
+        {plannerError ? (
+          <Alert variant="warn">
+            {plannerError}
+          </Alert>
+        ) : null}
+        {createSaved ? (
+          <Alert variant="success">
+            Termin erstellt ✓
+          </Alert>
+        ) : null}
+        <div className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur pb-2">
+          <div className="mx-auto w-full max-w-2xl flex flex-col gap-3 sm:gap-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <h1 className="text-2xl font-semibold">Einsatzplanung</h1>
+              <div className="text-xs text-gray-600">
+                <span className="font-medium">Termine:</span> <span>{assignmentsCount}</span>
+              </div>
             </div>
 
-            <div className="inline-flex rounded-lg border bg-gray-50 p-0.5">
-              <button
+            <div className="w-full flex items-center justify-between gap-3">
+              <div className="max-w-[48%]">
+                {isAdmin ? (
+                  <Link
+                    href="/admin/assignments/new"
+                    className="rounded-md border px-2 py-1 text-sm font-semibold hover:bg-gray-50 sm:px-3 sm:py-2 whitespace-nowrap truncate"
+                  >
+                    <span className="sm:hidden">+ Termin</span>
+                    <span className="hidden sm:inline">Neuen Termin erstellen</span>
+                  </Link>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={openCreateModal}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-md whitespace-nowrap truncate"
+                  >
+                    <span className="sm:hidden">+ Termin</span>
+                    <span className="hidden sm:inline">Termin erstellen</span>
+                  </Button>
+                )}
+              </div>
+
+              <div className="max-w-[48%] flex justify-end">
+                <Link
+                  href={isAdmin ? "/admin" : "/dashboard"}
+                  className="rounded-md border px-2 py-1 text-sm font-semibold hover:bg-gray-50 sm:px-3 sm:py-2 whitespace-nowrap truncate"
+                >
+                  Dashboard
+                </Link>
+              </div>
+            </div>
+
+            <div className="flex w-full overflow-hidden rounded-lg border">
+              <Button
                 type="button"
-                className={`h-8 px-3 text-sm rounded-md ${viewMode === "month" ? "bg-white font-semibold shadow-sm" : "text-gray-700"}`}
+                variant="outline"
+                size="sm"
+                className={`flex-1 rounded-none transition whitespace-nowrap ${viewMode === "month" ? "bg-gray-900 text-white hover:bg-gray-900" : "bg-white text-gray-800"}`}
                 onClick={switchToMonth}
               >
                 Monat
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className={`h-8 px-3 text-sm rounded-md ${viewMode === "week" ? "bg-white font-semibold shadow-sm" : "text-gray-700"}`}
+                variant="outline"
+                size="sm"
+                className={`flex-1 rounded-none transition whitespace-nowrap ${viewMode === "week" ? "bg-gray-900 text-white hover:bg-gray-900" : "bg-white text-gray-800"}`}
                 onClick={switchToWeek}
               >
                 Woche
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className={`h-8 px-3 text-sm rounded-md ${viewMode === "day" ? "bg-white font-semibold shadow-sm" : "text-gray-700"}`}
+                variant="outline"
+                size="sm"
+                className={`flex-1 rounded-none transition whitespace-nowrap ${viewMode === "day" ? "bg-gray-900 text-white hover:bg-gray-900" : "bg-white text-gray-800"}`}
                 onClick={switchToDay}
               >
                 Tag
-              </button>
+              </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
-              <span className="font-medium">Status:</span>
-              <StatusPill status="ASSIGNED" />
-              <StatusPill status="CONFIRMED" />
-              <StatusPill status="DONE" />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center self-start sm:self-auto w-full sm:w-auto">
-            <div className="inline-flex items-center gap-2 rounded-lg border bg-white px-2 py-1 shadow-sm">
-              <button
-                type="button"
-                className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
-                onClick={goPrev}
-                aria-label="Vorheriger"
-              >
-                ←
-              </button>
-
-              <div className="min-w-[170px] text-center text-sm font-semibold">
-                {viewMode === "month"
-                  ? monthLabel(viewMonth)
-                  : viewMode === "day"
-                    ? `${formatWeekdayShort(gridDays[0])}, ${formatDate(gridDays[0])}`
-                    : `${formatDate(gridDays[0])} – ${formatDate(gridDays[6])}`}
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="text-xs text-gray-500">Status</div>
+              <div className="flex flex-wrap justify-center gap-2">
+                  <StatusPill status="ASSIGNED" className="px-3 py-1 text-sm" />
+                  <StatusPill status="CONFIRMED" className="px-3 py-1 text-sm" />
+                  <StatusPill status="DONE" className="px-3 py-1 text-sm" />
               </div>
 
-              <button
-                type="button"
-                className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
-                onClick={goNext}
-                aria-label="Nächster"
-              >
-                →
-              </button>
+              {viewMode === "day" ? (
+                <div className="flex w-full flex-wrap items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-md whitespace-nowrap"
+                    onClick={() => setDayStart(startOfDayLocal(new Date()))}
+                  >
+                    Heute
+                  </Button>
+                  <div className="w-full inline-flex items-center justify-center gap-2 rounded-lg border bg-white px-2 py-1 shadow-sm">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-md whitespace-nowrap"
+                      onClick={goPrev}
+                      aria-label="Vorheriger"
+                    >
+                      ←
+                    </Button>
+
+                    <div className="min-w-[200px] text-center text-base font-semibold sm:text-xl truncate">
+                      {`${formatWeekdayShort(gridDays[0])}, ${formatDate(gridDays[0])}`}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-md whitespace-nowrap"
+                      onClick={goNext}
+                      aria-label="Nächster"
+                    >
+                      →
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 rounded-lg border bg-white px-2 py-1 shadow-sm">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-md whitespace-nowrap"
+                    onClick={goPrev}
+                    aria-label="Vorheriger"
+                  >
+                    ←
+                  </Button>
+
+                  <div className="min-w-[170px] text-center text-base font-semibold sm:text-xl truncate">
+                    {viewMode === "month"
+                      ? monthLabel(viewMonth)
+                      : `${formatDate(gridDays[0])} – ${formatDate(gridDays[6])}`}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-md whitespace-nowrap"
+                    onClick={goNext}
+                    aria-label="Nächster"
+                  >
+                    →
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
+        {!loading && !plannerError && assignmentsCount === 0 ? (
+          <Card className="border-dashed bg-gray-50 p-6 text-center text-sm text-gray-600">
+            Keine Termine in diesem Zeitraum.
+          </Card>
+        ) : null}
       </div>
 
       {/* Month or Week Grid */}
-      <section className="mt-4 rounded-lg border p-3">
+      <Card className="mt-3 p-2 sm:p-4">
         {viewMode === "month" ? (
           <>
             <div className="grid grid-cols-7 text-xs font-semibold text-gray-600">
@@ -495,8 +779,8 @@ export default function PlannerPage() {
             </div>
           </>
         ) : viewMode === "week" ? (
-          <div className="flex overflow-y-auto" style={{ maxHeight: 560 }}>
-            <div className="w-16 shrink-0 pr-2">
+          <div className="flex overflow-y-auto w-full" style={{ maxHeight: 560 }}>
+            <div className="w-12 sm:w-16 shrink-0 pr-2">
               <div className="relative" style={{ height: totalHeight }}>
                 {Array.from({ length: totalRows + 1 }).map((_, idx) => {
                   const minutes = START_HOUR * 60 + idx * 30;
@@ -592,8 +876,8 @@ export default function PlannerPage() {
             </div>
           </div>
         ) : (
-          <div className="flex overflow-y-auto" style={{ maxHeight: 560 }}>
-            <div className="w-16 shrink-0 pr-2">
+          <div className="flex overflow-y-auto w-full" style={{ maxHeight: 560 }}>
+            <div className="w-12 sm:w-16 shrink-0 pr-2">
               <div className="relative" style={{ height: totalHeight }}>
                 {Array.from({ length: totalRows + 1 }).map((_, idx) => {
                   const minutes = START_HOUR * 60 + idx * 30;
@@ -690,9 +974,157 @@ export default function PlannerPage() {
             </div>
           </div>
         )}
-      </section>
+      </Card>
 
-      <section className="mt-6 rounded-lg border p-4">
+      {showCreateModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-lg bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">Termin erstellen</h2>
+            </div>
+
+            {createError ? (
+              <Alert variant="error" className="mt-2 text-xs">
+                {createError}
+              </Alert>
+            ) : null}
+            {createCustomerLoading ? (
+              <div className="mt-2 text-xs text-gray-600">Kunden werden geladen…</div>
+            ) : null}
+            {!createCustomerLoading && createCustomerOptions.length === 0 ? (
+              <div className="mt-2 text-xs text-gray-600">
+                Keine Kunden gefunden. Bitte Admin kontaktieren.
+              </div>
+            ) : null}
+
+            <form className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={handleCreateAssignment}>
+              <label className="grid gap-1 sm:col-span-2">
+                <span className="text-xs text-gray-600">Kunde</span>
+                <select
+                  value={createCustomerId}
+                  onChange={(e) => setCreateCustomerId(e.target.value)}
+                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                  disabled={createSaving || createCustomerOptions.length === 0 || createCustomerLoading}
+                >
+                  <option value="">Bitte wählen…</option>
+                  {createCustomerOptions.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-1">
+                <span className="text-xs text-gray-600">Datum</span>
+                <input
+                  type="date"
+                  value={createDate}
+                  onChange={(e) => setCreateDate(e.target.value)}
+                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                  disabled={createSaving}
+                />
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-600">Start</span>
+                  <input
+                    type="time"
+                    value={createStartTime}
+                    onChange={(e) => setCreateStartTime(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={createSaving}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-600">Ende</span>
+                  <input
+                    type="time"
+                    value={createEndTime}
+                    onChange={(e) => setCreateEndTime(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={createSaving}
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-1 sm:col-span-2">
+                <span className="text-xs text-gray-600">Notiz (optional)</span>
+                <textarea
+                  rows={2}
+                  value={createNotes}
+                  onChange={(e) => setCreateNotes(e.target.value)}
+                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                  disabled={createSaving}
+                />
+              </label>
+
+              <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={createRecurring}
+                  onChange={(e) => setCreateRecurring(e.target.checked)}
+                  disabled={createSaving}
+                />
+                Serientermin
+              </label>
+
+              {createRecurring ? (
+                <>
+                  <label className="grid gap-1">
+                    <span className="text-xs text-gray-600">Frequenz</span>
+                    <select
+                      value={createFrequency}
+                      onChange={(e) => setCreateFrequency(e.target.value as "WEEKLY" | "BIWEEKLY")}
+                      className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                      disabled={createSaving}
+                    >
+                      <option value="WEEKLY">Wöchentlich</option>
+                      <option value="BIWEEKLY">Alle 2 Wochen</option>
+                    </select>
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-xs text-gray-600">Wiederholen bis</span>
+                    <input
+                      type="date"
+                      value={createRepeatUntil}
+                      onChange={(e) => setCreateRepeatUntil(e.target.value)}
+                      className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                      disabled={createSaving}
+                    />
+                  </label>
+                </>
+              ) : null}
+
+              <div className="sm:col-span-2 sticky bottom-0 -mx-4 mt-2 border-t bg-white px-4 pt-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={closeCreateModal}
+                  >
+                    Schließen
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    disabled={createSaving || createCustomerOptions.length === 0 || createCustomerLoading}
+                  >
+                    {createSaving ? "Speichern…" : "Termin erstellen"}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      <Card className="mt-6">
         <h2 className="text-base font-semibold">Feiertage (Baden-Württemberg)</h2>
         <p className="mt-1 text-sm text-gray-600">Nur visuelle Markierung (MVP). Später direkt im Kalender.</p>
 
@@ -708,7 +1140,7 @@ export default function PlannerPage() {
             ))}
           </ul>
         )}
-      </section>
+      </Card>
     </main>
   );
 }
