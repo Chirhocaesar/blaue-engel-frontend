@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Input, Select, Textarea } from "@/components/ui";
+import { Button, Card, Input, Select, Textarea } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -529,41 +529,73 @@ export default function MasterdataPage() {
           {usersLoading ? (
             <div className="text-sm text-gray-600">Lade…</div>
           ) : userRows.length === 0 ? (
-            <div className="rounded border p-4 text-sm text-gray-700">Keine Mitarbeiter gefunden.</div>
+            <Card variant="subtle" className="text-sm text-gray-700">
+              Keine Eintraege vorhanden.
+            </Card>
           ) : (
-            <div className="overflow-x-auto rounded border">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="p-2 text-left">Name</th>
-                    <th className="p-2 text-left">E-Mail</th>
-                    <th className="p-2 text-left">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {userRows.map((u) => (
-                    <tr key={u.id} className="border-t">
-                      <td className="p-2">{u.name}</td>
-                      <td className="p-2">{u.email}</td>
-                      <td className="p-2">
-                        <button
-                          type="button"
-                          className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
-                          onClick={() => {
-                            setResetError(null);
-                            setResetUser(u.raw);
-                            setResetPassword("");
-                            setResetConfirm("");
-                          }}
-                        >
-                          Passwort zurücksetzen
-                        </button>
-                      </td>
+            <>
+              <div className="space-y-3 sm:hidden">
+                {userRows.map((u) => (
+                  <Card key={u.id} className="space-y-2">
+                    <div>
+                      <div className="text-sm text-gray-600">Name</div>
+                      <div>{u.name}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">E-Mail</div>
+                      <div>{u.email}</div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setResetError(null);
+                        setResetUser(u.raw);
+                        setResetPassword("");
+                        setResetConfirm("");
+                      }}
+                    >
+                      Passwort zuruecksetzen
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+              <div className="hidden sm:block overflow-x-auto rounded border">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-2 text-left">Name</th>
+                      <th className="p-2 text-left">E-Mail</th>
+                      <th className="p-2 text-left">Aktionen</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {userRows.map((u) => (
+                      <tr key={u.id} className="border-t">
+                        <td className="p-2">{u.name}</td>
+                        <td className="p-2">{u.email}</td>
+                        <td className="p-2">
+                          <button
+                            type="button"
+                            className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                            onClick={() => {
+                              setResetError(null);
+                              setResetUser(u.raw);
+                              setResetPassword("");
+                              setResetConfirm("");
+                            }}
+                          >
+                            Passwort zurücksetzen
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </section>
       ) : (
@@ -601,38 +633,69 @@ export default function MasterdataPage() {
           {customersLoading ? (
             <div className="text-sm text-gray-600">Lade…</div>
           ) : customers.length === 0 ? (
-            <div className="rounded border p-4 text-sm text-gray-700">Keine Kunden gefunden.</div>
+            <Card variant="subtle" className="text-sm text-gray-700">
+              Keine Eintraege vorhanden.
+            </Card>
           ) : (
-            <div className="overflow-x-auto rounded border">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="p-2 text-left">Name</th>
-                    <th className="p-2 text-left">Adresse</th>
-                    <th className="p-2 text-left">Telefon</th>
-                    <th className="p-2 text-left">Aktionen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((c) => (
-                    <tr key={c.id} className="border-t">
-                      <td className="p-2">{c.name}</td>
-                      <td className="p-2">{c.address || "—"}</td>
-                      <td className="p-2">{c.phone || "—"}</td>
-                      <td className="p-2">
-                        <button
-                          type="button"
-                          className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
-                          onClick={() => openEditCustomer(c.id)}
-                        >
-                          Bearbeiten
-                        </button>
-                      </td>
+            <>
+              <div className="space-y-3 sm:hidden">
+                {customers.map((c) => (
+                  <Card key={c.id} className="space-y-2">
+                    <div>
+                      <div className="text-sm text-gray-600">Name</div>
+                      <div>{c.name}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Adresse</div>
+                      <div>{c.address || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Telefon</div>
+                      <div>{c.phone || "—"}</div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => openEditCustomer(c.id)}
+                    >
+                      Bearbeiten
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+              <div className="hidden sm:block overflow-x-auto rounded border">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-2 text-left">Name</th>
+                      <th className="p-2 text-left">Adresse</th>
+                      <th className="p-2 text-left">Telefon</th>
+                      <th className="p-2 text-left">Aktionen</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {customers.map((c) => (
+                      <tr key={c.id} className="border-t">
+                        <td className="p-2">{c.name}</td>
+                        <td className="p-2">{c.address || "—"}</td>
+                        <td className="p-2">{c.phone || "—"}</td>
+                        <td className="p-2">
+                          <button
+                            type="button"
+                            className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                            onClick={() => openEditCustomer(c.id)}
+                          >
+                            Bearbeiten
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </section>
       )}
