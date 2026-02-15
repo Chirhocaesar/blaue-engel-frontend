@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   const qs = url.searchParams.toString();
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/time-adjustments${qs ? `?${qs}` : ""}`,
+    `${API_BASE}/time-adjustments${qs ? `?${qs}` : ""}`,
     {
       headers: { Authorization: `Bearer ${auth.token}` },
       cache: "no-store",
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null);
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/time-adjustments`, {
+  const upstreamRes = await fetch(`${API_BASE}/time-adjustments`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,

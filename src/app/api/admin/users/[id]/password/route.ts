@@ -48,7 +48,7 @@ export async function PATCH(
   const { id } = await context.params;
   const body = await req.json().catch(() => ({}));
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/users/${id}/password`, {
+  const upstreamRes = await fetch(`${API_BASE}/users/${id}/password`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${auth.token}`,

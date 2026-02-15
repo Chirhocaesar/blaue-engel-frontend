@@ -48,7 +48,7 @@ export async function PATCH(
   const { id } = await context.params;
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/deactivate`,
+    `${API_BASE}/customers/${encodeURIComponent(id)}/deactivate`,
     {
       method: "PATCH",
       headers: { Authorization: `Bearer ${auth.token}` },

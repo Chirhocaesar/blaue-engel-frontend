@@ -46,7 +46,7 @@ export async function GET(req: Request) {
   const includeInactive = url.searchParams.get("includeInactive");
   const qs = includeInactive ? `?includeInactive=${encodeURIComponent(includeInactive)}` : "";
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/users${qs}`, {
+  const upstreamRes = await fetch(`${API_BASE}/users${qs}`, {
     headers: { Authorization: `Bearer ${auth.token}` },
     cache: "no-store",
   });
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const { role: _role, ...payload } = body || {};
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/users`, {
+  const upstreamRes = await fetch(`${API_BASE}/users`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,

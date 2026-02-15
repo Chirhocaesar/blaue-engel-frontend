@@ -70,7 +70,7 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/customers/${encodeURIComponent(id)}`,
+    `${API_BASE}/customers/${encodeURIComponent(id)}`,
     {
       method: "PATCH",
       headers: {

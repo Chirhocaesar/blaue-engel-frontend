@@ -29,22 +29,10 @@ function getCustomers(data: CustomersResponse): Customer[] {
   return Array.isArray(data?.items) ? data.items : [];
 }
 
-function addDaysIsoDate(value: string, days: number) {
-  if (!value) return "";
-  const d = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return "";
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function calculateRecurringCount(startDate: string, repeatUntil: string, intervalDays: number) {
-  if (!startDate || !repeatUntil || intervalDays <= 0) return 0;
-  const start = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${repeatUntil}T00:00:00Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
-  const diffDays = Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
-  if (diffDays < 0) return 0;
-  return Math.floor(diffDays / intervalDays) + 1;
+function toPositiveInt(value: string) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return parsed;
 }
 
 export default function AdminAssignmentNewClient() {
@@ -57,9 +45,9 @@ export default function AdminAssignmentNewClient() {
   const [customerLoadError, setCustomerLoadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [seriesEnabled, setSeriesEnabled] = useState(false);
-  const [seriesFrequency, setSeriesFrequency] = useState<"WEEKLY" | "BIWEEKLY">("WEEKLY");
+  const [seriesFrequency, setSeriesFrequency] = useState<"WEEKLY" | "BIWEEKLY">("BIWEEKLY");
   const [seriesSuccess, setSeriesSuccess] = useState<string | null>(null);
-  const [repeatUntil, setRepeatUntil] = useState("");
+  const [seriesCount, setSeriesCount] = useState("6");
 
   const [customerId, setCustomerId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
@@ -109,8 +97,8 @@ export default function AdminAssignmentNewClient() {
   const canSubmit = useMemo(() => {
     const baseReady = !!(customerId && employeeId && date && startTime && endTime);
     if (!seriesEnabled) return baseReady;
-    return baseReady && !!repeatUntil;
-  }, [customerId, employeeId, date, startTime, endTime, seriesEnabled, repeatUntil]);
+    return baseReady && toPositiveInt(seriesCount) > 0;
+  }, [customerId, employeeId, date, startTime, endTime, seriesEnabled, seriesCount]);
 
   useEffect(() => {
     if (canSubmit && formError) setFormError(null);
@@ -118,9 +106,8 @@ export default function AdminAssignmentNewClient() {
 
   useEffect(() => {
     if (!seriesEnabled) return;
-    if (!date || repeatUntil) return;
-    setRepeatUntil(addDaysIsoDate(date, 14));
-  }, [seriesEnabled, date, repeatUntil]);
+    if (!seriesCount) setSeriesCount("6");
+  }, [seriesEnabled, seriesCount]);
 
   async function submit() {
     setError(null);
@@ -140,13 +127,13 @@ export default function AdminAssignmentNewClient() {
 
     setSubmitting(true);
     try {
-      const endpoint = "/api/admin/assignments";
+      const endpoint = seriesEnabled ? "/api/admin/assignments/series" : "/api/admin/assignments";
       const payload = seriesEnabled
         ? (() => {
             const intervalDays = seriesFrequency === "BIWEEKLY" ? 14 : 7;
-            const recurringCount = calculateRecurringCount(date, repeatUntil, intervalDays);
-            if (recurringCount <= 0) {
-              throw new Error("Bitte ein gueltiges Serien-Enddatum waehlen.");
+            const recurringCount = toPositiveInt(seriesCount);
+            if (!recurringCount || intervalDays <= 0) {
+              throw new Error("Bitte Anzahl und Intervall angeben.");
             }
             return {
               customerId,
@@ -371,12 +358,13 @@ export default function AdminAssignmentNewClient() {
                   </Select>
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Wiederholen bis (Datum)</span>
+                  <span className="text-xs text-gray-600">Anzahl Termine</span>
                   <Input
-                    type="date"
-                    value={repeatUntil}
-                    onChange={(e) => setRepeatUntil(e.target.value)}
-                    required
+                    type="number"
+                    min={1}
+                    max={52}
+                    value={seriesCount}
+                    onChange={(e) => setSeriesCount(e.target.value)}
                   />
                 </label>
               </div>

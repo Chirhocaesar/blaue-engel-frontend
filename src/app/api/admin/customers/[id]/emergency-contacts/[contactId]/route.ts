@@ -49,7 +49,7 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts/${encodeURIComponent(contactId)}`,
+    `${API_BASE}/customers/${encodeURIComponent(id)}/emergency-contacts/${encodeURIComponent(contactId)}`,
     {
       method: "PATCH",
       headers: {
@@ -75,7 +75,7 @@ export async function DELETE(
   const { id, contactId } = await context.params;
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts/${encodeURIComponent(contactId)}`,
+    `${API_BASE}/customers/${encodeURIComponent(id)}/emergency-contacts/${encodeURIComponent(contactId)}`,
     {
       method: "DELETE",
       headers: {

@@ -45,6 +45,30 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.res;
 
   const body = await req.json().catch(() => ({}));
+  const payload = {
+    customerId: body?.customerId,
+    employeeId: body?.employeeId,
+    startAt: body?.startAt,
+    endAt: body?.endAt,
+    notes: body?.notes,
+    isRecurring: Boolean(body?.isRecurring),
+    recurringCount: body?.recurringCount,
+    recurringIntervalDays: body?.recurringIntervalDays,
+  } as {
+    customerId?: string;
+    employeeId?: string;
+    startAt?: string;
+    endAt?: string;
+    notes?: string;
+    isRecurring?: boolean;
+    recurringCount?: number;
+    recurringIntervalDays?: number;
+  };
+
+  if (!payload.isRecurring) {
+    delete payload.recurringCount;
+    delete payload.recurringIntervalDays;
+  }
 
   const upstreamRes = await fetch(`${API_BASE}/assignments`, {
     method: "POST",
@@ -52,7 +76,7 @@ export async function POST(req: Request) {
       Authorization: `Bearer ${auth.token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
     cache: "no-store",
   });
 

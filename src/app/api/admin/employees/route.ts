@@ -33,7 +33,7 @@ export async function GET() {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.res;
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/users?role=EMPLOYEE`, {
+  const upstreamRes = await fetch(`${API_BASE}/users?role=EMPLOYEE`, {
     headers: { Authorization: `Bearer ${auth.token}` },
     cache: "no-store",
   });
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const payload = { ...body, role: "EMPLOYEE" };
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/users`, {
+  const upstreamRes = await fetch(`${API_BASE}/users`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,

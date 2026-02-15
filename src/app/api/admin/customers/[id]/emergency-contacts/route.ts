@@ -48,7 +48,7 @@ export async function GET(
   const { id } = await context.params;
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts`,
+    `${API_BASE}/customers/${encodeURIComponent(id)}/emergency-contacts`,
     {
       headers: { Authorization: `Bearer ${auth.token}` },
       cache: "no-store",
@@ -70,7 +70,7 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts`,
+    `${API_BASE}/customers/${encodeURIComponent(id)}/emergency-contacts`,
     {
       method: "POST",
       headers: {

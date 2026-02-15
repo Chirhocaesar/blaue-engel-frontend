@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   const qs = url.searchParams.toString();
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/corrections/day${qs ? `?${qs}` : ""}`,
+    `${API_BASE}/corrections/day${qs ? `?${qs}` : ""}`,
     {
       headers: { Authorization: `Bearer ${auth.token}` },
       cache: "no-store",

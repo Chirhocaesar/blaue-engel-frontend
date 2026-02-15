@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, Input, Select, Textarea } from "@/components/ui";
 
@@ -142,8 +142,15 @@ function EmergencyContactsPanel({
     cancelEdit();
   }
 
+  function handlePanelKeyDown(event: React.KeyboardEvent) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
   return (
-    <Card variant="subtle" className="p-3 space-y-2">
+    <Card variant="subtle" className="p-3 space-y-2" onKeyDown={handlePanelKeyDown}>
       <div className="text-sm font-semibold">Notfallkontakte</div>
       {error ? <div className="text-xs text-red-600">{error}</div> : null}
       {saved ? <div className="text-xs text-green-700">Kontakt gespeichert ✓</div> : null}
@@ -474,7 +481,7 @@ export default function MasterdataPage() {
     return json as Customer;
   }
 
-  async function loadEmergencyContacts(customerId?: string) {
+  const loadEmergencyContacts = useCallback(async (customerId?: string) => {
     const targetId = customerId || editingCustomer?.id || createdCustomerId;
     if (!targetId) return;
     setEcLoading(true);
@@ -493,7 +500,7 @@ export default function MasterdataPage() {
     } finally {
       setEcLoading(false);
     }
-  }
+  }, [editingCustomer?.id, createdCustomerId]);
 
   async function submitEmployee(e: React.FormEvent) {
     e.preventDefault();
