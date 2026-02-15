@@ -48,7 +48,7 @@ export async function GET(
   const { id } = await context.params;
 
   const upstreamRes = await fetch(
-    `${API_BASE}/admin/customers/${encodeURIComponent(id)}`,
+    `${API_BASE}/customers/${encodeURIComponent(id)}`,
     {
       headers: { Authorization: `Bearer ${auth.token}` },
       cache: "no-store",

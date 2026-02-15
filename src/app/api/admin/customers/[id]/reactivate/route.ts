@@ -38,39 +38,23 @@ async function requireAdmin() {
   return { ok: true, token } as const;
 }
 
-export async function GET(req: Request) {
+export async function PATCH(
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.res;
 
-  const url = new URL(req.url);
-  const includeInactive = url.searchParams.get("includeInactive");
-  const qs = includeInactive ? `?includeInactive=${encodeURIComponent(includeInactive)}` : "";
+  const { id } = await context.params;
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/users${qs}`, {
-    headers: { Authorization: `Bearer ${auth.token}` },
-    cache: "no-store",
-  });
-
-  const data = await upstreamRes.json().catch(() => ([]));
-  return NextResponse.json(data, { status: upstreamRes.status });
-}
-
-export async function POST(req: Request) {
-  const auth = await requireAdmin();
-  if (!auth.ok) return auth.res;
-
-  const body = await req.json().catch(() => ({}));
-  const { role: _role, ...payload } = body || {};
-
-  const upstreamRes = await fetch(`${API_BASE}/admin/users`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${auth.token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
+  const upstreamRes = await fetch(
+    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/reactivate`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${auth.token}` },
+      cache: "no-store",
+    }
+  );
 
   const data = await upstreamRes.json().catch(() => ({}));
   return NextResponse.json(data, { status: upstreamRes.status });

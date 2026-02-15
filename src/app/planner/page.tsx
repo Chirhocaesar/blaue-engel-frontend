@@ -234,7 +234,7 @@ export default function PlannerPage() {
     setShowCreateModal(true);
 
     try {
-      const res = await fetch("/api/me/customers", { cache: "no-store" });
+      const res = await fetch("/api/customers", { cache: "no-store" });
       const raw = res.ok ? await res.json() : [];
       const items: CustomerMinimal[] = Array.isArray(raw) ? raw : raw?.items ?? [];
       if (res.ok) {

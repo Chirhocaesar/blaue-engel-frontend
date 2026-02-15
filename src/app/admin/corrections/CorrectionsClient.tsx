@@ -412,8 +412,12 @@ export default function CorrectionsClient() {
             </div>
             <div className="flex items-center gap-2">
               {isLocked ? (
-                <span className="rounded border px-2 py-0.5 text-xs font-semibold text-red-700 border-red-300">
-                  GESPERRT
+                <span
+                  className="rounded border px-2 py-0.5 text-xs font-semibold text-red-700 border-red-300"
+                  aria-label="Gesperrt"
+                  title="Gesperrt"
+                >
+                  🔒
                 </span>
               ) : null}
             </div>

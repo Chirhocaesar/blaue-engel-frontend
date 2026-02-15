@@ -16,7 +16,6 @@ import {
 import { deDateToIso, makeTimeOptions, normalizeDeTime } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
 import StatusPill from "@/components/StatusPill";
-import { Lock } from "lucide-react";
 import { Alert, Button, Card, Pill } from "@/components/ui";
 
 type Customer = {
@@ -439,7 +438,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     try {
       const [empRes, custRes] = await Promise.all([
         fetch("/api/admin/employees", { cache: "no-store" }),
-        fetch("/api/admin/customers?limit=50", { cache: "no-store" }),
+        fetch("/api/customers?limit=50", { cache: "no-store" }),
       ]);
       const empJson = await empRes.json().catch(() => []);
       const custJson = await custRes.json().catch(() => ({}));
@@ -777,6 +776,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       try {
         const res = await fetch(endpoint, { cache: "no-store" });
         const json = await res.json().catch(() => ([]));
+        if (res.status === 404) {
+          if (!cancelled) {
+            setEmergencyContacts([]);
+            setEcError("");
+          }
+          return;
+        }
         if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
         const items = Array.isArray(json) ? json : [];
         if (!cancelled) {
@@ -1166,7 +1172,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                   aria-label="Gesperrt"
                   title="Gesperrt"
                 >
-                  <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span aria-hidden="true">🔒</span>
                 </span>
               ) : null}
             </div>

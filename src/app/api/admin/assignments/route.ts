@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null);
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/assignments/series`, {
+  const upstreamRes = await fetch(`${API_BASE}/assignments`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,

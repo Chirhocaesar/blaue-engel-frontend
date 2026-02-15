@@ -10,6 +10,7 @@ type AdminUser = {
   id: string;
   email?: string | null;
   fullName?: string | null;
+  isActive?: boolean | null;
 };
 
 type Customer = {
@@ -23,6 +24,7 @@ type Customer = {
   birthDate?: string | null;
   customerType?: "STATUTORY" | "PRIVATE" | null;
   adminNotes?: string | null;
+  isActive?: boolean | null;
 };
 
 type EmergencyContact = {
@@ -56,6 +58,234 @@ function getCustomers(data: CustomersResponse): Customer[] {
   return Array.isArray(data?.items) ? data.items : [];
 }
 
+function sanitizePhone(value: string) {
+  return value.replace(/[^\d+]/g, "");
+}
+
+type EmergencyContactsPanelProps = {
+  customerId: string;
+  contacts: EmergencyContact[];
+  loading: boolean;
+  error: string | null;
+  saving: boolean;
+  saved: boolean;
+  name: string;
+  phone: string;
+  relation: string;
+  onNameChange: (value: string) => void;
+  onPhoneChange: (value: string) => void;
+  onRelationChange: (value: string) => void;
+  onCreate: (event?: React.SyntheticEvent) => Promise<void> | void;
+  onDelete: (contactId: string) => Promise<void> | void;
+  onUpdate: (contactId: string, payload: { name: string; phone: string; relation?: string }) => Promise<void> | void;
+  onRefresh: (customerId: string) => Promise<void> | void;
+};
+
+function EmergencyContactsPanel({
+  customerId,
+  contacts,
+  loading,
+  error,
+  saving,
+  saved,
+  name,
+  phone,
+  relation,
+  onNameChange,
+  onPhoneChange,
+  onRelationChange,
+  onCreate,
+  onDelete,
+  onUpdate,
+  onRefresh,
+}: EmergencyContactsPanelProps) {
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRelation, setEditRelation] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!customerId) return;
+    void onRefresh(customerId);
+  }, [customerId, onRefresh]);
+
+  function startEdit(contact: EmergencyContact) {
+    setEditId(contact.id);
+    setEditName(contact.name || "");
+    setEditPhone(contact.phone || "");
+    setEditRelation(contact.relation || "");
+    setEditError(null);
+  }
+
+  function cancelEdit() {
+    setEditId(null);
+    setEditName("");
+    setEditPhone("");
+    setEditRelation("");
+    setEditError(null);
+  }
+
+  async function saveEdit(contactId: string) {
+    const nextName = editName.trim();
+    const nextPhone = editPhone.trim();
+    if (!nextName || !nextPhone) {
+      setEditError("Name und Telefon sind erforderlich.");
+      return;
+    }
+    setEditError(null);
+    await onUpdate(contactId, {
+      name: nextName,
+      phone: nextPhone,
+      relation: editRelation.trim() || undefined,
+    });
+    cancelEdit();
+  }
+
+  return (
+    <Card variant="subtle" className="p-3 space-y-2">
+      <div className="text-sm font-semibold">Notfallkontakte</div>
+      {error ? <div className="text-xs text-red-600">{error}</div> : null}
+      {saved ? <div className="text-xs text-green-700">Kontakt gespeichert ✓</div> : null}
+      {editError ? <div className="text-xs text-red-600">{editError}</div> : null}
+      {loading ? (
+        <div className="text-sm text-gray-600">Lade…</div>
+      ) : contacts.length === 0 ? (
+        <div className="text-sm text-gray-600">Keine Notfallkontakte.</div>
+      ) : (
+        <div className="space-y-2">
+          {contacts.map((c) => {
+            const tel = sanitizePhone(c.phone || "");
+            const isEditing = editId === c.id;
+            return (
+              <div
+                key={c.id}
+                className="flex flex-col gap-2 rounded border bg-white px-2 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 flex-1">
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <Input
+                        className="text-sm"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        disabled={saving}
+                      />
+                      <Input
+                        className="text-sm"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        disabled={saving}
+                      />
+                      <Input
+                        className="text-sm"
+                        value={editRelation}
+                        onChange={(e) => setEditRelation(e.target.value)}
+                        disabled={saving}
+                        placeholder="Beziehung (optional)"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="font-medium truncate">{c.name}</div>
+                      <div className="text-xs text-gray-600">
+                        {c.relation ? `${c.relation} · ` : ""}{c.phone}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {tel && !isEditing ? (
+                    <a
+                      className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                      href={`tel:${tel}`}
+                    >
+                      Anrufen
+                    </a>
+                  ) : null}
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        disabled={saving}
+                        onClick={() => saveEdit(c.id)}
+                      >
+                        {saving ? "Speichern…" : "Speichern"}
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        disabled={saving}
+                        onClick={cancelEdit}
+                      >
+                        Abbrechen
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        disabled={saving}
+                        onClick={() => startEdit(c)}
+                      >
+                        Bearbeiten
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        disabled={saving}
+                        onClick={() => onDelete(c.id)}
+                      >
+                        Löschen
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <Input
+          className="text-sm"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          disabled={saving}
+        />
+        <Input
+          className="text-sm"
+          placeholder="Telefon"
+          value={phone}
+          onChange={(e) => onPhoneChange(e.target.value)}
+          disabled={saving}
+        />
+        <Input
+          className="text-sm"
+          placeholder="Beziehung (optional)"
+          value={relation}
+          onChange={(e) => onRelationChange(e.target.value)}
+          disabled={saving}
+        />
+        <div className="sm:col-span-3">
+          <button
+            type="button"
+            className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+            disabled={saving}
+            onClick={(event) => onCreate(event)}
+          >
+            {saving ? "Speichern…" : "Kontakt hinzufügen"}
+          </button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function MasterdataPage() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<"employees" | "customers">("employees");
@@ -63,10 +293,14 @@ export default function MasterdataPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
+  const [includeInactiveEmployees, setIncludeInactiveEmployees] = useState(false);
+  const [userToggleId, setUserToggleId] = useState<string | null>(null);
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
   const [customersError, setCustomersError] = useState<string | null>(null);
+  const [includeInactiveCustomers, setIncludeInactiveCustomers] = useState(false);
+  const [customerToggleId, setCustomerToggleId] = useState<string | null>(null);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -127,7 +361,8 @@ export default function MasterdataPage() {
     setUsersLoading(true);
     setUsersError(null);
     try {
-      const res = await fetch("/api/admin/users", { cache: "no-store" });
+      const qs = includeInactiveEmployees ? "?includeInactive=1" : "";
+      const res = await fetch(`/api/admin/users${qs}`, { cache: "no-store" });
       const json = await res.json().catch(() => ([]));
       if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
       setUsers(getUsers(json));
@@ -142,7 +377,9 @@ export default function MasterdataPage() {
     setCustomersLoading(true);
     setCustomersError(null);
     try {
-      const res = await fetch("/api/admin/customers?limit=50", { cache: "no-store" });
+      const qs = new URLSearchParams({ limit: "50" });
+      if (includeInactiveCustomers) qs.set("includeInactive", "1");
+      const res = await fetch(`/api/admin/customers?${qs.toString()}`, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
       setCustomers(getCustomers(json));
@@ -165,7 +402,7 @@ export default function MasterdataPage() {
     return () => {
       cancelled = true;
     };
-  }, [tab]);
+  }, [tab, includeInactiveEmployees, includeInactiveCustomers]);
 
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -416,6 +653,7 @@ export default function MasterdataPage() {
             phone,
             relation: ecRelation.trim() || undefined,
           }),
+          cache: "no-store",
         }
       );
       const json = await res.json().catch(() => ({}));
@@ -433,9 +671,8 @@ export default function MasterdataPage() {
             relation: nextContact.relation ?? (ecRelation.trim() || undefined),
           },
         ]);
-      } else {
-        await loadEmergencyContacts(targetId);
       }
+      await loadEmergencyContacts(targetId);
       setEcName("");
       setEcPhone("");
       setEcRelation("");
@@ -453,10 +690,11 @@ export default function MasterdataPage() {
     if (!targetId) return;
     setEcError(null);
     setEcSaving(true);
+    setEmergencyContacts((prev) => prev.filter((c) => c.id !== contactId));
     try {
       const res = await fetch(
         `/api/admin/customers/${targetId}/emergency-contacts/${contactId}`,
-        { method: "DELETE" }
+        { method: "DELETE", cache: "no-store" }
       );
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
@@ -464,6 +702,40 @@ export default function MasterdataPage() {
       setEcSaved(true);
     } catch (e: any) {
       setEcError(e?.message ?? "Notfallkontakt konnte nicht gelöscht werden.");
+      await loadEmergencyContacts(targetId);
+    } finally {
+      setEcSaving(false);
+    }
+  }
+
+  async function updateEmergencyContact(
+    contactId: string,
+    payload: { name: string; phone: string; relation?: string }
+  ) {
+    const targetId = editingCustomer?.id || createdCustomerId;
+    if (!targetId) return;
+    setEcError(null);
+    setEcSaving(true);
+    setEmergencyContacts((prev) =>
+      prev.map((c) => (c.id === contactId ? { ...c, ...payload } : c))
+    );
+    try {
+      const res = await fetch(
+        `/api/admin/customers/${targetId}/emergency-contacts/${contactId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          cache: "no-store",
+        }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+      await loadEmergencyContacts(targetId);
+      setEcSaved(true);
+    } catch (e: any) {
+      setEcError(e?.message ?? "Notfallkontakt konnte nicht gespeichert werden.");
+      await loadEmergencyContacts(targetId);
     } finally {
       setEcSaving(false);
     }
@@ -551,6 +823,98 @@ export default function MasterdataPage() {
     }
   }
 
+  async function deactivateUser(user: AdminUser) {
+    if (!user?.id) return;
+    setUserToggleId(user.id);
+    setUsersError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/deactivate`, {
+        method: "PATCH",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+
+      if (includeInactiveEmployees) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, isActive: false } : u))
+        );
+      } else {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      }
+    } catch (e: any) {
+      setUsersError(e?.message ?? "Mitarbeiter konnte nicht deaktiviert werden.");
+    } finally {
+      setUserToggleId(null);
+    }
+  }
+
+  async function reactivateUser(user: AdminUser) {
+    if (!user?.id) return;
+    setUserToggleId(user.id);
+    setUsersError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/reactivate`, {
+        method: "PATCH",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, isActive: true } : u))
+      );
+    } catch (e: any) {
+      setUsersError(e?.message ?? "Mitarbeiter konnte nicht reaktiviert werden.");
+    } finally {
+      setUserToggleId(null);
+    }
+  }
+
+  async function deactivateCustomer(customer: Customer) {
+    if (!customer?.id) return;
+    setCustomerToggleId(customer.id);
+    setCustomersError(null);
+    try {
+      const res = await fetch(`/api/admin/customers/${customer.id}/deactivate`, {
+        method: "PATCH",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+
+      if (includeInactiveCustomers) {
+        setCustomers((prev) =>
+          prev.map((c) => (c.id === customer.id ? { ...c, isActive: false } : c))
+        );
+      } else {
+        setCustomers((prev) => prev.filter((c) => c.id !== customer.id));
+      }
+    } catch (e: any) {
+      setCustomersError(e?.message ?? "Kunde konnte nicht deaktiviert werden.");
+    } finally {
+      setCustomerToggleId(null);
+    }
+  }
+
+  async function reactivateCustomer(customer: Customer) {
+    if (!customer?.id) return;
+    setCustomerToggleId(customer.id);
+    setCustomersError(null);
+    try {
+      const res = await fetch(`/api/admin/customers/${customer.id}/reactivate`, {
+        method: "PATCH",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customer.id ? { ...c, isActive: true } : c))
+      );
+    } catch (e: any) {
+      setCustomersError(e?.message ?? "Kunde konnte nicht reaktiviert werden.");
+    } finally {
+      setCustomerToggleId(null);
+    }
+  }
+
   return (
     <main className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -586,6 +950,15 @@ export default function MasterdataPage() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">Mitarbeiter</h2>
             <div className="flex items-center gap-2 flex-wrap">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={includeInactiveEmployees}
+                  onChange={(e) => setIncludeInactiveEmployees(e.target.checked)}
+                />
+                Inaktive anzeigen
+              </label>
               {empSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
               {resetSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
               {editEmpSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
@@ -621,7 +994,14 @@ export default function MasterdataPage() {
                   <Card key={u.id} className="space-y-2">
                     <div>
                       <div className="text-sm text-gray-600">Name</div>
-                      <div>{u.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span>{u.name}</span>
+                        {includeInactiveEmployees && u.raw.isActive === false ? (
+                          <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
+                            Inaktiv
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm text-gray-600">E-Mail</div>
@@ -650,6 +1030,29 @@ export default function MasterdataPage() {
                     >
                       Passwort zuruecksetzen
                     </Button>
+                    {includeInactiveEmployees && u.raw.isActive === false ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={userToggleId === u.id}
+                        onClick={() => reactivateUser(u.raw)}
+                      >
+                        {userToggleId === u.id ? "Reaktivieren…" : "Reaktivieren"}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={userToggleId === u.id}
+                        onClick={() => deactivateUser(u.raw)}
+                      >
+                        {userToggleId === u.id ? "Deaktivieren…" : "Deaktivieren"}
+                      </Button>
+                    )}
                   </Card>
                 ))}
               </div>
@@ -659,6 +1062,9 @@ export default function MasterdataPage() {
                     <tr>
                       <th className="p-2 text-left">Name</th>
                       <th className="p-2 text-left">E-Mail</th>
+                      {includeInactiveEmployees ? (
+                        <th className="p-2 text-left">Status</th>
+                      ) : null}
                       <th className="p-2 text-left">Aktionen</th>
                     </tr>
                   </thead>
@@ -667,6 +1073,19 @@ export default function MasterdataPage() {
                       <tr key={u.id} className="border-t">
                         <td className="p-2">{u.name}</td>
                         <td className="p-2">{u.email}</td>
+                        {includeInactiveEmployees ? (
+                          <td className="p-2">
+                            {u.raw.isActive === false ? (
+                              <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
+                                Inaktiv
+                              </span>
+                            ) : (
+                              <span className="rounded-full border px-2 py-0.5 text-xs text-green-700">
+                                Aktiv
+                              </span>
+                            )}
+                          </td>
+                        ) : null}
                         <td className="p-2">
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -688,6 +1107,25 @@ export default function MasterdataPage() {
                             >
                               Passwort zurücksetzen
                             </button>
+                            {includeInactiveEmployees && u.raw.isActive === false ? (
+                              <button
+                                type="button"
+                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                disabled={userToggleId === u.id}
+                                onClick={() => reactivateUser(u.raw)}
+                              >
+                                {userToggleId === u.id ? "Reaktivieren…" : "Reaktivieren"}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                disabled={userToggleId === u.id}
+                                onClick={() => deactivateUser(u.raw)}
+                              >
+                                {userToggleId === u.id ? "Deaktivieren…" : "Deaktivieren"}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -703,6 +1141,15 @@ export default function MasterdataPage() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">Kunden</h2>
             <div className="flex items-center gap-2 flex-wrap">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={includeInactiveCustomers}
+                  onChange={(e) => setIncludeInactiveCustomers(e.target.checked)}
+                />
+                Inaktive anzeigen
+              </label>
               {custSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
               <button
                 type="button"
@@ -743,7 +1190,14 @@ export default function MasterdataPage() {
                   <Card key={c.id} className="space-y-2">
                     <div>
                       <div className="text-sm text-gray-600">Name</div>
-                      <div>{c.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span>{c.name}</span>
+                        {includeInactiveCustomers && c.isActive === false ? (
+                          <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
+                            Inaktiv
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm text-gray-600">Adresse</div>
@@ -762,6 +1216,29 @@ export default function MasterdataPage() {
                     >
                       Bearbeiten
                     </Button>
+                    {includeInactiveCustomers && c.isActive === false ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={customerToggleId === c.id}
+                        onClick={() => reactivateCustomer(c)}
+                      >
+                        {customerToggleId === c.id ? "Reaktivieren…" : "Reaktivieren"}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={customerToggleId === c.id}
+                        onClick={() => deactivateCustomer(c)}
+                      >
+                        {customerToggleId === c.id ? "Deaktivieren…" : "Deaktivieren"}
+                      </Button>
+                    )}
                   </Card>
                 ))}
               </div>
@@ -771,6 +1248,9 @@ export default function MasterdataPage() {
                     <tr>
                       <th className="p-2 text-left">Name</th>
                       <th className="p-2 text-left">Adresse</th>
+                      {includeInactiveCustomers ? (
+                        <th className="p-2 text-left">Status</th>
+                      ) : null}
                       <th className="p-2 text-left">Telefon</th>
                       <th className="p-2 text-left">Aktionen</th>
                     </tr>
@@ -780,15 +1260,49 @@ export default function MasterdataPage() {
                       <tr key={c.id} className="border-t">
                         <td className="p-2">{c.name}</td>
                         <td className="p-2">{c.address || "—"}</td>
+                        {includeInactiveCustomers ? (
+                          <td className="p-2">
+                            {c.isActive === false ? (
+                              <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
+                                Inaktiv
+                              </span>
+                            ) : (
+                              <span className="rounded-full border px-2 py-0.5 text-xs text-green-700">
+                                Aktiv
+                              </span>
+                            )}
+                          </td>
+                        ) : null}
                         <td className="p-2">{c.phone || "—"}</td>
                         <td className="p-2">
-                          <button
-                            type="button"
-                            className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
-                            onClick={() => openEditCustomer(c.id)}
-                          >
-                            Bearbeiten
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                              onClick={() => openEditCustomer(c.id)}
+                            >
+                              Bearbeiten
+                            </button>
+                            {includeInactiveCustomers && c.isActive === false ? (
+                              <button
+                                type="button"
+                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                disabled={customerToggleId === c.id}
+                                onClick={() => reactivateCustomer(c)}
+                              >
+                                {customerToggleId === c.id ? "Reaktivieren…" : "Reaktivieren"}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                disabled={customerToggleId === c.id}
+                                onClick={() => deactivateCustomer(c)}
+                              >
+                                {customerToggleId === c.id ? "Deaktivieren…" : "Deaktivieren"}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1073,88 +1587,20 @@ export default function MasterdataPage() {
             </form>
 
             {createdCustomerId ? (
-              <div className="mt-4 rounded border p-3 space-y-2">
-                <div className="text-sm font-semibold">Notfallkontakte</div>
-                {ecError ? <div className="text-xs text-red-600">{ecError}</div> : null}
-                {ecSaved ? <div className="text-xs text-green-700">Kontakt gespeichert ✓</div> : null}
-                {ecLoading ? (
-                  <div className="text-sm text-gray-600">Lade…</div>
-                ) : emergencyContacts.length === 0 ? (
-                  <div className="text-sm text-gray-600">Keine Notfallkontakte.</div>
-                ) : (
-                  <div className="space-y-2">
-                    {emergencyContacts.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center justify-between gap-2 rounded border px-2 py-2 text-sm"
-                      >
-                        <div>
-                          <div className="font-medium">{c.name}</div>
-                          <div className="text-xs text-gray-600">
-                            {c.relation ? `${c.relation} · ` : ""}{c.phone}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
-                          disabled={ecSaving}
-                          onClick={() => deleteEmergencyContact(c.id)}
-                        >
-                          Löschen
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Input
-                    className="text-sm"
-                    placeholder="Name"
-                    value={ecName}
-                    onChange={(e) => setEcName(e.target.value)}
-                    disabled={ecSaving}
-                  />
-                  <Input
-                    className="text-sm"
-                    placeholder="Telefon"
-                    value={ecPhone}
-                    onChange={(e) => setEcPhone(e.target.value)}
-                    disabled={ecSaving}
-                  />
-                  <Input
-                    className="text-sm"
-                    placeholder="Beziehung (optional)"
-                    value={ecRelation}
-                    onChange={(e) => setEcRelation(e.target.value)}
-                    disabled={ecSaving}
-                  />
-                  <div className="sm:col-span-3">
-                    <button
-                      type="button"
-                      className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                      disabled={ecSaving}
-                      onClick={(event) => submitEmergencyContact(event)}
-                    >
-                      {ecSaving ? "Speichern…" : "Kontakt hinzufügen"}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-end">
-                  <button
-                    type="button"
-                    className="rounded-md border px-3 py-2 text-sm"
-                    onClick={() => {
-                      setShowCustomerModal(false);
-                      setCreatedCustomerId(null);
-                      setCreatedCustomerName("");
-                      setEmergencyContacts([]);
-                      setEcError(null);
-                    }}
-                  >
-                    Fertig
-                  </button>
-                </div>
+              <div className="mt-4 flex items-center justify-end">
+                <button
+                  type="button"
+                  className="rounded-md border px-3 py-2 text-sm"
+                  onClick={() => {
+                    setShowCustomerModal(false);
+                    setCreatedCustomerId(null);
+                    setCreatedCustomerName("");
+                    setEmergencyContacts([]);
+                    setEcError(null);
+                  }}
+                >
+                  Fertig
+                </button>
               </div>
             ) : null}
           </div>
@@ -1315,74 +1761,26 @@ export default function MasterdataPage() {
                   />
                 </div>
 
-                <div className="rounded border p-3 space-y-2">
-                  <div className="text-sm font-semibold">Notfallkontakte</div>
-                  {ecError ? <div className="text-xs text-red-600">{ecError}</div> : null}
-                  {ecSaved ? <div className="text-xs text-green-700">Kontakt gespeichert ✓</div> : null}
-                  {ecLoading ? (
-                    <div className="text-sm text-gray-600">Lade…</div>
-                  ) : emergencyContacts.length === 0 ? (
-                    <div className="text-sm text-gray-600">Keine Notfallkontakte.</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {emergencyContacts.map((c) => (
-                        <div
-                          key={c.id}
-                          className="flex items-center justify-between gap-2 rounded border px-2 py-2 text-sm"
-                        >
-                          <div>
-                            <div className="font-medium">{c.name}</div>
-                            <div className="text-xs text-gray-600">
-                              {c.relation ? `${c.relation} · ` : ""}{c.phone}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
-                            disabled={ecSaving}
-                            onClick={() => deleteEmergencyContact(c.id)}
-                          >
-                            Löschen
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <Input
-                      className="text-sm"
-                      placeholder="Name"
-                      value={ecName}
-                      onChange={(e) => setEcName(e.target.value)}
-                      disabled={ecSaving}
-                    />
-                    <Input
-                      className="text-sm"
-                      placeholder="Telefon"
-                      value={ecPhone}
-                      onChange={(e) => setEcPhone(e.target.value)}
-                      disabled={ecSaving}
-                    />
-                    <Input
-                      className="text-sm"
-                      placeholder="Beziehung (optional)"
-                      value={ecRelation}
-                      onChange={(e) => setEcRelation(e.target.value)}
-                      disabled={ecSaving}
-                    />
-                    <div className="sm:col-span-3">
-                      <button
-                        type="button"
-                        className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                        disabled={ecSaving}
-                        onClick={(event) => submitEmergencyContact(event)}
-                      >
-                        {ecSaving ? "Speichern…" : "Kontakt hinzufügen"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                {editingCustomer?.id ? (
+                  <EmergencyContactsPanel
+                    customerId={editingCustomer.id}
+                    contacts={emergencyContacts}
+                    loading={ecLoading}
+                    error={ecError}
+                    saving={ecSaving}
+                    saved={ecSaved}
+                    name={ecName}
+                    phone={ecPhone}
+                    relation={ecRelation}
+                    onNameChange={setEcName}
+                    onPhoneChange={setEcPhone}
+                    onRelationChange={setEcRelation}
+                    onCreate={submitEmergencyContact}
+                    onDelete={deleteEmergencyContact}
+                    onUpdate={updateEmergencyContact}
+                    onRefresh={loadEmergencyContacts}
+                  />
+                ) : null}
 
                 <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-white px-4 py-3">
                   <button

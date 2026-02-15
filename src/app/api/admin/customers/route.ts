@@ -41,7 +41,19 @@ export async function GET(req: Request) {
     : 50;
   const limit = String(safeLimit);
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/customers?limit=${encodeURIComponent(limit)}`, {
+  const upstreamUrl = new URL(`${API_BASE}/admin/customers`);
+  upstreamUrl.searchParams.set("limit", limit);
+
+  const includeInactive = url.searchParams.get("includeInactive");
+  if (includeInactive) upstreamUrl.searchParams.set("includeInactive", includeInactive);
+
+  const cursor = url.searchParams.get("cursor");
+  if (cursor) upstreamUrl.searchParams.set("cursor", cursor);
+
+  const q = url.searchParams.get("q");
+  if (q) upstreamUrl.searchParams.set("q", q);
+
+  const upstreamRes = await fetch(upstreamUrl.toString(), {
     headers: { Authorization: `Bearer ${auth.token}` },
     cache: "no-store",
   });

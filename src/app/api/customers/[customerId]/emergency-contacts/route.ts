@@ -68,9 +68,13 @@ export async function POST(
   const auth = await getAuthRole();
   if (!auth.ok) return auth.res;
 
+  if (auth.role !== "ADMIN") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
   const { customerId } = await context.params;
   const body = await req.json().catch(() => ({}));
-  const path = contactsPath(auth.role, customerId);
+  const path = `/admin/customers/${encodeURIComponent(customerId)}/emergency-contacts`;
 
   const upstreamRes = await fetch(`${API_BASE}${path}`, {
     method: "POST",

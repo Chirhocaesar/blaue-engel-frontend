@@ -37,6 +37,16 @@ function addDaysIsoDate(value: string, days: number) {
   return d.toISOString().slice(0, 10);
 }
 
+function calculateRecurringCount(startDate: string, repeatUntil: string, intervalDays: number) {
+  if (!startDate || !repeatUntil || intervalDays <= 0) return 0;
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${repeatUntil}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  const diffDays = Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+  if (diffDays < 0) return 0;
+  return Math.floor(diffDays / intervalDays) + 1;
+}
+
 export default function AdminAssignmentNewClient() {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -70,7 +80,7 @@ export default function AdminAssignmentNewClient() {
       try {
         const [empRes, custRes] = await Promise.all([
           fetch("/api/admin/employees", { cache: "no-store" }),
-          fetch("/api/admin/customers?limit=50", { cache: "no-store" }),
+          fetch("/api/customers?limit=50", { cache: "no-store" }),
         ]);
         const empJson = await empRes.json().catch(() => []);
         const custJson = await custRes.json().catch(() => ({}));
@@ -130,19 +140,25 @@ export default function AdminAssignmentNewClient() {
 
     setSubmitting(true);
     try {
-      const endpoint = seriesEnabled
-        ? "/api/admin/assignments/series"
-        : "/api/admin/assignments";
+      const endpoint = "/api/admin/assignments";
       const payload = seriesEnabled
-        ? {
-            customerId,
-            employeeId,
-            startAt: startIso,
-            endAt: endIso,
-            notes: notes.trim() || undefined,
-            frequency: seriesFrequency,
-            repeatUntil,
-          }
+        ? (() => {
+            const intervalDays = seriesFrequency === "BIWEEKLY" ? 14 : 7;
+            const recurringCount = calculateRecurringCount(date, repeatUntil, intervalDays);
+            if (recurringCount <= 0) {
+              throw new Error("Bitte ein gueltiges Serien-Enddatum waehlen.");
+            }
+            return {
+              customerId,
+              employeeId,
+              startAt: startIso,
+              endAt: endIso,
+              notes: notes.trim() || undefined,
+              isRecurring: true,
+              recurringCount,
+              recurringIntervalDays: intervalDays,
+            };
+          })()
         : {
             customerId,
             employeeId,
