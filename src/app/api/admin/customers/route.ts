@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     : 50;
   const limit = String(safeLimit);
 
-  const upstreamUrl = new URL(`${API_BASE}/admin/customers`);
+  const upstreamUrl = new URL(`${API_BASE}/customers`);
   upstreamUrl.searchParams.set("limit", limit);
 
   const includeInactive = url.searchParams.get("includeInactive");
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
 
-  const upstreamRes = await fetch(`${API_BASE}/admin/customers`, {
+  const upstreamRes = await fetch(`${API_BASE}/customers`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${auth.token}`,
