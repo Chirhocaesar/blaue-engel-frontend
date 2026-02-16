@@ -15,6 +15,7 @@ import {
 } from "@/lib/format";
 import { deDateToIso, makeTimeOptions, normalizeDeTime } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
+import { statusLabelDe } from "@/lib/status";
 import StatusPill from "@/components/StatusPill";
 import { Alert, Button, Card, Pill } from "@/components/ui";
 
@@ -166,7 +167,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const [teEndTime, setTeEndTime] = useState<string>("");
   const [teNotes, setTeNotes] = useState<string>("");
   const [teSaving, setTeSaving] = useState(false);
-  const timeOptions = useMemo(() => makeTimeOptions(15), []);
+  const timeOptions = useMemo(() => makeTimeOptions(30), []);
   const showNativeInputs = useNativePickers();
 
   // signature
@@ -1305,11 +1306,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                     disabled={editSaving || editLocked || isLocked}
                   >
-                    <option value="PLANNED">PLANNED</option>
-                    <option value="ASSIGNED">ASSIGNED</option>
-                    <option value="CONFIRMED">CONFIRMED</option>
-                    <option value="DONE">DONE</option>
-                    <option value="CANCELLED">CANCELLED</option>
+                    <option value="PLANNED">{statusLabelDe("PLANNED")}</option>
+                    <option value="ASSIGNED">{statusLabelDe("ASSIGNED")}</option>
+                    <option value="CONFIRMED">{statusLabelDe("CONFIRMED")}</option>
+                    <option value="DONE">{statusLabelDe("DONE")}</option>
+                    <option value="CANCELLED">{statusLabelDe("CANCELLED")}</option>
                   </select>
                 </label>
 

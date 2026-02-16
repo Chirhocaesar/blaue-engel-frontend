@@ -1,0 +1,206 @@
+=== rg: monthly ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/dashboard/page.tsx:52:          href="/monthly"
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:137:        <Link href="/admin/reports/monthly" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+
+=== rg: Monats ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/dashboard/page.tsx:53:          title="Monatsübersicht"
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/dashboard/page.tsx:54:          desc="Deine Monatswerte und erledigte Kilometer."
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/monthly/page.tsx:156:          <h1 className="text-2xl font-bold">Monatsübersicht</h1>
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/monthly/page.tsx:157:          <p className="mt-1 text-sm text-gray-600">Deine Monatswerte.</p>
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:138:          Monatsbericht
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:213:          <h1 className="text-2xl font-bold">Monatsübersicht (Admin)</h1>
+
+=== rg: kilometers ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/monthly/page.tsx:16:  kilometers?: number | null;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/monthly/page.tsx:116:        const val = (a as any).kilometers ?? (a as any).km;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/monthly/page.tsx:135:          typeof (a as any).kilometers === "number"
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/monthly/page.tsx:136:            ? (a as any).kilometers
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:27:  kilometers?: number | null;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:213:        const val = (a as any).kilometers ?? (a as any).km;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:230:        const val = (a as any).kilometers ?? (a as any).km;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:27:  kilometers?: number | null;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:154:        const val = (a as any).kilometers ?? (a as any).km;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:171:        const val = (a as any).kilometers ?? (a as any).km;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:190:          typeof (a as any).kilometers === "number"
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:191:            ? (a as any).kilometers
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/stats/route.ts:12:  kilometers?: number | null;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/stats/route.ts:117:      const val = (a as any).kilometers ?? (a as any).km;
+
+=== rg: DONE ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:331:  const isDone = statusU === "DONE";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:1312:                    <option value="DONE">{statusLabelDe("DONE")}</option>
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/TimeEntriesBox.tsx:142:  const canAdd = assignmentStatus === "CONFIRMED" || assignmentStatus === "DONE";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/TimeEntriesBox.tsx:165:            Bitte zuerst den Einsatz bestätigen (Status: {statusLabelDe("CONFIRMED")}) oder abschließen (Status: {statusLabelDe("DONE")}).
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/EmployeeActions.tsx:6:type Status = "PLANNED" | "ASSIGNED" | "CONFIRMED" | "DONE" | "CANCELLED";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/EmployeeActions.tsx:28:  const signatureAllowed = s === "DONE";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/EmployeeActions.tsx:35:    if (s === "CONFIRMED") return `Bestätigt. Bitte nach Durchführung unterschreiben (Status: ${statusLabelDe("DONE")}).`;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/EmployeeActions.tsx:36:    if (s === "DONE") return "Erledigt. Unterschrift möglich.";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/page.tsx:8:type AssignmentStatus = "PLANNED" | "ASSIGNED" | "CONFIRMED" | "DONE" | "CANCELLED";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/monthly/page.tsx:54:  return String(status || "").toUpperCase() === "DONE";
+/home/deploy/apps/platform/blaue-engel/frontend/src/lib/status.ts:1:export type NormalizedStatus = "ASSIGNED" | "CONFIRMED" | "DONE" | "CANCELLED" | "PLANNED" | "";
+/home/deploy/apps/platform/blaue-engel/frontend/src/lib/status.ts:11:    case "DONE":
+/home/deploy/apps/platform/blaue-engel/frontend/src/lib/status.ts:13:      return "DONE";
+/home/deploy/apps/platform/blaue-engel/frontend/src/lib/status.ts:31:    case "DONE":
+/home/deploy/apps/platform/blaue-engel/frontend/src/lib/status.ts:49:    case "DONE":
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:119:  const doneCount = items.filter((a) => String(a.status || "").toUpperCase() === "DONE").length;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:68:  return String(status || "").toUpperCase() === "DONE";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:65:  return String(status || "").toUpperCase() === "DONE";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:562:    return arr.some((a) => String(a.status || a.state || "").toUpperCase() === "DONE");
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:742:                  <StatusPill status="DONE" className="px-3 py-1 text-sm" />
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/stats/route.ts:53:  return String(status || "").toUpperCase() === "DONE";
+
+=== rg: km-entries ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:415:      const res = await fetch(`/api/me/km-entries?from=${date}&to=${date}&limit=1`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:964:      const res = await fetch(`/api/me/km-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:538:        const res = await fetch(`/api/me/km-entries?from=${kmDate}&to=${kmDate}&limit=1`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:622:      const res = await fetch(`/api/me/km-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/km-entries/route.ts:15:  const res = await fetch(`${API_BASE}/me/km-entries${qs ? `?${qs}` : ""}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/km-entries/route.ts:32:  const res = await fetch(`${API_BASE}/me/km-entries`, {
+
+=== rg: /admin/ ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:297:    if (!empId || !day) return "/admin/corrections";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:298:    return `/admin/corrections?employeeId=${encodeURIComponent(empId)}&date=${encodeURIComponent(day)}&aid=${encodeURIComponent(id)}`;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:441:        fetch("/api/admin/employees", { cache: "no-store" }),
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:507:      const res = await fetch(`/api/admin/assignments/${id}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:544:      const res = await fetch(`/api/admin/assignments/${id}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:1500:                Bitte Admin kontaktieren: <Link href="/admin/corrections" className="underline">Admin → Korrekturen → Tag</Link>.
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:1511:            <Link href="/admin/corrections" className="rounded border px-2 py-1 text-xs">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:1667:            <Link href="/admin/corrections" className="rounded border px-2 py-1 text-xs">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:284:        const res = await fetch("/api/admin/employees", { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:326:          const url = new URL("/api/admin/customers", window.location.origin);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:666:                    href="/admin/assignments/new"
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/assignments/new/AdminAssignmentNewClient.tsx:71:        const empRes = await fetch("/api/admin/employees", { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/assignments/new/AdminAssignmentNewClient.tsx:77:          const url = new URL("/api/admin/customers", window.location.origin);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/assignments/new/AdminAssignmentNewClient.tsx:167:      const endpoint = seriesEnabled ? "/api/admin/assignments/series" : "/api/admin/assignments";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:82:        const res = await fetch("/api/admin/users?includeInactive=1", { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:85:          console.warn("/api/admin/users failed", res.status, json);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:107:          `/api/admin/assignments?start=${ymdLocal(start)}&end=${ymdLocal(end)}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:112:          console.warn("/api/admin/assignments failed", assignmentsRes.status, assignmentsJson);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:79:        const res = await fetch("/api/admin/users?includeInactive=1&limit=1000", { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:82:          console.warn("/api/admin/users failed", res.status, json);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:109:          console.warn("/api/admin/assignments failed", assignmentsRes.status, assignmentsJson);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/page.tsx:10:// 1) Login as admin and open /admin/corrections.
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/page.tsx:13:// 4) curl: GET /api/admin/corrections/day?employeeId=...&date=YYYY-MM-DD
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/employees/new/page.tsx:6:  redirect("/admin/masterdata?tab=employees");
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/CorrectionsClient.tsx:163:      const res = await fetch("/api/admin/employees", { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/CorrectionsClient.tsx:180:        `/api/admin/corrections/day?employeeId=${encodeURIComponent(employeeId)}&date=${encodeURIComponent(dateIso)}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/CorrectionsClient.tsx:282:      const res = await fetch(`/api/admin/time-adjustments`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/CorrectionsClient.tsx:317:      const res = await fetch(`/api/admin/km-adjustments`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/employees/page.tsx:6:  redirect("/admin/masterdata?tab=employees");
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/people/page.tsx:6:  redirect("/admin/masterdata");
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:382:      const res = await fetch(`/api/admin/users${qs}`, { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:399:      const res = await fetch(`/api/admin/customers?${qs.toString()}`, { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:488:    const res = await fetch(`/api/admin/customers/${customerId}`, { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:503:        `/api/admin/customers/${targetId}/emergency-contacts`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:526:      const res = await fetch("/api/admin/users", {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:560:      const res = await fetch("/api/admin/customers", {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:623:      const res = await fetch(`/api/admin/customers/${editingCustomer.id}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:666:        `/api/admin/customers/${targetId}/emergency-contacts`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:715:        `/api/admin/customers/${targetId}/emergency-contacts/${contactId}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:743:        `/api/admin/customers/${targetId}/emergency-contacts/${contactId}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:780:      const res = await fetch(`/api/admin/users/${resetUser.id}/password`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:826:      const res = await fetch(`/api/admin/users/${editingEmployee.id}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:850:      const res = await fetch(`/api/admin/users/${user.id}/deactivate`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:875:      const res = await fetch(`/api/admin/users/${user.id}/reactivate`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:896:      const res = await fetch(`/api/admin/customers/${customer.id}/deactivate`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:921:      const res = await fetch(`/api/admin/customers/${customer.id}/reactivate`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:1214:                    onClick={() => router.push(`/admin/customers/${c.id}`)}
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:1218:                        router.push(`/admin/customers/${c.id}`);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:1303:                            href={`/admin/customers/${c.id}`}
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:81:      const usersRes = await fetch(`${baseUrl}/api/admin/users`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:134:        <Link href="/admin/reports/week" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:137:        <Link href="/admin/reports/monthly" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:140:        <Link href="/admin/masterdata" className="rounded-xl border px-4 py-2 text-left">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:144:        <Link href="/admin/assignments/new" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:147:        <Link href="/admin/corrections" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:224:                          <Link className="underline" href={`/admin/corrections?assignmentId=${encodeURIComponent(a.id)}`}>
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/page.tsx:6:  redirect("/admin/masterdata?tab=customers");
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/new/page.tsx:6:  redirect("/admin/masterdata?tab=customers");
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/CustomerDetailClient.tsx:90:    const res = await fetch(`/api/admin/customers/${id}`, { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/CustomerDetailClient.tsx:103:      const url = new URL("/api/admin/customers", window.location.origin);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/CustomerDetailClient.tsx:127:      const res = await fetch(`/api/admin/customers/${id}/emergency-contacts`, { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/CustomerDetailClient.tsx:143:      const res = await fetch(`/api/admin/customers/${id}/stats`, { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/CustomerDetailClient.tsx:193:            <Link href="/admin/masterdata?tab=customers" className="rounded border px-3 py-2 text-sm inline-block">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/CustomerDetailClient.tsx:222:          <Link href="/admin/masterdata?tab=customers" className="rounded border px-3 py-2 text-sm hover:bg-gray-50">
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/customers/[customerId]/emergency-contacts/route.ts:41:    ? `/admin/customers/${encoded}/emergency-contacts`
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/customers/[customerId]/emergency-contacts/route.ts:77:  const path = `/admin/customers/${encodeURIComponent(customerId)}/emergency-contacts`;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/emergency-contacts/[contactId]/route.ts:52:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts/${encodeURIComponent(contactId)}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/emergency-contacts/[contactId]/route.ts:78:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts/${encodeURIComponent(contactId)}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/users/[id]/password/route.ts:51:  const upstreamRes = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(id)}/password`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/emergency-contacts/route.ts:51:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/emergency-contacts/route.ts:73:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/emergency-contacts`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/users/[id]/deactivate/route.ts:51:    `${API_BASE}/admin/users/${encodeURIComponent(id)}/deactivate`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/users/[id]/route.ts:51:  const upstreamRes = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(id)}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/deactivate/route.ts:51:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/deactivate`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/route.ts:44:  const upstreamUrl = new URL(`${API_BASE}/admin/customers`);
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/route.ts:71:  const upstreamRes = await fetch(`${API_BASE}/admin/customers`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/users/[id]/reactivate/route.ts:51:    `${API_BASE}/admin/users/${encodeURIComponent(id)}/reactivate`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/employees/route.ts:36:  const upstreamRes = await fetch(`${API_BASE}/admin/users?role=EMPLOYEE`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/reactivate/route.ts:51:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}/reactivate`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/time-adjustments/route.ts:40:    `${API_BASE}/admin/time-adjustments${qs ? `?${qs}` : ""}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/time-adjustments/route.ts:57:  const upstreamRes = await fetch(`${API_BASE}/admin/time-adjustments`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/route.ts:51:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/customers/[id]/route.ts:73:    `${API_BASE}/admin/customers/${encodeURIComponent(id)}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/km-adjustments/route.ts:40:    `${API_BASE}/admin/km-adjustments${qs ? `?${qs}` : ""}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/km-adjustments/route.ts:57:  const upstreamRes = await fetch(`${API_BASE}/admin/km-adjustments`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/corrections/day/route.ts:40:    `${API_BASE}/admin/corrections/day${qs ? `?${qs}` : ""}`,
+
+=== rg: /me/ ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:82:  // Day-level KM entry returned by backend on /me/assignments/:id and /assignments/:id
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:389:      const res = await fetch(`/api/me/time-entries?${qs.toString()}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:415:      const res = await fetch(`/api/me/km-entries?from=${date}&to=${date}&limit=1`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:699:      const res = await fetch(`/api/me/time-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:889:      const res = await fetch(`/api/me/assignments/${id}/signatures`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:910:      const res = await fetch(`/api/me/assignments/${id}/ack`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:929:      const res = await fetch(`/api/me/assignments/${id}/done`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:964:      const res = await fetch(`/api/me/km-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/TimeEntriesBox.tsx:62:        `/api/me/time-entries?assignmentId=${encodeURIComponent(assignmentId)}&limit=50`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/TimeEntriesBox.tsx:105:      const res = await fetch(`/api/me/time-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/TimeEntriesBox.tsx:127:      const res = await fetch(`/api/me/time-entries?id=${encodeURIComponent(id)}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/EmployeeActions.tsx:163:    await postJson(`/api/me/assignments/${assignmentId}/ack`, { action: "CONFIRM" }, "confirm");
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/EmployeeActions.tsx:168:      `/api/me/assignments/${assignmentId}/ack`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/EmployeeActions.tsx:185:      `/api/me/assignments/${assignmentId}/signatures`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/page.tsx:67:  const basePath = me.role === "ADMIN" ? "/assignments" : "/me/assignments";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:515:      const res = await fetch("/api/me/assignments", {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:538:        const res = await fetch(`/api/me/km-entries?from=${kmDate}&to=${kmDate}&limit=1`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:622:      const res = await fetch(`/api/me/km-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/assignments/[id]/route.ts:37:      : `/me/assignments/${encodeURIComponent(id)}`;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/km-entries/route.ts:15:  const res = await fetch(`${API_BASE}/me/km-entries${qs ? `?${qs}` : ""}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/km-entries/route.ts:32:  const res = await fetch(`${API_BASE}/me/km-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/customers/[customerId]/emergency-contacts/route.ts:42:    : `/me/customers/${encoded}/emergency-contacts`;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/customers/route.ts:44:      : `${API_BASE}/me/customers${qs ? `?${qs}` : ""}`;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/assignments/[id]/done/route.ts:20:  const res = await fetch(`${API_BASE}/me/assignments/${id}/done`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/CorrectionsClient.tsx:226:        const res = await fetch(`/api/me/assignments/${qAssignmentId}`, { cache: "no-store" });
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/assignments/[id]/ack/route.ts:22:  const res = await fetch(`${API_BASE}/me/assignments/${id}/ack`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/assignments/[id]/signatures/route.ts:28:  const upstreamRes = await fetch(`${API_BASE}/me/assignments/${id}/signatures`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/assignments/route.ts:20:  const upstreamRes = await fetch(`${API_BASE}/me/assignments${qs ? `?${qs}` : ""}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/assignments/route.ts:39:  const upstreamRes = await fetch(`${API_BASE}/me/assignments`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/assignments/[id]/route.ts:31:  const path = me.role === "ADMIN" ? `/assignments/${id}` : `/me/assignments/${id}`;
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/customers/route.ts:18:  const upstreamRes = await fetch(`${API_BASE}/me/customers${qs ? `?${qs}` : ""}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/time-entries/route.ts:19:    `${API_BASE}/me/time-entries${qs ? `?${qs}` : ""}`,
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/time-entries/route.ts:40:  const upstreamRes = await fetch(`${API_BASE}/me/time-entries`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/me/time-entries/route.ts:69:  const upstreamRes = await fetch(`${API_BASE}/me/time-entries/${id}`, {
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/planner/assignments/route.ts:29:  const path = me.role === "ADMIN" ? "/assignments" : "/me/assignments";
+
+=== rg: force-dynamic ===
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/AssignmentDetailClient.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/assignments/[id]/page.tsx:4:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/assignments/[id]/route.ts:4:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/assignments/new/page.tsx:6:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/corrections/page.tsx:7:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/customers/[customerId]/emergency-contacts/route.ts:4:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/new/page.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/planner/page.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/page.tsx:8:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/CustomerDetailClient.tsx:7:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/[id]/page.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/customers/page.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/week/page.tsx:8:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/reports/monthly/page.tsx:8:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/people/page.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/employees/new/page.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/page.tsx:4:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/employees/page.tsx:3:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/admin/masterdata/MasterdataClient.tsx:8:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/planner/assignments/route.ts:4:export const dynamic = "force-dynamic";
+/home/deploy/apps/platform/blaue-engel/frontend/src/app/api/admin/assignments/series/route.ts:4:export const dynamic = "force-dynamic";

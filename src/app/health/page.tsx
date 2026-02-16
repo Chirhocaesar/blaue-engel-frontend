@@ -4,8 +4,8 @@ export default async function HealthPage() {
   if (!baseUrl) {
     return (
       <main style={{ padding: 16 }}>
-        <h1>Health</h1>
-        <p>Missing NEXT_PUBLIC_API_BASE_URL</p>
+        <h1>Health-Check</h1>
+        <p>NEXT_PUBLIC_API_BASE_URL fehlt</p>
       </main>
     );
   }
@@ -21,20 +21,20 @@ export default async function HealthPage() {
     const healthRes = await fetch(`${baseUrl}/health`, { cache: "no-store" });
     healthData = await healthRes.json();
   } catch (e: any) {
-    error = e?.message ?? "Unknown error";
+    error = e?.message ?? "Unbekannter Fehler";
   }
 
   return (
     <main style={{ padding: 16, fontFamily: "system-ui" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700 }}>
-        Blaue Engel – Frontend API Check
+        Blaue Engel – Frontend-API-Pruefung
       </h1>
 
-      <p>API Base URL: <code>{baseUrl}</code></p>
+      <p>API-Basis-URL: <code>{baseUrl}</code></p>
 
       {error && (
         <p style={{ color: "crimson", marginTop: 12 }}>
-          Error: {error}
+          Fehler: {error}
         </p>
       )}
 

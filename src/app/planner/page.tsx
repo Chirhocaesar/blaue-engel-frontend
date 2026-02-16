@@ -107,6 +107,8 @@ type Assignment = {
     phone?: string;
   };
   customerName?: string;
+  employee?: { id?: string | null; fullName?: string | null; email?: string | null } | null;
+  employeeId?: string | null;
   status?: any;
   state?: any;
 };
@@ -114,6 +116,18 @@ type Assignment = {
 type CustomerOption = {
   id: string;
   label: string;
+};
+
+type EmployeeOption = {
+  id: string;
+  label: string;
+};
+
+type EmployeeMinimal = {
+  id: string;
+  email?: string | null;
+  fullName?: string | null;
+  role?: string | null;
 };
 
 type CustomerMinimal = {
@@ -131,6 +145,27 @@ function buildCustomerOptions(assignments: Assignment[]) {
     const address = a.customer?.address || "";
     const label = address ? `${name} - ${address}` : name;
     if (!map.has(id)) map.set(id, { id, label });
+  });
+  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function buildEmployeeOptions(assignments: Assignment[]) {
+  const map = new Map<string, EmployeeOption>();
+  assignments.forEach((a) => {
+    const id = a.employee?.id ?? (a as any).employeeId;
+    if (!id) return;
+    const label = a.employee?.fullName || a.employee?.email || id;
+    if (!map.has(id)) map.set(id, { id, label });
+  });
+  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function buildEmployeeOptionsFromEmployees(employees: EmployeeMinimal[]) {
+  const map = new Map<string, EmployeeOption>();
+  employees.forEach((e) => {
+    if (!e?.id) return;
+    const label = e.fullName || e.email || e.id;
+    if (!map.has(e.id)) map.set(e.id, { id: e.id, label });
   });
   return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
@@ -173,6 +208,8 @@ export default function PlannerPage() {
   const [plannerError, setPlannerError] = useState<string>("");
   const [reloadKey, setReloadKey] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [employeeFilterId, setEmployeeFilterId] = useState("");
+  const [employeeOptionsAll, setEmployeeOptionsAll] = useState<EmployeeOption[]>([]);
   const showNativeInputs = useNativePickers();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -181,9 +218,11 @@ export default function PlannerPage() {
   const [createStartTime, setCreateStartTime] = useState("");
   const [createEndTime, setCreateEndTime] = useState("");
   const [createNotes, setCreateNotes] = useState("");
+  const [createCustomerQuery, setCreateCustomerQuery] = useState("");
   const [createRecurring, setCreateRecurring] = useState(false);
   const [createFrequency, setCreateFrequency] = useState<"WEEKLY" | "BIWEEKLY">("WEEKLY");
   const [createRepeatUntil, setCreateRepeatUntil] = useState("");
+  const [createRepeatUntilTouched, setCreateRepeatUntilTouched] = useState(false);
   const [createSaving, setCreateSaving] = useState(false);
   const [createError, setCreateError] = useState("");
   const [createSaved, setCreateSaved] = useState(false);
@@ -206,9 +245,22 @@ export default function PlannerPage() {
   const [kmSavedAt, setKmSavedAt] = useState<number | null>(null);
   const [kmError, setKmError] = useState<string | null>(null);
 
+  const visibleAssignmentsByDate = useMemo(() => {
+    if (!isAdmin || !employeeFilterId) return assignmentsByDate;
+    const filtered: Record<string, Assignment[]> = {};
+    Object.entries(assignmentsByDate).forEach(([key, items]) => {
+      const next = items.filter((a) => {
+        const id = a.employee?.id ?? (a as any).employeeId;
+        return id === employeeFilterId;
+      });
+      if (next.length > 0) filtered[key] = next;
+    });
+    return filtered;
+  }, [assignmentsByDate, employeeFilterId, isAdmin]);
+
   const assignmentsCount = useMemo(
-    () => Object.values(assignmentsByDate).reduce((sum, arr) => sum + arr.length, 0),
-    [assignmentsByDate]
+    () => Object.values(visibleAssignmentsByDate).reduce((sum, arr) => sum + arr.length, 0),
+    [visibleAssignmentsByDate]
   );
 
   const customerOptions = useMemo(() => {
@@ -217,6 +269,37 @@ export default function PlannerPage() {
     return buildCustomerOptions(all);
   }, [assignmentsByDate]);
 
+  const employeeOptions = useMemo(() => {
+    const all: Assignment[] = [];
+    Object.values(assignmentsByDate).forEach((arr) => all.push(...arr));
+    return buildEmployeeOptions(all);
+  }, [assignmentsByDate]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/employees", { cache: "no-store" });
+        const raw = res.ok ? await res.json() : [];
+        const items: EmployeeMinimal[] = Array.isArray(raw) ? raw : raw?.items ?? [];
+        const filtered = items.filter((u) => !u.role || u.role === "EMPLOYEE");
+        if (!cancelled) {
+          setEmployeeOptionsAll(buildEmployeeOptionsFromEmployees(filtered));
+        }
+      } catch {
+        if (!cancelled) {
+          setEmployeeOptionsAll([]);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
+
   async function openCreateModal() {
     const baseDate = gridDays?.[0] ?? new Date();
     const dateIso = dayKeyLocal(baseDate);
@@ -224,9 +307,11 @@ export default function PlannerPage() {
     setCreateStartTime("09:00");
     setCreateEndTime("12:00");
     setCreateNotes("");
+    setCreateCustomerQuery("");
     setCreateRecurring(false);
     setCreateFrequency("WEEKLY");
     setCreateRepeatUntil(dayKeyLocal(addDays(baseDate, 14)));
+    setCreateRepeatUntilTouched(false);
     setCreateError("");
     setCreateCustomerId("");
     setCreateCustomerOptions(customerOptions);
@@ -234,13 +319,32 @@ export default function PlannerPage() {
     setShowCreateModal(true);
 
     try {
-      const res = await fetch("/api/customers", { cache: "no-store" });
-      const raw = res.ok ? await res.json() : [];
-      const items: CustomerMinimal[] = Array.isArray(raw) ? raw : raw?.items ?? [];
-      if (res.ok) {
-        setCreateCustomerOptions(buildCustomerOptionsFromCustomers(items));
+      if (isAdmin) {
+        let cursor: string | null = null;
+        let all: CustomerMinimal[] = [];
+        for (let i = 0; i < 50; i += 1) {
+          const url = new URL("/api/admin/customers", window.location.origin);
+          url.searchParams.set("limit", "50");
+          if (cursor) url.searchParams.set("cursor", cursor);
+          const res = await fetch(url.toString(), { cache: "no-store" });
+          const raw = res.ok ? await res.json() : {};
+          const items: CustomerMinimal[] = Array.isArray(raw) ? raw : raw?.items ?? [];
+          if (!res.ok) break;
+          all = all.concat(items);
+          const nextCursor = raw?.nextCursor ?? null;
+          if (!nextCursor || items.length === 0) break;
+          cursor = nextCursor;
+        }
+        setCreateCustomerOptions(buildCustomerOptionsFromCustomers(all));
       } else {
-        setCreateCustomerOptions(customerOptions);
+        const res = await fetch("/api/customers?limit=1000", { cache: "no-store" });
+        const raw = res.ok ? await res.json() : [];
+        const items: CustomerMinimal[] = Array.isArray(raw) ? raw : raw?.items ?? [];
+        if (res.ok) {
+          setCreateCustomerOptions(buildCustomerOptionsFromCustomers(items));
+        } else {
+          setCreateCustomerOptions(customerOptions);
+        }
       }
     } catch {
       setCreateCustomerOptions(customerOptions);
@@ -253,6 +357,12 @@ export default function PlannerPage() {
     setShowCreateModal(false);
     setCreateError("");
   }
+
+  const filteredCreateCustomerOptions = useMemo(() => {
+    const q = createCustomerQuery.trim().toLowerCase();
+    if (!q) return createCustomerOptions;
+    return createCustomerOptions.filter((c) => c.label.toLowerCase().includes(q));
+  }, [createCustomerOptions, createCustomerQuery]);
 
   useEffect(() => {
     const next = isoToDeDate(kmDate);
@@ -386,7 +496,7 @@ export default function PlannerPage() {
       }
       const rangeDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       if (rangeDays > 90) {
-        setCreateError("Serienzeitraum ist auf 90 Tage begrenzt.");
+        setCreateError("Serienzeitraum ist auf 3 Monate begrenzt.");
         return;
       }
       const intervalDays = createFrequency === "BIWEEKLY" ? 14 : 7;
@@ -595,6 +705,35 @@ export default function PlannerPage() {
               </button>
             </div>
 
+            {isAdmin ? (
+              <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+                <label className="grid gap-1 text-xs text-gray-600">
+                  <span>Mitarbeiter</span>
+                  <select
+                    value={employeeFilterId}
+                    onChange={(e) => setEmployeeFilterId(e.target.value)}
+                    className="min-h-[36px] rounded border px-2 py-1 text-sm"
+                  >
+                    <option value="">Alle Mitarbeiter</option>
+                    {(employeeOptionsAll.length > 0 ? employeeOptionsAll : employeeOptions).map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {employeeFilterId ? (
+                  <button
+                    type="button"
+                    className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+                    onClick={() => setEmployeeFilterId("")}
+                  >
+                    Filter zurücksetzen
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="text-xs text-gray-500">Status</div>
               <div className="flex flex-wrap justify-center gap-2">
@@ -704,7 +843,7 @@ export default function PlannerPage() {
 
                 const iso = dayKeyLocal(d);
                 const holidayLabel = getBwHolidayLabelByIsoDate(iso);
-                const dayAssignments = assignmentsByDate[iso] || [];
+                const dayAssignments = visibleAssignmentsByDate[iso] || [];
 
                 return (
                   <div
@@ -770,99 +909,125 @@ export default function PlannerPage() {
             </div>
           </>
         ) : viewMode === "week" ? (
-          <div className="flex overflow-y-auto w-full" style={{ maxHeight: 560 }}>
-            <div className="w-12 sm:w-16 shrink-0 pr-2">
-              <div className="relative" style={{ height: totalHeight }}>
-                {Array.from({ length: totalRows + 1 }).map((_, idx) => {
-                  const minutes = START_HOUR * 60 + idx * 30;
-                  const hour = Math.floor(minutes / 60);
-                  const minute = minutes % 60;
-                  const label = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+          <div className="relative w-full overflow-auto scroll-smooth" style={{ maxHeight: 560 }}>
+            <div className="sticky top-0 z-20 flex border-b bg-white">
+              <div className="w-12 sm:w-16 shrink-0 pr-2 bg-white" />
+              <div className="grid grid-cols-7 gap-px flex-1 bg-gray-200">
+                {gridDays.map((d) => {
+                  const iso = dayKeyLocal(d);
+                  const holidayLabel = getBwHolidayLabelByIsoDate(iso);
                   return (
-                    <div
-                      key={idx}
-                      className="absolute left-0 text-[10px] text-gray-500"
-                      style={{ top: idx * ROW_H - 8, height: ROW_H }}
-                    >
-                      {label}
+                    <div key={iso} className="bg-white px-2 py-1 text-sm flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold">{formatWeekdayShort(d)}</div>
+                        <div className="text-xs text-gray-600">{d.getDate()}</div>
+                      </div>
+                      {holidayLabel ? (
+                        <div className="text-[10px] rounded-full border px-2 py-0.5" title={holidayLabel}>
+                          Feiertag
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <div className="flex-1">
-              <div className="grid grid-cols-7 gap-px bg-gray-200" style={{ height: totalHeight }}>
-                {gridDays.map((d) => {
-                  const iso = dayKeyLocal(d);
-                  const holidayLabel = getBwHolidayLabelByIsoDate(iso);
-                  const dayAssignments = assignmentsByDate[iso] || [];
+            <div className="flex w-full">
+              <div className="w-12 sm:w-16 shrink-0 pr-2 sticky left-0 z-10 bg-white">
+                <div className="relative" style={{ height: totalHeight }}>
+                  {Array.from({ length: totalRows + 1 }).map((_, idx) => {
+                    const minutes = START_HOUR * 60 + idx * 30;
+                    const hour = Math.floor(minutes / 60);
+                    const minute = minutes % 60;
+                    const label = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                    return (
+                      <div
+                        key={idx}
+                        className="absolute left-0 text-[10px] text-gray-500"
+                        style={{ top: idx * ROW_H - 8, height: ROW_H }}
+                      >
+                        {label}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  return (
-                    <div key={iso} className="relative bg-white">
-                      <div className="sticky top-0 z-10 bg-white border-b px-2 py-1 text-sm flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold">{formatWeekdayShort(d)}</div>
-                          <div className="text-xs text-gray-600">{d.getDate()}</div>
+              <div className="flex-1">
+                <div className="grid grid-cols-7 gap-px bg-gray-200" style={{ height: totalHeight }}>
+                  {gridDays.map((d) => {
+                    const iso = dayKeyLocal(d);
+                    const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+                    const dayAssignments = visibleAssignmentsByDate[iso] || [];
+
+                    const now = new Date();
+                    const todayIso = dayKeyLocal(now);
+                    const nowMinutes = minutesSinceStartOfDayLocal(now);
+                    const nowVisible = nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
+                    const nowTop = ((nowMinutes - START_HOUR * 60) / 30) * ROW_H;
+
+                    return (
+                      <div key={iso} className="relative bg-white">
+                        <div className="relative" style={{ height: totalHeight }}>
+                          {Array.from({ length: totalRows + 1 }).map((_, ri) => (
+                            <div
+                              key={ri}
+                              className="absolute left-0 right-0 bg-gray-50"
+                              style={{ top: ri * ROW_H - 1, height: 1 }}
+                            />
+                          ))}
+
+                          {iso === todayIso && nowVisible ? (
+                            <div
+                              className="absolute left-0 right-0 h-px bg-gray-400/70 pointer-events-none z-10"
+                              style={{ top: nowTop }}
+                            />
+                          ) : null}
+
+                          {dayAssignments.map((a) => {
+                            const startDate = new Date(a.startAt);
+                            const endDate = new Date(a.endAt);
+
+                            const startMinutes = minutesSinceStartOfDayLocal(startDate);
+                            const endMinutes = minutesSinceStartOfDayLocal(endDate);
+
+                            const visibleStart = Math.max(startMinutes, START_HOUR * 60);
+                            const visibleEnd = Math.min(endMinutes, END_HOUR * 60);
+                            if (visibleEnd <= visibleStart) return null;
+
+                            const topPx = ((visibleStart - START_HOUR * 60) / 30) * ROW_H;
+                            const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
+
+                            const status = getStatusString(a);
+                            const colorCls = statusPillClass(status);
+
+                            const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+                            const customerAddressLine = (a as any).customerAddressLine || (a as any).address || (a.customer as any)?.address || "";
+
+                            const startLabel = formatTime(startDate);
+                            const endLabel = formatTime(endDate);
+
+                            return (
+                              <Link
+                                key={a.id}
+                                href={`/assignments/${a.id}`}
+                                className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-0.5 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
+                                style={{ top: topPx, height: Math.max(42, heightPx) }}
+                                title={`${startLabel}–${endLabel} ${customerName}`}
+                              >
+                                <div className="truncate">{`${startLabel}–${endLabel} ${customerName}`}</div>
+                                {customerAddressLine ? (
+                                  <div className="truncate text-[10px] text-gray-600">{customerAddressLine}</div>
+                                ) : null}
+                              </Link>
+                            );
+                          })}
                         </div>
-                        {holidayLabel ? (
-                          <div className="text-[10px] rounded-full border px-2 py-0.5" title={holidayLabel}>
-                            Feiertag
-                          </div>
-                        ) : null}
                       </div>
-
-                      <div className="relative" style={{ height: totalHeight }}>
-                        {Array.from({ length: totalRows + 1 }).map((_, ri) => (
-                          <div
-                            key={ri}
-                            className="absolute left-0 right-0 bg-gray-50"
-                            style={{ top: ri * ROW_H - 1, height: 1 }}
-                          />
-                        ))}
-
-                        {dayAssignments.map((a) => {
-                          const startDate = new Date(a.startAt);
-                          const endDate = new Date(a.endAt);
-
-                          const startMinutes = minutesSinceStartOfDayLocal(startDate);
-                          const endMinutes = minutesSinceStartOfDayLocal(endDate);
-
-                          const visibleStart = Math.max(startMinutes, START_HOUR * 60);
-                          const visibleEnd = Math.min(endMinutes, END_HOUR * 60);
-                          if (visibleEnd <= visibleStart) return null;
-
-                          const topPx = ((visibleStart - START_HOUR * 60) / 30) * ROW_H;
-                          const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
-
-                          const status = getStatusString(a);
-                          const colorCls = statusPillClass(status);
-
-                          const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
-                          const customerAddressLine = (a as any).customerAddressLine || (a as any).address || (a.customer as any)?.address || "";
-
-                          const startLabel = formatTime(startDate);
-                          const endLabel = formatTime(endDate);
-
-                          return (
-                            <Link
-                              key={a.id}
-                              href={`/assignments/${a.id}`}
-                              className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-0.5 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
-                              style={{ top: topPx, height: Math.max(42, heightPx) }}
-                              title={`${startLabel}–${endLabel} ${customerName}`}
-                            >
-                              <div className="truncate">{`${startLabel}–${endLabel} ${customerName}`}</div>
-                              {customerAddressLine ? (
-                                <div className="truncate text-[10px] text-gray-600">{customerAddressLine}</div>
-                              ) : null}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -893,7 +1058,7 @@ export default function PlannerPage() {
                 {gridDays.map((d) => {
                   const iso = dayKeyLocal(d);
                   const holidayLabel = getBwHolidayLabelByIsoDate(iso);
-                  const dayAssignments = assignmentsByDate[iso] || [];
+                  const dayAssignments = visibleAssignmentsByDate[iso] || [];
 
                   return (
                     <div key={iso} className="relative bg-white">
@@ -991,6 +1156,14 @@ export default function PlannerPage() {
             <form className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={handleCreateAssignment}>
               <label className="grid gap-1 sm:col-span-2">
                 <span className="text-xs text-gray-600">Kunde</span>
+                <input
+                  type="text"
+                  value={createCustomerQuery}
+                  onChange={(e) => setCreateCustomerQuery(e.target.value)}
+                  placeholder="Kunden suchen…"
+                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                  disabled={createSaving || createCustomerLoading}
+                />
                 <select
                   value={createCustomerId}
                   onChange={(e) => setCreateCustomerId(e.target.value)}
@@ -998,7 +1171,7 @@ export default function PlannerPage() {
                   disabled={createSaving || createCustomerOptions.length === 0 || createCustomerLoading}
                 >
                   <option value="">Bitte wählen…</option>
-                  {createCustomerOptions.map((c) => (
+                  {filteredCreateCustomerOptions.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.label}
                     </option>
@@ -1081,7 +1254,10 @@ export default function PlannerPage() {
                     <input
                       type="date"
                       value={createRepeatUntil}
-                      onChange={(e) => setCreateRepeatUntil(e.target.value)}
+                      onChange={(e) => {
+                        setCreateRepeatUntilTouched(true);
+                        setCreateRepeatUntil(e.target.value);
+                      }}
                       className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                       disabled={createSaving}
                     />

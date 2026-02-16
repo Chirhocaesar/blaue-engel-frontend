@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatDate, formatMinutes } from "@/lib/format";
 import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
+import { statusLabelDe } from "@/lib/status";
 
 type TimeEntry = {
   id: string;
@@ -161,7 +162,7 @@ export function TimeEntriesBox({
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #eee", borderRadius: 12 }}>
           <div style={{ fontWeight: 700 }}>Zeiteintrag aktuell nicht möglich</div>
           <div style={{ marginTop: 6, fontSize: 13, opacity: 0.75 }}>
-            Bitte zuerst den Einsatz bestätigen (Status: CONFIRMED) oder abschließen (Status: DONE).
+            Bitte zuerst den Einsatz bestätigen (Status: {statusLabelDe("CONFIRMED")}) oder abschließen (Status: {statusLabelDe("DONE")}).
           </div>
         </div>
       ) : (

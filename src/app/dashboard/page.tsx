@@ -49,14 +49,9 @@ export default async function DashboardPage() {
           desc="Deine geplanten Einsätze ansehen und bestätigen."
         />
         <CardLink
-          href="/time-entries"
-          title="Zeiterfassung"
-          desc="Arbeitszeiten eintragen (monatlich)."
-        />
-        <CardLink
-          href="/km-entries"
-          title="KM"
-          desc="Kilometer eintragen (monatlich)."
+          href="/monthly"
+          title="Monatsübersicht"
+          desc="Deine Monatswerte und erledigte Kilometer."
         />
       </div>
 

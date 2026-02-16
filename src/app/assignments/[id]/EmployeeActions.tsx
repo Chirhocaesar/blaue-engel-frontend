@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { statusLabelDe } from "@/lib/status";
 
 type Status = "PLANNED" | "ASSIGNED" | "CONFIRMED" | "DONE" | "CANCELLED";
 
@@ -31,9 +32,9 @@ export function EmployeeActions({
     if (s === "CANCELLED") return "Diese Leistung wurde storniert. Keine Aktionen möglich.";
     if (s === "PLANNED") return "Noch nicht zugewiesen.";
     if (s === "ASSIGNED") return "Bitte bestätigen oder ablehnen.";
-    if (s === "CONFIRMED") return "Bestätigt. Bitte nach Durchführung unterschreiben (Status DONE).";
+    if (s === "CONFIRMED") return `Bestätigt. Bitte nach Durchführung unterschreiben (Status: ${statusLabelDe("DONE")}).`;
     if (s === "DONE") return "Erledigt. Unterschrift möglich.";
-    return `Status: ${String(status)}`;
+    return `Status: ${statusLabelDe(status)}`;
   }, [s, status]);
 
   useEffect(() => {
@@ -148,11 +149,11 @@ export function EmployeeActions({
       });
 
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message ?? `Request failed (${res.status})`);
+      if (!res.ok) throw new Error(data?.message ?? `Anfrage fehlgeschlagen (${res.status})`);
 
       window.location.reload();
     } catch (e: any) {
-      setError(e?.message ?? "Something went wrong");
+      setError(e?.message ?? "Etwas ist schiefgelaufen");
     } finally {
       setBusy(null);
     }

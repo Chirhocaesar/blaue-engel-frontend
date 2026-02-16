@@ -1,0 +1,188 @@
+=== git rev-parse HEAD ===
+c1a815e381596b4141f058be1d37099d6d0f46f8
+
+=== git status ===
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/app/admin/assignments/new/AdminAssignmentNewClient.tsx
+	modified:   src/app/admin/customers/[id]/CustomerDetailClient.tsx
+	modified:   src/app/admin/masterdata/MasterdataClient.tsx
+	modified:   src/app/admin/page.tsx
+	modified:   src/app/api/admin/assignments/[id]/route.ts
+	modified:   src/app/api/admin/assignments/route.ts
+	modified:   src/app/api/admin/assignments/series/route.ts
+	modified:   src/app/api/admin/corrections/day/route.ts
+	modified:   src/app/api/admin/customers/[id]/deactivate/route.ts
+	modified:   src/app/api/admin/customers/[id]/emergency-contacts/[contactId]/route.ts
+	modified:   src/app/api/admin/customers/[id]/emergency-contacts/route.ts
+	modified:   src/app/api/admin/customers/[id]/reactivate/route.ts
+	modified:   src/app/api/admin/customers/[id]/route.ts
+	modified:   src/app/api/admin/customers/route.ts
+	modified:   src/app/api/admin/employees/route.ts
+	modified:   src/app/api/admin/km-adjustments/route.ts
+	modified:   src/app/api/admin/time-adjustments/route.ts
+	modified:   src/app/api/admin/users/[id]/deactivate/route.ts
+	modified:   src/app/api/admin/users/[id]/password/route.ts
+	modified:   src/app/api/admin/users/[id]/reactivate/route.ts
+	modified:   src/app/api/admin/users/[id]/route.ts
+	modified:   src/app/api/admin/users/route.ts
+	modified:   src/app/api/assignments/[id]/route.ts
+	modified:   src/app/api/assignments/[id]/signatures/route.ts
+	modified:   src/app/api/auth/login/route.ts
+	modified:   src/app/api/customers/[customerId]/emergency-contacts/route.ts
+	modified:   src/app/api/customers/route.ts
+	modified:   src/app/api/me/assignments/[id]/ack/route.ts
+	modified:   src/app/api/me/assignments/[id]/done/route.ts
+	modified:   src/app/api/me/assignments/[id]/route.ts
+	modified:   src/app/api/me/assignments/[id]/signatures/route.ts
+	modified:   src/app/api/me/assignments/route.ts
+	modified:   src/app/api/me/customers/route.ts
+	modified:   src/app/api/me/km-entries/route.ts
+	modified:   src/app/api/me/time-entries/route.ts
+	modified:   src/app/api/planner/assignments/route.ts
+	modified:   src/app/api/users/me/route.ts
+	modified:   src/app/assignments/[id]/AssignmentDetailClient.tsx
+	modified:   src/app/assignments/[id]/EmployeeActions.tsx
+	modified:   src/app/assignments/[id]/TimeEntriesBox.tsx
+	modified:   src/app/dashboard/page.tsx
+	modified:   src/app/health/page.tsx
+	modified:   src/app/login/page.tsx
+	modified:   src/app/planner/page.tsx
+	modified:   src/lib/api.ts
+	modified:   src/lib/useNativePickers.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	diagnostics/
+	scripts/
+	src/app/admin/reports/
+	src/app/api/admin/customers/[id]/stats/
+	src/app/monthly/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+=== git log -n 20 ===
+commit c1a815e381596b4141f058be1d37099d6d0f46f8
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sun Feb 15 11:27:37 2026 +0000
+
+    feat: add admin customer details page
+
+commit 3b44a2d2ba2d29b20cb42119ee12a61c51c2f753
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sun Feb 15 10:15:50 2026 +0000
+
+    refactor: proxy admin routes to non-admin backend endpoints
+
+commit a64e955ab8dc8df7f38d48f0710bf29d52257bea
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sun Feb 15 10:03:02 2026 +0000
+
+    refactor: proxy admin routes to non-admin backend endpoints
+
+commit 30c1a3cc4e8460d09adf1446f0e5ad5f9a8c75bc
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sun Feb 15 09:51:29 2026 +0000
+
+    fix: admin customers proxy to /customers
+
+commit dc921badc87d4910da5607993f4a39865aedda73
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sun Feb 15 08:56:26 2026 +0000
+
+    fix: customer smart proxy + masterdata activation toggles
+
+commit 2c02e4b5f2e9d3d66e7a268c8f952f9f8249a590
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 17:46:58 2026 +0000
+
+    fix: call loadAssignment without args
+
+commit a9e81c856d156881565b6d475ce64636266c7557
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 17:40:47 2026 +0000
+
+    fix(api): add missing assignment + emergency contact proxies
+
+commit 2d5acfe8f4edac631d18e2d64a18923bbfa42ae5
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 15:38:59 2026 +0000
+
+    fix(planner): map start/end to ISO from/to
+
+commit c1771fd9c4a3a093960c48b6551c77f4054c4f30
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 15:24:01 2026 +0000
+
+    fix(ui): keep planner view toggle active styling
+
+commit 2f981cbc4a8d4391b05a931c5bb60139f11cd756
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 14:32:29 2026 +0000
+
+    feat(admin): add assignments series proxy
+
+commit 46e3bac389f850ac68574fc97f470f6d039f38a2
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 14:01:32 2026 +0000
+
+    fix(api): align Next proxies with admin endpoints
+
+commit 6cfb696d90d6f7bf7f277b1e4da5871e81faf687
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 12:39:27 2026 +0000
+
+    feat(admin): add customer id proxy
+
+commit 50de3fc1a600580f51c376e812b8103bb50c385f
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 12:24:02 2026 +0000
+
+    fix(admin): proxy customers to admin endpoint
+
+commit ab9a25322ee92cae27ecd70cb0491795b865fa6f
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 12:08:23 2026 +0000
+
+    fix(admin): use /api/admin/users/:id for employee edit
+
+commit 1bdb16d6bb769b74236976e9b41a7c00c5a084fa
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 11:50:20 2026 +0000
+
+    feat(api): add admin users PATCH proxy
+
+commit 27e6c8557ee956ce0f2b9e6fa8eda83f869a5512
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 10:41:31 2026 +0000
+
+    feat(admin): employee edit modal
+
+commit bfd3e6ce672e5054a52b2c234ae6643bbb15064d
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 10:33:07 2026 +0000
+
+    ui: masterdata mobile cards
+
+commit 57a6c3dde08c144352d13f1a651424cfb6af233b
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 10:15:22 2026 +0000
+
+    chore: install lucide-react
+
+commit 3f44f6013b04712c83340c159a6c922ebdd32217
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 10:11:08 2026 +0000
+
+    refactor(ui): admin forms
+
+commit 983c5970c903aff58bcc542f463f9ce0412487da
+Author: Chirhocaesar <chirhocaesar@gmail.com>
+Date:   Sat Feb 14 10:10:54 2026 +0000
+
+    fix(ui): corrections remove debug + alerts
