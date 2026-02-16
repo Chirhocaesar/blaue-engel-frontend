@@ -10,7 +10,6 @@ type Assignment = {
   endAt: string;
   status?: string | null;
   kilometers?: number | null;
-  km?: number | null;
   employee?: { fullName?: string | null; email?: string | null } | null;
   employeeId?: string | null;
 };
@@ -114,8 +113,7 @@ export async function GET(
     if (isDone(a.status)) {
       doneAssignments += 1;
       doneHours += hours;
-      const val = (a as any).kilometers ?? (a as any).km;
-      if (typeof val === "number" && Number.isFinite(val)) doneKilometers += val;
+      if (typeof a.kilometers === "number" && Number.isFinite(a.kilometers)) doneKilometers += a.kilometers;
     }
 
     const startMs = new Date(a.startAt).getTime();

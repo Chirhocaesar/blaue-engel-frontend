@@ -71,6 +71,7 @@ type Assignment = {
   endAt: string;
   notes?: string | null;
   status?: string;
+  kilometers?: number | null;
   customer?: Customer;
   customerName?: string;
   employee?: { id?: string; fullName?: string | null; email?: string | null } | null;
@@ -78,9 +79,6 @@ type Assignment = {
   signatures?: Signature[];
   timeEntries?: TimeEntry[];
   latestSignature?: LatestSignature | null;
-
-  // Day-level KM entry returned by backend on /me/assignments/:id and /assignments/:id
-  kmEntry?: { id: string; km: number } | null;
 
   totals?: {
     plannedMinutes: number;
@@ -275,16 +273,17 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
   const summary = useMemo(() => {
     const t = data?.totals;
+    const kmValue = typeof data?.kilometers === "number" ? data.kilometers : null;
     return {
       planned: t?.plannedMinutes ?? 0,
       recorded: t?.recordedMinutes ?? 0,
       adjustments: t?.adjustedMinutes ?? 0,
       final: t?.finalMinutes ?? 0,
-      kmRecorded: t?.kmRecorded ?? null,
+      kmRecorded: kmValue,
       kmAdjustments: t?.kmAdjusted ?? 0,
-      kmFinal: t?.kmFinal ?? null,
+      kmFinal: kmValue,
     };
-  }, [data?.totals]);
+  }, [data?.kilometers, data?.totals]);
 
   const kmDate = useMemo(() => {
     if (!data?.startAt) return "";
@@ -344,10 +343,10 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
       setData(json);
 
-      if (json?.kmEntry?.km != null) {
-        setKmValue(String(json.kmEntry.km));
+      if (typeof json?.kilometers === "number") {
+        setKmValue(String(json.kilometers));
         setKmLoadState("value");
-      } else if (json?.kmEntry) {
+      } else {
         setKmValue("");
         setKmLoadState("empty");
       }
@@ -404,31 +403,6 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       setTimeEntries([]);
     } finally {
       setTeLoading(false);
-    }
-  }
-
-  async function loadKmForDate(date: string) {
-    if (!date) return;
-    setKmErr("");
-    setKmLoadState("loading");
-    try {
-      const res = await fetch(`/api/me/km-entries?from=${date}&to=${date}&limit=1`, {
-        cache: "no-store",
-      });
-      const raw = await res.json().catch(() => ({}));
-      const items = Array.isArray(raw) ? raw : raw?.items ?? [];
-      if (items && items.length > 0) {
-        const item = items[0];
-        const km = item?.km ?? null;
-        setKmValue(km == null ? "" : String(km));
-        setKmLoadState("value");
-      } else {
-        setKmValue("");
-        setKmLoadState("empty");
-      }
-    } catch {
-      setKmValue("");
-      setKmLoadState("error");
     }
   }
 
@@ -630,25 +604,14 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   useEffect(() => {
     if (!kmDate) return;
     setKmLocked(false);
-    if (data?.kmEntry?.km != null) {
-      setKmValue(String(data.kmEntry.km));
+    if (typeof data?.kilometers === "number") {
+      setKmValue(String(data.kilometers));
       setKmLoadState("value");
       return;
     }
-    if (isAdmin) {
-      const km = data?.kmEntry?.km ?? null;
-      if (km == null) {
-        setKmValue("");
-        setKmLoadState("empty");
-      } else {
-        setKmValue(String(km));
-        setKmLoadState("value");
-      }
-      return;
-    }
-    loadKmForDate(kmDate);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kmDate, isAdmin, data?.kmEntry?.km]);
+    setKmValue("");
+    setKmLoadState("empty");
+  }, [kmDate, data?.kilometers]);
 
   async function handleAddTimeEntry() {
     if (teSaving) return;
@@ -961,17 +924,16 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
     setKmSaving(true);
     try {
-      const res = await fetch(`/api/me/km-entries`, {
-        method: "POST",
+      const res = await fetch(`/api/me/assignments/${id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: kmDate, km: n }),
+        body: JSON.stringify({ kilometers: n }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (res.status === 403 && json?.message === "LOCKED_AFTER_SIGNATURE") {
           setKmLocked(true);
           setIsKmLockedBySignature(true);
-          await loadKmForDate(kmDate);
           return;
         }
         throw new Error(json?.message || "Fehler beim Speichern");
@@ -979,7 +941,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
       setKmSavedAt(Date.now());
       setIsKmLockedBySignature(false);
-      await loadKmForDate(kmDate);
+      await loadAssignment();
     } catch (e: any) {
       const msg = e?.message || "Fehler beim Speichern";
       if (msg === "LOCKED_AFTER_SIGNATURE" || msg.includes("LOCKED_AFTER_SIGNATURE")) {
@@ -1432,8 +1394,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               <div className="text-sm text-gray-700">
                 {kmLoadState === "error"
                   ? "Fehler beim Laden"
-                  : data?.kmEntry?.km != null
-                    ? String(data.kmEntry.km)
+                  : data?.kilometers != null
+                    ? String(data.kilometers)
                     : "Nicht erfasst"}
               </div>
               <span className="rounded border px-2 py-0.5 text-xs text-gray-600">Nur Anzeige</span>
@@ -1442,8 +1404,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             <div className="text-sm text-gray-700">
               {kmLoadState === "error"
                 ? "Fehler beim Laden"
-                : data?.kmEntry?.km != null
-                  ? String(data.kmEntry.km)
+                : data?.kilometers != null
+                  ? String(data.kilometers)
                   : kmValue || "Nicht erfasst"}
             </div>
           ) : (

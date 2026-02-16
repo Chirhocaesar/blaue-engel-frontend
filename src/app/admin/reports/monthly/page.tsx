@@ -25,7 +25,6 @@ type Assignment = {
   employee?: { id?: string | null; fullName?: string | null; email?: string | null } | null;
   employeeId?: string | null;
   kilometers?: number | null;
-  km?: number | null;
 };
 
 type ItemsResponse<T> = T[] | { items?: T[] };
@@ -151,8 +150,7 @@ export default function AdminMonthlyReportPage() {
       row.planned += hours;
       if (isDone(a.status)) {
         row.done += hours;
-        const val = (a as any).kilometers ?? (a as any).km;
-        if (typeof val === "number" && Number.isFinite(val)) row.km += val;
+        if (typeof a.kilometers === "number" && Number.isFinite(a.kilometers)) row.km += a.kilometers;
       }
       map.set(empId, row);
     });
@@ -168,8 +166,7 @@ export default function AdminMonthlyReportPage() {
       planned += hours;
       if (isDone(a.status)) {
         done += hours;
-        const val = (a as any).kilometers ?? (a as any).km;
-        if (typeof val === "number" && Number.isFinite(val)) km += val;
+        if (typeof a.kilometers === "number" && Number.isFinite(a.kilometers)) km += a.kilometers;
       }
     });
     return { planned, done, km };
@@ -186,12 +183,7 @@ export default function AdminMonthlyReportPage() {
         const dateLabel = start.toLocaleDateString("de-DE");
         const timeLabel = `${start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
         const duration = hoursBetween(a.startAt, a.endAt);
-        const km =
-          typeof (a as any).kilometers === "number"
-            ? (a as any).kilometers
-            : typeof (a as any).km === "number"
-              ? (a as any).km
-              : null;
+        const km = typeof a.kilometers === "number" ? a.kilometers : null;
         const employeeLabel = a.employee?.fullName || a.employee?.email || "—";
         return {
           id: a.id,

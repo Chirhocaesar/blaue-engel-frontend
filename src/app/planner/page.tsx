@@ -99,6 +99,7 @@ type Assignment = {
   id: string;
   startAt: string;
   endAt: string;
+  kilometers?: number | null;
   customer?: {
     id?: string;
     name?: string;
@@ -529,33 +530,23 @@ export default function PlannerPage() {
     }
   }
 
-  // fetch km entry for kmDate on mount and when kmDate changes
+  // sync km value from the assignment for the selected date
   useEffect(() => {
     let cancelled = false;
     setKmError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/me/km-entries?from=${kmDate}&to=${kmDate}&limit=1`, {
-          cache: "no-store",
-        });
-        const raw = await res.json().catch(() => ({}));
-        const items = Array.isArray(raw) ? raw : raw?.items ?? [];
-        if (cancelled) return;
-        if (items && items.length > 0) {
-          const item = items[0];
-          const km = item?.km ?? null;
-          setKmValue(km == null ? "" : String(km));
-        } else {
-          setKmValue("");
-        }
-      } catch (e) {
-        if (!cancelled) setKmValue("");
+    const items = assignmentsByDate[kmDate] || [];
+    const target = items.find((a) => String(a.status || a.state || "").toUpperCase() === "CONFIRMED") || null;
+    if (!cancelled) {
+      if (target && typeof target.kilometers === "number") {
+        setKmValue(String(target.kilometers));
+      } else {
+        setKmValue("");
       }
-    })();
+    }
     return () => {
       cancelled = true;
     };
-  }, [kmDate]);
+  }, [assignmentsByDate, kmDate]);
 
   const hasDoneAssignmentForKmDate = useMemo(() => {
     const arr = assignmentsByDate[kmDate] || [];
@@ -617,18 +608,34 @@ export default function PlannerPage() {
       return;
     }
 
+    const items = assignmentsByDate[kmDate] || [];
+    const target = items.find((a) => String(a.status || a.state || "").toUpperCase() === "CONFIRMED") || null;
+    if (!target) {
+      setKmError("Kein bestätigter Einsatz gefunden.");
+      return;
+    }
+
     setKmSaving(true);
     try {
-      const res = await fetch(`/api/me/km-entries`, {
-        method: "POST",
+      const res = await fetch(`/api/me/assignments/${target.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: kmDate, km: n }),
+        body: JSON.stringify({ kilometers: n }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) setKmError(json?.message || "Fehler beim Speichern");
-      else {
+      if (!res.ok) {
+        setKmError(json?.message || "Fehler beim Speichern");
+      } else {
         setKmSavedAt(Date.now());
         setKmError(null);
+        setAssignmentsByDate((prev) => {
+          const next = { ...prev };
+          const list = [...(next[kmDate] || [])];
+          const idx = list.findIndex((a) => a.id === target.id);
+          if (idx >= 0) list[idx] = { ...list[idx], kilometers: n };
+          next[kmDate] = list;
+          return next;
+        });
       }
     } catch (e) {
       setKmError("Fehler beim Speichern");

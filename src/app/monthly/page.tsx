@@ -14,7 +14,6 @@ type Assignment = {
   employee?: { fullName?: string | null; email?: string | null } | null;
   employeeId?: string | null;
   kilometers?: number | null;
-  km?: number | null;
 };
 
 type AssignmentsResponse = { items?: Assignment[] } | Assignment[];
@@ -113,8 +112,7 @@ export default function MonthlyPage() {
       planned += hours;
       if (isDone(a.status)) {
         done += hours;
-        const val = (a as any).kilometers ?? (a as any).km;
-        if (typeof val === "number" && Number.isFinite(val)) km += val;
+        if (typeof a.kilometers === "number" && Number.isFinite(a.kilometers)) km += a.kilometers;
       }
     });
     return { planned, done, km };
@@ -131,12 +129,7 @@ export default function MonthlyPage() {
         const dateLabel = start.toLocaleDateString("de-DE");
         const timeLabel = `${start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
         const duration = hoursBetween(a.startAt, a.endAt);
-        const km =
-          typeof (a as any).kilometers === "number"
-            ? (a as any).kilometers
-            : typeof (a as any).km === "number"
-              ? (a as any).km
-              : null;
+        const km = typeof a.kilometers === "number" ? a.kilometers : null;
         return {
           id: a.id,
           dateLabel,

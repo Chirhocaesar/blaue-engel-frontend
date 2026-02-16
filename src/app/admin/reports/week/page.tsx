@@ -25,7 +25,6 @@ type Assignment = {
   employee?: { id?: string | null; fullName?: string | null; email?: string | null } | null;
   employeeId?: string | null;
   kilometers?: number | null;
-  km?: number | null;
 };
 
 type ItemsResponse<T> = T[] | { items?: T[] };
@@ -210,8 +209,7 @@ export default function AdminWeeklyReportPage() {
       row.planned += hours;
       if (isDone(a.status)) {
         row.done += hours;
-        const val = (a as any).kilometers ?? (a as any).km;
-        if (typeof val === "number" && Number.isFinite(val)) row.km += val;
+        if (typeof a.kilometers === "number" && Number.isFinite(a.kilometers)) row.km += a.kilometers;
       }
       map.set(empId, row);
     });
@@ -227,8 +225,7 @@ export default function AdminWeeklyReportPage() {
       planned += hours;
       if (isDone(a.status)) {
         done += hours;
-        const val = (a as any).kilometers ?? (a as any).km;
-        if (typeof val === "number" && Number.isFinite(val)) km += val;
+        if (typeof a.kilometers === "number" && Number.isFinite(a.kilometers)) km += a.kilometers;
       }
     });
     return { planned, done, km };
