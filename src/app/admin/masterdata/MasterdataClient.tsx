@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Card, Input, Select, Textarea } from "@/components/ui";
@@ -27,6 +27,13 @@ type Customer = {
   adminNotes?: string | null;
   isActive?: boolean | null;
 };
+
+function normalizeCustomerId(input: any): string {
+  if (input?.id && typeof input.id === "string") return input.id;
+  if (input?.customerId && typeof input.customerId === "string") return input.customerId;
+  if (input?.customer?.id && typeof input.customer.id === "string") return input.customer.id;
+  return "";
+}
 
 type EmergencyContact = {
   id: string;
@@ -349,6 +356,7 @@ export default function MasterdataPage() {
   const [custFormError, setCustFormError] = useState<string | null>(null);
   const [createdCustomerId, setCreatedCustomerId] = useState<string | null>(null);
   const [createdCustomerName, setCreatedCustomerName] = useState<string>("");
+  const missingCustomerIdWarned = useRef(false);
 
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [ecLoading, setEcLoading] = useState(false);
@@ -399,7 +407,11 @@ export default function MasterdataPage() {
       const res = await fetch(`/api/admin/customers?${qs.toString()}`, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
-      setCustomers(getCustomers(json));
+      const items = getCustomers(json).map((c) => ({
+        ...c,
+        id: normalizeCustomerId(c) || c.id,
+      }));
+      setCustomers(items);
     } catch (e: any) {
       setCustomersError(e?.message ?? "Kunden konnten nicht geladen werden.");
     } finally {
@@ -1211,10 +1223,26 @@ export default function MasterdataPage() {
                     className="space-y-2 cursor-pointer"
                     role="link"
                     tabIndex={0}
-                    onClick={() => router.push(`/admin/customers/${c.id}`)}
+                    onClick={() => {
+                      if (!c.id) {
+                        if (!missingCustomerIdWarned.current) {
+                          console.warn("Customer list entry missing id", c);
+                          missingCustomerIdWarned.current = true;
+                        }
+                        return;
+                      }
+                      router.push(`/admin/customers/${c.id}`);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
+                        if (!c.id) {
+                          if (!missingCustomerIdWarned.current) {
+                            console.warn("Customer list entry missing id", c);
+                            missingCustomerIdWarned.current = true;
+                          }
+                          return;
+                        }
                         router.push(`/admin/customers/${c.id}`);
                       }
                     }}
@@ -1223,6 +1251,11 @@ export default function MasterdataPage() {
                       <div className="text-sm text-gray-600">Name</div>
                       <div className="flex items-center gap-2">
                         <span>{c.name}</span>
+                        {!c.id ? (
+                          <span className="rounded-full border px-2 py-0.5 text-xs text-red-700 border-red-300">
+                            Fehlende ID
+                          </span>
+                        ) : null}
                         {includeInactiveCustomers && c.isActive === false ? (
                           <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
                             Inaktiv
@@ -1299,12 +1332,21 @@ export default function MasterdataPage() {
                     {customers.map((c) => (
                       <tr key={c.id} className="border-t">
                         <td className="p-2 border">
-                          <Link
-                            href={`/admin/customers/${c.id}`}
-                            className="font-medium hover:underline"
-                          >
-                            {c.name}
-                          </Link>
+                          {c.id ? (
+                            <Link
+                              href={`/admin/customers/${c.id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {c.name}
+                            </Link>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{c.name}</span>
+                              <span className="rounded-full border px-2 py-0.5 text-xs text-red-700 border-red-300">
+                                Fehlende ID
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="p-2 border">{c.address || "—"}</td>
                         {includeInactiveCustomers ? (
