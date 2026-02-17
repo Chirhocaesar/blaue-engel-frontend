@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui";
 
+export const dynamic = "force-dynamic";
+
 type Assignment = {
   id: string;
   startAt: string;
