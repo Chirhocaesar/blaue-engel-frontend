@@ -10,6 +10,8 @@ type Assignment = {
   endAt: string;
   status?: string | null;
   kilometers?: number | null;
+  kmAdjusted?: number | null;
+  kmFinal?: number | null;
   employee?: { fullName?: string | null; email?: string | null } | null;
   employeeId?: string | null;
 };
@@ -113,7 +115,12 @@ export async function GET(
     if (isDone(a.status)) {
       doneAssignments += 1;
       doneHours += hours;
-      if (typeof a.kilometers === "number" && Number.isFinite(a.kilometers)) doneKilometers += a.kilometers;
+      const kmValue = typeof a.kmFinal === "number"
+        ? a.kmFinal
+        : typeof a.kilometers === "number"
+          ? a.kilometers
+          : 0;
+      if (Number.isFinite(kmValue)) doneKilometers += kmValue;
     }
 
     const startMs = new Date(a.startAt).getTime();
