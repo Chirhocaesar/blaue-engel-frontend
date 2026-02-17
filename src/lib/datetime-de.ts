@@ -88,3 +88,37 @@ export function makeTimeOptions(stepMinutes: number): { value: string; label: st
   }
   return options;
 }
+
+type DateInput = string | Date | null | undefined;
+
+export function formatDateTimeDE(value: DateInput): string {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("de-DE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Berlin",
+  }).formatToParts(d);
+  const lookup = new Map(parts.map((part) => [part.type, part.value]));
+  const day = lookup.get("day") || "";
+  const month = lookup.get("month") || "";
+  const year = lookup.get("year") || "";
+  const hour = lookup.get("hour") || "";
+  const minute = lookup.get("minute") || "";
+  if (!day || !month || !year || !hour || !minute) return "";
+  return `${day}.${month}.${year} ${hour}:${minute}`;
+}
+
+export function toInputValueLocal(value: DateInput): string {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(
+    d.getHours()
+  )}:${pad2(d.getMinutes())}`;
+}

@@ -1210,6 +1210,8 @@ export default function PlannerPage() {
                   <span className="text-xs text-gray-600">Start</span>
                   <input
                     type="time"
+                    lang="de-DE"
+                    step={1800}
                     value={createStartTime}
                     onChange={(e) => setCreateStartTime(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
@@ -1220,6 +1222,8 @@ export default function PlannerPage() {
                   <span className="text-xs text-gray-600">Ende</span>
                   <input
                     type="time"
+                    lang="de-DE"
+                    step={1800}
                     value={createEndTime}
                     onChange={(e) => setCreateEndTime(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"

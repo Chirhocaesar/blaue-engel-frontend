@@ -1669,6 +1669,29 @@ export default function MasterdataPage() {
             </form>
 
             {createdCustomerId ? (
+              <div className="mt-4">
+                <EmergencyContactsPanel
+                  customerId={createdCustomerId}
+                  contacts={emergencyContacts}
+                  loading={ecLoading}
+                  error={ecError}
+                  saving={ecSaving}
+                  saved={ecSaved}
+                  name={ecName}
+                  phone={ecPhone}
+                  relation={ecRelation}
+                  onNameChange={setEcName}
+                  onPhoneChange={setEcPhone}
+                  onRelationChange={setEcRelation}
+                  onCreate={submitEmergencyContact}
+                  onDelete={deleteEmergencyContact}
+                  onUpdate={updateEmergencyContact}
+                  onRefresh={loadEmergencyContacts}
+                />
+              </div>
+            ) : null}
+
+            {createdCustomerId ? (
               <div className="mt-4 flex items-center justify-end">
                 <button
                   type="button"

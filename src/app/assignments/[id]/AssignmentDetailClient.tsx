@@ -14,8 +14,7 @@ import {
   formatTime,
   formatWeekdayShort,
 } from "@/lib/format";
-import { deDateToIso, makeTimeOptions, normalizeDeTime } from "@/lib/datetime-de";
-import { useNativePickers } from "@/lib/useNativePickers";
+import { makeTimeOptions, toInputValueLocal } from "@/lib/datetime-de";
 import { statusLabelDe } from "@/lib/status";
 import StatusPill from "@/components/StatusPill";
 import { Alert, Button, Card, Pill } from "@/components/ui";
@@ -96,9 +95,6 @@ type Assignment = {
   };
 };
 
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
 type AdminEmployee = {
   id: string;
   email?: string | null;
@@ -111,18 +107,12 @@ type AdminCustomer = {
   companyName?: string | null;
 };
 
-// local datetime-local value from ISO string
-function toLocalDateTimeInput(iso: string) {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(
-    d.getHours()
-  )}:${pad2(d.getMinutes())}`;
-}
-
-// ISO from datetime-local (assumes local time)
-function fromLocalDateTimeInput(v: string) {
-  const d = new Date(v);
-  return d.toISOString();
+function splitLocalDateTime(value?: string | null) {
+  if (!value) return { date: "", time: "" };
+  const local = toInputValueLocal(value);
+  if (!local) return { date: "", time: "" };
+  const [date, time] = local.split("T");
+  return { date: date || "", time: time || "" };
 }
 
 function durationMinutes(startIso: string, endIso: string) {
@@ -163,15 +153,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const [teErr, setTeErr] = useState<string>("");
 
   // add time entry form
-  const [teStart, setTeStart] = useState<string>("");
-  const [teEnd, setTeEnd] = useState<string>("");
-  const [teDateDe, setTeDateDe] = useState<string>("");
+  const [teDate, setTeDate] = useState<string>("");
   const [teStartTime, setTeStartTime] = useState<string>("");
   const [teEndTime, setTeEndTime] = useState<string>("");
   const [teNotes, setTeNotes] = useState<string>("");
   const [teSaving, setTeSaving] = useState(false);
   const timeOptions = useMemo(() => makeTimeOptions(30), []);
-  const showNativeInputs = useNativePickers();
 
   // signature
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -210,8 +197,10 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
   const [editCustomerId, setEditCustomerId] = useState("");
   const [editEmployeeId, setEditEmployeeId] = useState("");
-  const [editStartAt, setEditStartAt] = useState("");
-  const [editEndAt, setEditEndAt] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
 
@@ -362,8 +351,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       }
 
       // initialize time entry defaults from assignment
-      if (json?.startAt) setTeStart(toLocalDateTimeInput(json.startAt));
-      if (json?.endAt) setTeEnd(toLocalDateTimeInput(json.endAt));
+      const startParts = splitLocalDateTime(json?.startAt);
+      const endParts = splitLocalDateTime(json?.endAt);
+      if (startParts.date) setTeDate(startParts.date);
+      if (startParts.time) setTeStartTime(startParts.time);
+      if (!startParts.date && endParts.date) setTeDate(endParts.date);
+      if (endParts.time) setTeEndTime(endParts.time);
       return json;
     } catch (e: any) {
       setErr(e?.message || "Fehler beim Laden");
@@ -453,8 +446,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     setEditLocked(false);
     setEditCustomerId(data.customerId || data.customer?.id || "");
     setEditEmployeeId(data.employeeId || data.employee?.id || "");
-    setEditStartAt(data.startAt ? toLocalDateTimeInput(data.startAt) : "");
-    setEditEndAt(data.endAt ? toLocalDateTimeInput(data.endAt) : "");
+    const startParts = splitLocalDateTime(data.startAt);
+    const endParts = splitLocalDateTime(data.endAt);
+    setEditStartDate(startParts.date);
+    setEditStartTime(startParts.time);
+    setEditEndDate(endParts.date);
+    setEditEndTime(endParts.time);
     setEditNotes(data.notes || "");
     setEditStatus(String(data.status || "").toUpperCase());
     if (adminCustomers.length === 0 || adminEmployees.length === 0) {
@@ -474,13 +471,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     setEditError("");
     setEditLocked(false);
 
-    if (!editCustomerId || !editEmployeeId || !editStartAt || !editEndAt) {
+    if (!editCustomerId || !editEmployeeId || !editStartDate || !editStartTime || !editEndDate || !editEndTime) {
       setEditError("Bitte alle Pflichtfelder ausfüllen.");
       return;
     }
 
-    const startIso = fromLocalDateTimeInput(editStartAt);
-    const endIso = fromLocalDateTimeInput(editEndAt);
+    const startIso = new Date(`${editStartDate}T${editStartTime}`).toISOString();
+    const endIso = new Date(`${editEndDate}T${editEndTime}`).toISOString();
     if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
       setEditError("Endzeit muss nach der Startzeit liegen.");
       return;
@@ -632,38 +629,18 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   async function handleAddTimeEntry() {
     if (teSaving) return;
     setTeErr("");
-    if (!teStart || !teEnd) {
+
+    if (!teDate) {
+      setTeErr("Bitte Datum wählen.");
+      return;
+    }
+    if (!teStartTime || !teEndTime) {
       setTeErr("Bitte Start- und Endzeit angeben.");
       return;
     }
 
-    let startIso = "";
-    let endIso = "";
-
-    if (showNativeInputs) {
-      if (!teStart || !teEnd) {
-        setTeErr("Bitte Start- und Endzeit angeben.");
-        return;
-      }
-      startIso = fromLocalDateTimeInput(teStart);
-      endIso = fromLocalDateTimeInput(teEnd);
-    } else {
-      const dateIso = deDateToIso(teDateDe);
-      if (!dateIso) {
-        setTeErr("Bitte Datum im Format TT.MM.JJJJ angeben.");
-        return;
-      }
-
-      const startNormalized = normalizeDeTime(teStartTime);
-      const endNormalized = normalizeDeTime(teEndTime);
-      if (!startNormalized || !endNormalized) {
-        setTeErr("Bitte Start- und Endzeit angeben.");
-        return;
-      }
-
-      startIso = new Date(`${dateIso}T${startNormalized}`).toISOString();
-      endIso = new Date(`${dateIso}T${endNormalized}`).toISOString();
-    }
+    const startIso = new Date(`${teDate}T${teStartTime}`).toISOString();
+    const endIso = new Date(`${teDate}T${teEndTime}`).toISOString();
 
     if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
       setTeErr("Endzeit muss nach der Startzeit liegen.");
@@ -1251,27 +1228,51 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 <label className="grid gap-1">
                   <span className="text-xs text-gray-600">Start</span>
                   <input
-                    type="datetime-local"
+                    type="date"
                     lang="de-DE"
-                    step={60}
-                    value={editStartAt}
-                    onChange={(e) => setEditStartAt(e.target.value)}
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                     disabled={editSaving || editLocked || isLocked}
                   />
+                  <select
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {timeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="grid gap-1">
                   <span className="text-xs text-gray-600">Ende</span>
                   <input
-                    type="datetime-local"
+                    type="date"
                     lang="de-DE"
-                    step={60}
-                    value={editEndAt}
-                    onChange={(e) => setEditEndAt(e.target.value)}
+                    value={editEndDate}
+                    onChange={(e) => setEditEndDate(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                     disabled={editSaving || editLocked || isLocked}
                   />
+                  <select
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    disabled={editSaving || editLocked || isLocked}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {timeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="grid gap-1 sm:col-span-2">
@@ -1528,105 +1529,63 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
         {!isAdmin && !isReceiptMode && !isAssigned ? (
           <>
-            {showNativeInputs ? (
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div>
-                  <label className="text-xs text-gray-600">Start</label>
-                  <input
-                    type="datetime-local"
-                    lang="de-DE"
-                    step={60}
-                    value={teStart}
-                    onChange={(e) => setTeStart(e.target.value)}
-                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                    disabled={teSaving || isSigned}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600">Ende</label>
-                  <input
-                    type="datetime-local"
-                    lang="de-DE"
-                    step={60}
-                    value={teEnd}
-                    onChange={(e) => setTeEnd(e.target.value)}
-                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                    disabled={teSaving || isSigned}
-                  />
-                </div>
-                <div className="flex items-end gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleAddTimeEntry}
-                    disabled={teSaving || isSigned}
-                    variant="outline"
-                    size="sm"
-                    className={`w-full ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                  >
-                    {teSaving ? "Speichern…" : "Zeit hinzufügen"}
-                  </Button>
-                </div>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <div>
+                <label className="text-xs text-gray-600">Datum</label>
+                <input
+                  type="date"
+                  lang="de-DE"
+                  value={teDate}
+                  onChange={(e) => setTeDate(e.target.value)}
+                  className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                  disabled={teSaving || isSigned}
+                />
               </div>
-            ) : (
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
-                <div>
-                  <label className="text-xs text-gray-600">Datum</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="TT.MM.JJJJ"
-                    value={teDateDe}
-                    onChange={(e) => setTeDateDe(e.target.value)}
-                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                    disabled={teSaving || isSigned}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600">Start</label>
-                  <select
-                    value={teStartTime}
-                    onChange={(e) => setTeStartTime(e.target.value)}
-                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                    disabled={teSaving || isSigned}
-                  >
-                    <option value="">Bitte wählen…</option>
-                    {timeOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600">Ende</label>
-                  <select
-                    value={teEndTime}
-                    onChange={(e) => setTeEndTime(e.target.value)}
-                    className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                    disabled={teSaving || isSigned}
-                  >
-                    <option value="">Bitte wählen…</option>
-                    {timeOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-end gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleAddTimeEntry}
-                    disabled={teSaving || isSigned}
-                    variant="outline"
-                    size="sm"
-                    className={`w-full ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
-                  >
-                    {teSaving ? "Speichern…" : "Zeit hinzufügen"}
-                  </Button>
-                </div>
+              <div>
+                <label className="text-xs text-gray-600">Start</label>
+                <select
+                  value={teStartTime}
+                  onChange={(e) => setTeStartTime(e.target.value)}
+                  className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                  disabled={teSaving || isSigned}
+                >
+                  <option value="">Bitte wählen…</option>
+                  {timeOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
+              <div>
+                <label className="text-xs text-gray-600">Ende</label>
+                <select
+                  value={teEndTime}
+                  onChange={(e) => setTeEndTime(e.target.value)}
+                  className={`mt-1 w-full rounded border px-2 py-2 text-sm ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                  disabled={teSaving || isSigned}
+                >
+                  <option value="">Bitte wählen…</option>
+                  {timeOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end gap-2">
+                <Button
+                  type="button"
+                  onClick={handleAddTimeEntry}
+                  disabled={teSaving || isSigned}
+                  variant="outline"
+                  size="sm"
+                  className={`w-full ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
+                >
+                  {teSaving ? "Speichern…" : "Zeit hinzufügen"}
+                </Button>
+              </div>
+            </div>
 
             <div className="mt-2">
               <label className="text-xs text-gray-600">Notiz (optional)</label>

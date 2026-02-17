@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { deDateToIso, isoToDeDate, makeTimeOptions } from "@/lib/datetime-de";
+import { deDateToIso, formatDateTimeDE, isoToDeDate, makeTimeOptions } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
 import { Button, Input, Select, Textarea } from "@/components/ui";
 
@@ -212,8 +212,8 @@ export default function AdminAssignmentNewClient() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (res.status === 409) {
-          const start = json?.conflictStartAt ? new Date(json.conflictStartAt).toLocaleString("de-DE") : "";
-          const end = json?.conflictEndAt ? new Date(json.conflictEndAt).toLocaleString("de-DE") : "";
+          const start = json?.conflictStartAt ? formatDateTimeDE(json.conflictStartAt) : "";
+          const end = json?.conflictEndAt ? formatDateTimeDE(json.conflictEndAt) : "";
           const range = start && end ? `${start} – ${end}` : "";
           throw new Error(`Konflikt mit bestehendem Termin. ${range}`.trim());
         }
@@ -339,7 +339,7 @@ export default function AdminAssignmentNewClient() {
               <Input
                 type="time"
                 lang="de-DE"
-                step={60}
+                step={1800}
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
               />
@@ -364,7 +364,7 @@ export default function AdminAssignmentNewClient() {
               <Input
                 type="time"
                 lang="de-DE"
-                step={60}
+                step={1800}
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
               />

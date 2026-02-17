@@ -20,6 +20,7 @@ export function formatDate(value: DateInput): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    timeZone: "Europe/Berlin",
   });
 }
 
@@ -29,25 +30,35 @@ export function formatDayMonth(value: DateInput): string {
   return d.toLocaleDateString(LOCALE, {
     day: "2-digit",
     month: "2-digit",
+    timeZone: "Europe/Berlin",
   });
 }
 
 export function formatWeekdayShort(value: DateInput): string {
   const d = toDate(value);
   if (!d) return value ? String(value) : "—";
-  return d.toLocaleDateString(LOCALE, { weekday: "short" });
+  return d.toLocaleDateString(LOCALE, { weekday: "short", timeZone: "Europe/Berlin" });
 }
 
 export function formatMonthYear(value: DateInput): string {
   const d = toDate(value);
   if (!d) return value ? String(value) : "—";
-  return d.toLocaleDateString(LOCALE, { month: "long", year: "numeric" });
+  return d.toLocaleDateString(LOCALE, {
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Berlin",
+  });
 }
 
 export function formatTime(value: DateInput): string {
   const d = toDate(value);
   if (!d) return value ? String(value) : "—";
-  return d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString(LOCALE, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Berlin",
+  });
 }
 
 export function formatDateTime(value: DateInput): string {
@@ -59,6 +70,8 @@ export function formatDateTime(value: DateInput): string {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Berlin",
   });
 }
 
