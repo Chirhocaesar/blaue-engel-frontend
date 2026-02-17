@@ -54,7 +54,7 @@ export async function GET(req: Request) {
   const dayStart = `${date}T00:00:00.000Z`;
   const dayEnd = `${date}T23:59:59.999Z`;
   const listRes = await fetch(
-    `${API_BASE}/admin/assignments?employeeId=${encodeURIComponent(employeeId)}` +
+    `${API_BASE}/assignments?employeeId=${encodeURIComponent(employeeId)}` +
       `&from=${encodeURIComponent(dayStart)}` +
       `&to=${encodeURIComponent(dayEnd)}` +
       `&limit=200`,
