@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import PageHeader from "@/components/PageHeader";
 
 function CardLink({
   href,
@@ -30,12 +31,10 @@ export default async function DashboardPage() {
 
   return (
     <main className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Wähle eine Funktion aus.
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Wähle eine Funktion aus."
+      />
 
       <div className="space-y-3">
         <CardLink

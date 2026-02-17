@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Card, Input, Select, Textarea } from "@/components/ui";
+import StateNotice from "@/components/StateNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -1007,17 +1008,13 @@ export default function MasterdataPage() {
           </div>
 
           {usersError ? (
-            <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-              {usersError}
-            </div>
+            <StateNotice variant="error" message={usersError} />
           ) : null}
 
           {usersLoading ? (
-            <div className="text-sm text-gray-600">Lade…</div>
+            <StateNotice variant="loading" message="Lade…" />
           ) : userRows.length === 0 ? (
-            <Card variant="subtle" className="text-sm text-gray-700">
-              Keine Eintraege vorhanden.
-            </Card>
+            <StateNotice variant="empty" message="Keine Eintraege vorhanden." />
           ) : (
             <>
               <div className="space-y-3 sm:hidden">
@@ -1089,7 +1086,7 @@ export default function MasterdataPage() {
               </div>
               <div className="hidden sm:block overflow-x-auto rounded border">
                 <table className="min-w-full text-sm border">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 text-gray-700">
                     <tr>
                       <th className="p-2 text-left border">Name</th>
                       <th className="p-2 text-left border">E-Mail</th>
@@ -1101,7 +1098,7 @@ export default function MasterdataPage() {
                   </thead>
                   <tbody>
                     {userRows.map((u) => (
-                      <tr key={u.id} className="border-t">
+                      <tr key={u.id} className="border-t odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         <td className="p-2 border">{u.name}</td>
                         <td className="p-2 border">{u.email}</td>
                         {includeInactiveEmployees ? (
@@ -1203,17 +1200,13 @@ export default function MasterdataPage() {
           </div>
 
           {customersError ? (
-            <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-              {customersError}
-            </div>
+            <StateNotice variant="error" message={customersError} />
           ) : null}
 
           {customersLoading ? (
-            <div className="text-sm text-gray-600">Lade…</div>
+            <StateNotice variant="loading" message="Lade…" />
           ) : customers.length === 0 ? (
-            <Card variant="subtle" className="text-sm text-gray-700">
-              Keine Eintraege vorhanden.
-            </Card>
+            <StateNotice variant="empty" message="Keine Eintraege vorhanden." />
           ) : (
             <>
               <div className="space-y-3 sm:hidden">
@@ -1317,7 +1310,7 @@ export default function MasterdataPage() {
               </div>
               <div className="hidden sm:block overflow-x-auto rounded border">
                 <table className="min-w-full text-sm border">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 text-gray-700">
                     <tr>
                       <th className="p-2 text-left border">Name</th>
                       <th className="p-2 text-left border">Adresse</th>
@@ -1330,7 +1323,7 @@ export default function MasterdataPage() {
                   </thead>
                   <tbody>
                     {customers.map((c) => (
-                      <tr key={c.id} className="border-t">
+                      <tr key={c.id} className="border-t odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         <td className="p-2 border">
                           {c.id ? (
                             <Link

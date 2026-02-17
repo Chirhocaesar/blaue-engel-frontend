@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui";
+import { Alert, Card } from "@/components/ui";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -216,15 +217,15 @@ export default function AdminMonthlyReportPage() {
 
   return (
     <main className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Monatsübersicht (Admin)</h1>
-          <p className="mt-1 text-sm text-gray-600">Monatliche Auswertung je Mitarbeiter.</p>
-        </div>
-        <Link href="/admin" className="rounded-xl border px-4 py-2 text-sm font-semibold">
-          Admin-Dashboard
-        </Link>
-      </div>
+      <PageHeader
+        title="Monatsübersicht (Admin)"
+        subtitle="Monatliche Auswertung je Mitarbeiter."
+        actions={
+          <Link href="/admin" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+            Admin-Dashboard
+          </Link>
+        }
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">
@@ -270,18 +271,18 @@ export default function AdminMonthlyReportPage() {
       </div>
 
       {error ? (
-        <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="error">{error}</Alert>
       ) : null}
 
       {loading ? (
-        <div className="text-sm text-gray-600">Lade…</div>
+        <Alert variant="info">Lade…</Alert>
       ) : employeeFilter ? (
         <Card className="p-4">
           <h2 className="text-base font-semibold">Einsätze</h2>
           {rows.length === 0 ? (
-            <div className="mt-2 text-sm text-gray-600">Keine Einsätze im Zeitraum.</div>
+            <div className="mt-2">
+              <Alert variant="info">Keine Einsätze im Zeitraum.</Alert>
+            </div>
           ) : (
             <div className="mt-3 overflow-x-auto">
               <div className="min-w-[720px] overflow-hidden rounded-lg border">
@@ -293,8 +294,8 @@ export default function AdminMonthlyReportPage() {
                       <th className="text-left p-2">Kunde</th>
                       <th className="text-left p-2">Mitarbeiter</th>
                       <th className="text-left p-2">Status</th>
-                      <th className="text-left p-2">Dauer (Std.)</th>
-                      <th className="text-left p-2">KM (eingetragen)</th>
+                      <th className="text-right p-2">Dauer (Std.)</th>
+                      <th className="text-right p-2">KM (eingetragen)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -307,8 +308,8 @@ export default function AdminMonthlyReportPage() {
                         <td className="p-2 align-top">
                           <StatusPill status={row.status} />
                         </td>
-                        <td className="p-2 align-top">{row.duration.toFixed(2)}</td>
-                        <td className="p-2 align-top">{row.km == null ? "—" : row.km.toFixed(1)}</td>
+                        <td className="p-2 align-top text-right tabular-nums">{row.duration.toFixed(2)}</td>
+                        <td className="p-2 align-top text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -326,9 +327,9 @@ export default function AdminMonthlyReportPage() {
                 <thead className="bg-gray-50 text-gray-700">
                   <tr>
                     <th className="text-left p-2">Mitarbeiter</th>
-                    <th className="text-left p-2">Geplant (Std.)</th>
-                    <th className="text-left p-2">Erledigt (Std.)</th>
-                    <th className="text-left p-2">KM (eingetragen)</th>
+                    <th className="text-right p-2">Geplant (Std.)</th>
+                    <th className="text-right p-2">Erledigt (Std.)</th>
+                    <th className="text-right p-2">KM (eingetragen)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -346,9 +347,9 @@ export default function AdminMonthlyReportPage() {
                           <td className="p-2">
                             {e.fullName ? `${e.fullName} · ${e.email}` : e.email || e.id}
                           </td>
-                          <td className="p-2">{totals.planned.toFixed(2)}</td>
-                          <td className="p-2">{totals.done.toFixed(2)}</td>
-                          <td className="p-2">{totals.km.toFixed(1)}</td>
+                          <td className="p-2 text-right tabular-nums">{totals.planned.toFixed(2)}</td>
+                          <td className="p-2 text-right tabular-nums">{totals.done.toFixed(2)}</td>
+                          <td className="p-2 text-right tabular-nums">{totals.km.toFixed(1)}</td>
                         </tr>
                       );
                     })

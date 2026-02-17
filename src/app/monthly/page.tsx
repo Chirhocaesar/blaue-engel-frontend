@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui";
+import { Alert, Card } from "@/components/ui";
+import PageHeader from "@/components/PageHeader";
 import StatusPill from "@/components/StatusPill";
 
 export const dynamic = "force-dynamic";
@@ -158,15 +159,15 @@ export default function MonthlyPage() {
 
   return (
     <main className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Monatsübersicht</h1>
-          <p className="mt-1 text-sm text-gray-600">Deine Monatswerte.</p>
-        </div>
-        <Link href="/dashboard" className="rounded-xl border px-4 py-2 text-sm font-semibold">
-          Dashboard
-        </Link>
-      </div>
+      <PageHeader
+        title="Monatsübersicht"
+        subtitle="Deine Monatswerte."
+        actions={
+          <Link href="/dashboard" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+            Dashboard
+          </Link>
+        }
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">
@@ -196,42 +197,42 @@ export default function MonthlyPage() {
       </div>
 
       {error ? (
-        <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="error">{error}</Alert>
       ) : null}
 
       {loading ? (
-        <div className="text-sm text-gray-600">Lade…</div>
+        <Alert variant="info">Lade…</Alert>
       ) : (
         <Card className="p-4">
           <h2 className="text-base font-semibold">Einsätze</h2>
           {rows.length === 0 ? (
-            <div className="mt-2 text-sm text-gray-600">Keine Einsätze im Zeitraum.</div>
+            <div className="mt-2">
+              <Alert variant="info">Keine Einsätze im Zeitraum.</Alert>
+            </div>
           ) : (
             <div className="mt-3 overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-gray-50 text-gray-700">
                     <th className="text-left p-2 border">Datum</th>
                     <th className="text-left p-2 border">Zeit</th>
                     <th className="text-left p-2 border">Kunde</th>
                     <th className="text-left p-2 border">Status</th>
-                    <th className="text-left p-2 border">Dauer (Std.)</th>
-                    <th className="text-left p-2 border">KM (eingetragen)</th>
+                    <th className="text-right p-2 border">Dauer (Std.)</th>
+                    <th className="text-right p-2 border">KM (eingetragen)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.id}>
+                    <tr key={row.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                       <td className="p-2 border">{row.dateLabel}</td>
                       <td className="p-2 border">{row.timeLabel}</td>
                       <td className="p-2 border">{row.customerName}</td>
                       <td className="p-2 border">
                         <StatusPill status={row.status} />
                       </td>
-                      <td className="p-2 border">{row.duration.toFixed(2)}</td>
-                      <td className="p-2 border">{row.km == null ? "—" : row.km.toFixed(1)}</td>
+                      <td className="p-2 border text-right tabular-nums">{row.duration.toFixed(2)}</td>
+                      <td className="p-2 border text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui";
+import { Alert, Card } from "@/components/ui";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -253,15 +254,15 @@ export default function AdminWeeklyReportPage() {
 
   return (
     <main className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Wochenübersicht (Admin)</h1>
-          <p className="mt-1 text-sm text-gray-600">Wöchentliche Auswertung je Mitarbeiter.</p>
-        </div>
-        <Link href="/admin" className="rounded-xl border px-4 py-2 text-sm font-semibold">
-          Admin-Dashboard
-        </Link>
-      </div>
+      <PageHeader
+        title="Wochenübersicht (Admin)"
+        subtitle="Wöchentliche Auswertung je Mitarbeiter."
+        actions={
+          <Link href="/admin" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+            Admin-Dashboard
+          </Link>
+        }
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">
@@ -309,18 +310,18 @@ export default function AdminWeeklyReportPage() {
       </div>
 
       {error ? (
-        <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="error">{error}</Alert>
       ) : null}
 
       {loading ? (
-        <div className="text-sm text-gray-600">Lade…</div>
+        <Alert variant="info">Lade…</Alert>
       ) : (
         <Card className="p-4">
           <h2 className="text-base font-semibold">Wochenansicht nach Mitarbeiter</h2>
           {employeeRows.length === 0 ? (
-            <div className="mt-2 text-sm text-gray-600">Keine Mitarbeiter gefunden.</div>
+            <div className="mt-2">
+              <Alert variant="info">Keine Mitarbeiter gefunden.</Alert>
+            </div>
           ) : (
             <div className="mt-3 overflow-x-auto">
               <div className="min-w-[920px] overflow-hidden rounded-lg border">

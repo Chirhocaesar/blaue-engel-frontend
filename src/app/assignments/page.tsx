@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { apiGet, ApiError } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
+import { Alert } from "@/components/ui";
 
 type AssignmentStatus = "PLANNED" | "ASSIGNED" | "CONFIRMED" | "DONE" | "CANCELLED";
 
@@ -94,19 +96,21 @@ export default async function AssignmentsPage({
     if (err?.status === 403) {
       return (
         <div className="p-4 pb-24">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Einsätze</h1>
-            <Link className="text-sm underline" href={dashboardPath}>
-              Dashboard
-            </Link>
-          </div>
+          <PageHeader
+            title="Einsätze"
+            actions={
+              <Link className="text-sm underline" href={dashboardPath}>
+                Dashboard
+              </Link>
+            }
+          />
 
-          <div className="mt-4 rounded-xl border p-4">
+          <Alert variant="warn" className="mt-4">
             <p className="font-medium">Kein Zugriff</p>
             <p className="mt-1 text-sm opacity-80">
               Diese Seite ist aktuell nur für Admins verfügbar.
             </p>
-          </div>
+          </Alert>
 
           <div className="mt-4">
             <Link className="underline" href={dashboardPath}>
@@ -119,17 +123,19 @@ export default async function AssignmentsPage({
 
     return (
       <div className="p-4 pb-24">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Einsätze</h1>
-          <Link className="text-sm underline" href={dashboardPath}>
-            Dashboard
-          </Link>
-        </div>
+        <PageHeader
+          title="Einsätze"
+          actions={
+            <Link className="text-sm underline" href={dashboardPath}>
+              Dashboard
+            </Link>
+          }
+        />
 
-        <div className="mt-4 rounded-xl border p-4">
+        <Alert variant="error" className="mt-4">
           <p className="font-medium">Konnte Einsätze nicht laden.</p>
           <p className="mt-2 text-sm opacity-80">{err?.message ?? "Unbekannter Fehler"}</p>
-        </div>
+        </Alert>
       </div>
     );
   }
@@ -142,12 +148,14 @@ export default async function AssignmentsPage({
 
   return (
     <div className="p-4 pb-24">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Einsätze</h1>
-        <Link className="text-sm underline" href={dashboardPath}>
-          Dashboard
-        </Link>
-      </div>
+      <PageHeader
+        title="Einsätze"
+        actions={
+          <Link className="text-sm underline" href={dashboardPath}>
+            Dashboard
+          </Link>
+        }
+      />
 
       <p className="mt-2 text-sm opacity-70">
         Zeitraum ist standardmäßig „ab heute + 14 Tage“ (Backend-Default).
@@ -155,12 +163,12 @@ export default async function AssignmentsPage({
 
       <div className="mt-4 space-y-3">
         {items.length === 0 ? (
-          <div className="rounded-xl border p-4">
+          <Alert variant="info">
             <p className="font-medium">Keine Einsätze gefunden.</p>
             <p className="mt-1 text-sm opacity-80">
               Tipp: Es gibt Filter (status, employeeId, customerId, from/to).
             </p>
-          </div>
+          </Alert>
         ) : (
           items.map((a) => (
             <Link

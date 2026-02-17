@@ -7,6 +7,8 @@ import { formatDate, formatDateTime, formatDateTimeRange, formatKm, formatMinute
 import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
 import { Alert } from "@/components/ui";
+import PageHeader from "@/components/PageHeader";
+import StatusPill from "@/components/StatusPill";
 
 type Employee = {
   id: string;
@@ -349,15 +351,17 @@ export default function CorrectionsClient() {
 
   return (
     <main className="p-4 pb-24 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Korrekturen (Admin)</h1>
-        <Link
-          href="/planner"
-          className="rounded border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
-        >
-          Zum Dienstplan
-        </Link>
-      </div>
+      <PageHeader
+        title="Korrekturen (Admin)"
+        actions={
+          <Link
+            href="/planner"
+            className="rounded border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
+          >
+            Zum Dienstplan
+          </Link>
+        }
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <label className="grid gap-1 min-w-0">
           <span>Mitarbeiter</span>
@@ -502,13 +506,13 @@ export default function CorrectionsClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-gray-50 text-gray-700">
                     <th className="text-left p-2 border">Kunde</th>
                     <th className="text-left p-2 border">Zeit</th>
                     <th className="text-left p-2 border">Status</th>
-                    <th className="text-left p-2 border">KM (eingetragen)</th>
-                    <th className="text-left p-2 border">KM Korrektur</th>
-                    <th className="text-left p-2 border">KM final</th>
+                    <th className="text-right p-2 border">KM (eingetragen)</th>
+                    <th className="text-right p-2 border">KM Korrektur</th>
+                    <th className="text-right p-2 border">KM final</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -525,7 +529,7 @@ export default function CorrectionsClient() {
                         className={
                           highlightAID && a.id === highlightAID
                             ? "bg-yellow-50 border-yellow-200"
-                            : undefined
+                            : "odd:bg-white even:bg-gray-50/60 hover:bg-gray-100"
                         }
                       >
                         <td className="p-2 border">
@@ -535,12 +539,14 @@ export default function CorrectionsClient() {
                         <td className="p-2 border">
                           {formatDateTimeRange(a.startAt, a.endAt)}
                         </td>
-                        <td className="p-2 border">{a.status}</td>
                         <td className="p-2 border">
+                          <StatusPill status={a.status} />
+                        </td>
+                        <td className="p-2 border text-right tabular-nums">
                           {typeof a.kilometers === "number" ? formatKm(a.kilometers) : "—"}
                         </td>
-                        <td className="p-2 border">{a.kmAdjusted ?? 0}</td>
-                        <td className="p-2 border">
+                        <td className="p-2 border text-right tabular-nums">{a.kmAdjusted ?? 0}</td>
+                        <td className="p-2 border text-right tabular-nums">
                           {a.kmFinal ?? (a.kilometers ?? 0) + (a.kmAdjusted ?? 0)}
                         </td>
                       </tr>
@@ -560,7 +566,7 @@ export default function CorrectionsClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-gray-50 text-gray-700">
                     {showTimeColumns ? (
                       <>
                         <th className="text-left p-2 border">Start</th>
@@ -580,7 +586,7 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     bundle.timeEntries.map((t) => (
-                      <tr key={t.id}>
+                      <tr key={t.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         {showTimeColumns ? (
                           <>
                             <td className="p-2 border">
@@ -603,7 +609,7 @@ export default function CorrectionsClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-gray-50 text-gray-700">
                     <th className="text-left p-2 border">Delta</th>
                     <th className="text-left p-2 border">Grund</th>
                     <th className="text-left p-2 border">Erstellt</th>
@@ -618,7 +624,7 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     bundle.timeAdjustments.map((a) => (
-                      <tr key={a.id}>
+                      <tr key={a.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         <td className="p-2 border">{a.deltaMinutes}</td>
                         <td className="p-2 border">{a.reason}</td>
                         <td className="p-2 border">{formatDateTime(a.createdAt)}</td>
@@ -691,7 +697,7 @@ export default function CorrectionsClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-gray-50 text-gray-700">
                     <th className="text-left p-2 border">Delta</th>
                     <th className="text-left p-2 border">Grund</th>
                     <th className="text-left p-2 border">Erstellt</th>
@@ -706,7 +712,7 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     bundle.kmAdjustments.map((a) => (
-                      <tr key={a.id}>
+                      <tr key={a.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         <td className="p-2 border">{a.deltaKm}</td>
                         <td className="p-2 border">{a.reason}</td>
                         <td className="p-2 border">{formatDateTime(a.createdAt)}</td>
@@ -778,7 +784,7 @@ export default function CorrectionsClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm border">
                 <thead>
-                  <tr className="bg-gray-50">
+                  <tr className="bg-gray-50 text-gray-700">
                     <th className="text-left p-2 border">Erstellt</th>
                     <th className="text-left p-2 border">Aktion</th>
                     <th className="text-left p-2 border">Entität</th>
@@ -794,7 +800,7 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     logs.map((log) => (
-                      <tr key={log.id}>
+                      <tr key={log.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         <td className="p-2 border">{formatDateTime(log.createdAt)}</td>
                         <td className="p-2 border">{log.action}</td>
                         <td className="p-2 border">{log.entity}</td>

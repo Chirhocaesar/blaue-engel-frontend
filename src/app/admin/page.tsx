@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { apiGet, ApiError } from "@/lib/api";
 import { formatDate, formatDateTimeRange } from "@/lib/format";
 import StatusPill from "@/components/StatusPill";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -120,12 +121,10 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Admin-Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-600">Übersicht für die nächsten 14 Tage.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Admin-Dashboard"
+        subtitle="Übersicht für die nächsten 14 Tage."
+      />
 
       <div className="flex flex-wrap gap-2">
         <Link href="/planner" className="rounded-xl border px-4 py-2 text-sm font-semibold">
@@ -181,7 +180,7 @@ export default async function AdminDashboardPage() {
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm border">
             <thead>
-              <tr className="bg-gray-50">
+              <tr className="bg-gray-50 text-gray-700">
                 <th className="text-left p-2 border">Kunde</th>
                 <th className="text-left p-2 border">Mitarbeiter</th>
                 <th className="text-left p-2 border">Zeit</th>
@@ -205,7 +204,7 @@ export default async function AdminDashboardPage() {
                     ?? mappedUser?.email
                     ?? (a.employeeId ? shortId(a.employeeId) : "—");
                   return (
-                    <tr key={a.id}>
+                    <tr key={a.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                       <td className="p-2 border">
                         <div className="font-medium">{customerName}</div>
                       </td>
