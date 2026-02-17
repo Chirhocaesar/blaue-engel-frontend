@@ -938,7 +938,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (res.status === 403 && json?.message === "LOCKED_AFTER_SIGNATURE") {
+        if (res.status === 403 && String(json?.message || "").includes("KM_EDIT_LOCKED_AFTER_SIGNATURE")) {
           setKmLocked(true);
           setIsKmLockedBySignature(true);
           return;
@@ -951,11 +951,15 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       await loadAssignment();
     } catch (e: any) {
       const msg = e?.message || "Fehler beim Speichern";
-      if (msg === "LOCKED_AFTER_SIGNATURE" || msg.includes("LOCKED_AFTER_SIGNATURE")) {
+      if (msg.includes("KM_EDIT_LOCKED_AFTER_SIGNATURE")) {
         setKmLocked(true);
         setIsKmLockedBySignature(true);
-      } else if (msg === "ASSIGNMENT_NOT_CONFIRMED" || msg.includes("ASSIGNMENT_NOT_CONFIRMED")) {
+      } else if (msg.includes("KM_EDIT_ONLY_CONFIRMED")) {
         setKmErr("Bitte bestätige zuerst den Termin, bevor Kilometer erfasst werden können.");
+      } else if (msg.includes("KM_EDIT_NOT_ALLOWED_DONE")) {
+        setKmErr("KM kann nach Abschluss nicht mehr geändert werden.");
+      } else if (msg.includes("KM_EDIT_LOCKED_MONTH")) {
+        setKmErr("Monat gesperrt – KM nur über Admin-Korrektur.");
       } else {
         setKmErr(msg);
       }
@@ -1429,7 +1433,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                   onChange={(e) => setKmValue(e.target.value)}
                   className={`text-sm rounded border px-2 py-2 w-28 ${lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}`}
                   aria-label="Kilometer"
-                  disabled={kmSaving || isAssigned || isLocked || isKmLockedBySignature || kmLocked}
+                  disabled={kmSaving || isAssigned || isDone || isLocked || isKmLockedBySignature || kmLocked}
                 />
               )}
 
@@ -1437,7 +1441,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 <Button
                   type="button"
                   onClick={handleKmSave}
-                  disabled={kmSaving || isAssigned || isLocked || isKmLockedBySignature || kmLocked}
+                  disabled={kmSaving || isAssigned || isDone || isLocked || isKmLockedBySignature || kmLocked}
                   variant="outline"
                   size="sm"
                   className={lockAfterSignatureActive ? "opacity-60 cursor-not-allowed" : ""}
