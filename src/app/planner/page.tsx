@@ -741,6 +741,14 @@ export default function PlannerPage() {
               </div>
             ) : null}
 
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+              <span>Status:</span>
+              <StatusPill status="ASSIGNED" />
+              <StatusPill status="CONFIRMED" />
+              <StatusPill status="DONE" />
+              <StatusPill status="CANCELLED" />
+            </div>
+
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="text-xs text-gray-500">Status</div>
               <div className="flex flex-wrap justify-center gap-2">

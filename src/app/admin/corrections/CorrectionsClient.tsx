@@ -362,6 +362,9 @@ export default function CorrectionsClient() {
           </Link>
         }
       />
+      <div className="text-xs text-gray-600">
+        Änderungen hier wirken sich auf Monatsberichte und Abrechnung aus.
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <label className="grid gap-1 min-w-0">
           <span>Mitarbeiter</span>
@@ -507,12 +510,12 @@ export default function CorrectionsClient() {
               <table className="w-full text-sm border">
                 <thead>
                   <tr className="bg-gray-50 text-gray-700">
-                    <th className="text-left p-2 border">Kunde</th>
-                    <th className="text-left p-2 border">Zeit</th>
-                    <th className="text-left p-2 border">Status</th>
-                    <th className="text-right p-2 border">KM (eingetragen)</th>
-                    <th className="text-right p-2 border">KM Korrektur</th>
-                    <th className="text-right p-2 border">KM final</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Kunde</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Zeit</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Status</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM (eingetragen)</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM Korrektur</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM final</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -557,6 +560,8 @@ export default function CorrectionsClient() {
             </div>
           </section>
 
+          <div className="border-t" />
+
           <section className="rounded border p-4 space-y-3 min-h-[220px]">
             <h2 className="text-base font-semibold">Zeit</h2>
             <div className="text-sm text-gray-700">
@@ -569,12 +574,12 @@ export default function CorrectionsClient() {
                   <tr className="bg-gray-50 text-gray-700">
                     {showTimeColumns ? (
                       <>
-                        <th className="text-left p-2 border">Start</th>
-                        <th className="text-left p-2 border">Ende</th>
+                        <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Start</th>
+                        <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Ende</th>
                       </>
                     ) : null}
-                    <th className="text-left p-2 border">Dauer</th>
-                    <th className="text-left p-2 border">Notiz</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Dauer</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Notiz</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -610,9 +615,9 @@ export default function CorrectionsClient() {
               <table className="w-full text-sm border">
                 <thead>
                   <tr className="bg-gray-50 text-gray-700">
-                    <th className="text-left p-2 border">Delta</th>
-                    <th className="text-left p-2 border">Grund</th>
-                    <th className="text-left p-2 border">Erstellt</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Delta</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Grund</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Erstellt</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -688,6 +693,8 @@ export default function CorrectionsClient() {
             </div>
           </section>
 
+          <div className="border-t" />
+
           <section className="rounded border p-4 space-y-3 min-h-[180px]">
             <h2 className="text-base font-semibold">KM</h2>
             <div className="text-sm text-gray-700">
@@ -698,9 +705,9 @@ export default function CorrectionsClient() {
               <table className="w-full text-sm border">
                 <thead>
                   <tr className="bg-gray-50 text-gray-700">
-                    <th className="text-left p-2 border">Delta</th>
-                    <th className="text-left p-2 border">Grund</th>
-                    <th className="text-left p-2 border">Erstellt</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Delta</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Grund</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Erstellt</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -776,6 +783,8 @@ export default function CorrectionsClient() {
             </div>
           </section>
 
+          <div className="border-t" />
+
           <section className="rounded border p-4 space-y-3">
             <h2 className="text-base font-semibold">Audit-Protokoll</h2>
             {(() => {
@@ -785,10 +794,10 @@ export default function CorrectionsClient() {
               <table className="w-full text-sm border">
                 <thead>
                   <tr className="bg-gray-50 text-gray-700">
-                    <th className="text-left p-2 border">Erstellt</th>
-                    <th className="text-left p-2 border">Aktion</th>
-                    <th className="text-left p-2 border">Entität</th>
-                    <th className="text-left p-2 border">Grund</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Erstellt</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Aktion</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Entität</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Grund</th>
                   </tr>
                 </thead>
                 <tbody>

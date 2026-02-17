@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatDate,
+  formatDateTime,
   formatKm,
   formatMinutes,
   formatSignedMinutes,
@@ -18,6 +19,7 @@ import { useNativePickers } from "@/lib/useNativePickers";
 import { statusLabelDe } from "@/lib/status";
 import StatusPill from "@/components/StatusPill";
 import { Alert, Button, Card, Pill } from "@/components/ui";
+import StateNotice from "@/components/StateNotice";
 
 type Customer = {
   id?: string;
@@ -69,6 +71,7 @@ type Assignment = {
   employeeId?: string;
   startAt: string;
   endAt: string;
+  updatedAt?: string;
   notes?: string | null;
   status?: string;
   kilometers?: number | null;
@@ -620,6 +623,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     setKmLoadState("empty");
   }, [kmDate, data?.kilometers]);
 
+  useEffect(() => {
+    if (!kmSavedAt) return;
+    const t = window.setTimeout(() => setKmSavedAt(null), 2500);
+    return () => window.clearTimeout(t);
+  }, [kmSavedAt]);
+
   async function handleAddTimeEntry() {
     if (teSaving) return;
     setTeErr("");
@@ -972,7 +981,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   if (loading) {
     return (
       <main className="min-h-screen p-4">
-        <div className="text-sm text-gray-600">Lade…</div>
+        <StateNotice variant="loading" message="Lade…" />
       </main>
     );
   }
@@ -1153,6 +1162,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             {isLocked ? (
               <div className="mt-1 text-xs text-gray-600">
                 Gesperrt nach Unterschrift – Änderungen nur durch Admin-Korrektur möglich.
+              </div>
+            ) : null}
+            {data?.updatedAt ? (
+              <div className="mt-1 text-xs text-gray-500">
+                Letzte Änderung: {formatDateTime(data.updatedAt)}
               </div>
             ) : null}
           </div>
@@ -1460,7 +1474,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </div>
               ) : null}
 
-              {kmSavedAt ? <div className="text-sm text-green-700">Gespeichert ✓</div> : null}
+              {kmSavedAt ? <div className="text-sm text-green-700">✓ Kilometer gespeichert</div> : null}
             </>
           )}
         </div>
@@ -1651,9 +1665,9 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
         <div className="mt-4">
           {teLoading ? (
-            <div className="text-sm text-gray-600">Lade Zeiteinträge…</div>
+            <StateNotice variant="loading" message="Lade Zeiteinträge…" />
           ) : timeEntries.length === 0 ? (
-            <div className="text-sm text-gray-600">Noch keine Zeiteinträge.</div>
+            <StateNotice variant="empty" message="Noch keine Zeiteinträge." />
           ) : (
             <ul className="space-y-2">
               {timeEntries.map((t) => {

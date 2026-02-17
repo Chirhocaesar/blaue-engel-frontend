@@ -1088,12 +1088,12 @@ export default function MasterdataPage() {
                 <table className="min-w-full text-sm border">
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
-                      <th className="p-2 text-left border">Name</th>
-                      <th className="p-2 text-left border">E-Mail</th>
+                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Name</th>
+                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">E-Mail</th>
                       {includeInactiveEmployees ? (
-                        <th className="p-2 text-left border">Status</th>
+                        <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Status</th>
                       ) : null}
-                      <th className="p-2 text-left border">Aktionen</th>
+                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Aktionen</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1312,13 +1312,13 @@ export default function MasterdataPage() {
                 <table className="min-w-full text-sm border">
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
-                      <th className="p-2 text-left border">Name</th>
-                      <th className="p-2 text-left border">Adresse</th>
+                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Name</th>
+                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Adresse</th>
                       {includeInactiveCustomers ? (
-                        <th className="p-2 text-left border">Status</th>
+                        <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Status</th>
                       ) : null}
-                      <th className="p-2 text-left border">Telefon</th>
-                      <th className="p-2 text-left border">Aktionen</th>
+                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Telefon</th>
+                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Aktionen</th>
                     </tr>
                   </thead>
                   <tbody>

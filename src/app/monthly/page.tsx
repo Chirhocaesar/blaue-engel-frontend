@@ -100,6 +100,11 @@ export default function MonthlyPage() {
     return { start, end };
   }, [month]);
 
+  const monthLabel = useMemo(() => {
+    const base = parseMonth(month);
+    return base.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  }, [month]);
+
   const monthAssignments = useMemo(() => {
     const startTs = monthRange.start.getTime();
     const endTs = monthRange.end.getTime();
@@ -168,6 +173,10 @@ export default function MonthlyPage() {
           </Link>
         }
       />
+
+      <div className="text-sm text-gray-600">
+        Zeitraum: {monthLabel} · Mitarbeiter: Du
+      </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">

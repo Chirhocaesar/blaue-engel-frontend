@@ -213,12 +213,12 @@ export default async function AssignmentsPage({
 
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-4">
         <div className="mx-auto flex max-w-xl items-center justify-between">
-          <Link className="text-sm underline" href={dashboardPath}>
+          <Link className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50" href={dashboardPath}>
             Zurück
           </Link>
 
           {nextCursor ? (
-            <Link className="rounded-lg border px-4 py-2 text-sm" href={`/assignments?${nextParams.toString()}`}>
+            <Link className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50" href={`/assignments?${nextParams.toString()}`}>
               Nächste
             </Link>
           ) : (

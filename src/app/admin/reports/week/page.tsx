@@ -252,6 +252,10 @@ export default function AdminWeeklyReportPage() {
 
   const weekLabel = `${weekRange.start.toLocaleDateString("de-DE")} – ${weekRange.end.toLocaleDateString("de-DE")}`;
 
+  const updatedLabel = useMemo(() => {
+    return new Date().toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+  }, []);
+
   return (
     <main className="space-y-4">
       <PageHeader
@@ -263,6 +267,10 @@ export default function AdminWeeklyReportPage() {
           </Link>
         }
       />
+
+      <div className="text-sm text-gray-600">
+        Zeitraum: {weekLabel} · Stand: {updatedLabel}
+      </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">

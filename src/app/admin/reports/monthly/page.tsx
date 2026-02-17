@@ -142,6 +142,22 @@ export default function AdminMonthlyReportPage() {
     return monthAssignments.filter((a) => (a.employeeId || a.employee?.id) === employeeFilter);
   }, [monthAssignments, employeeFilter]);
 
+  const monthLabel = useMemo(() => {
+    const base = parseMonth(month);
+    return base.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  }, [month]);
+
+  const employeeLabel = useMemo(() => {
+    if (!employeeFilter) return "Alle Mitarbeiter";
+    const match = employees.find((e) => e.id === employeeFilter);
+    if (!match) return "Ausgewählt";
+    return match.fullName ? `${match.fullName} · ${match.email ?? ""}`.trim() : match.email || "Ausgewählt";
+  }, [employeeFilter, employees]);
+
+  const updatedLabel = useMemo(() => {
+    return new Date().toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+  }, []);
+
   const totalsByEmployee = useMemo(() => {
     const map = new Map<string, { planned: number; done: number; km: number }>();
     employees.forEach((e) => map.set(e.id, { planned: 0, done: 0, km: 0 }));
@@ -226,6 +242,10 @@ export default function AdminMonthlyReportPage() {
           </Link>
         }
       />
+
+      <div className="text-sm text-gray-600">
+        Zeitraum: {monthLabel} · Mitarbeiter: {employeeLabel} · Stand: {updatedLabel}
+      </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">
