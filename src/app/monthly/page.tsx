@@ -217,7 +217,7 @@ export default function MonthlyPage() {
                     <th className="text-left p-2 border">Kunde</th>
                     <th className="text-left p-2 border">Status</th>
                     <th className="text-left p-2 border">Dauer (Std.)</th>
-                    <th className="text-left p-2 border">KM</th>
+                    <th className="text-left p-2 border">KM (eingetragen)</th>
                   </tr>
                 </thead>
                 <tbody>

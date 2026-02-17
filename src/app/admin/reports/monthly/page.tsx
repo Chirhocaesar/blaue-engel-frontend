@@ -294,7 +294,7 @@ export default function AdminMonthlyReportPage() {
                       <th className="text-left p-2">Mitarbeiter</th>
                       <th className="text-left p-2">Status</th>
                       <th className="text-left p-2">Dauer (Std.)</th>
-                      <th className="text-left p-2">KM</th>
+                      <th className="text-left p-2">KM (eingetragen)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -328,7 +328,7 @@ export default function AdminMonthlyReportPage() {
                     <th className="text-left p-2">Mitarbeiter</th>
                     <th className="text-left p-2">Geplant (Std.)</th>
                     <th className="text-left p-2">Erledigt (Std.)</th>
-                    <th className="text-left p-2">KM</th>
+                    <th className="text-left p-2">KM (eingetragen)</th>
                   </tr>
                 </thead>
                 <tbody>
