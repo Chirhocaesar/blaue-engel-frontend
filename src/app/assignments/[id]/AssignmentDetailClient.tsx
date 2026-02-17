@@ -72,6 +72,8 @@ type Assignment = {
   notes?: string | null;
   status?: string;
   kilometers?: number | null;
+  kmAdjusted?: number | null;
+  kmFinal?: number | null;
   customer?: Customer;
   customerName?: string;
   employee?: { id?: string; fullName?: string | null; email?: string | null } | null;
@@ -273,17 +275,22 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
   const summary = useMemo(() => {
     const t = data?.totals;
-    const kmValue = typeof data?.kilometers === "number" ? data.kilometers : null;
+    const kmRecorded = typeof data?.kilometers === "number" ? data.kilometers : null;
+    const kmFinal = typeof data?.kmFinal === "number"
+      ? data.kmFinal
+      : typeof data?.kilometers === "number"
+        ? data.kilometers
+        : null;
     return {
       planned: t?.plannedMinutes ?? 0,
       recorded: t?.recordedMinutes ?? 0,
       adjustments: t?.adjustedMinutes ?? 0,
       final: t?.finalMinutes ?? 0,
-      kmRecorded: kmValue,
-      kmAdjustments: t?.kmAdjusted ?? 0,
-      kmFinal: kmValue,
+      kmRecorded,
+      kmAdjustments: t?.kmAdjusted ?? data?.kmAdjusted ?? 0,
+      kmFinal,
     };
-  }, [data?.kilometers, data?.totals]);
+  }, [data?.kilometers, data?.kmAdjusted, data?.kmFinal, data?.totals]);
 
   const kmDate = useMemo(() => {
     if (!data?.startAt) return "";
