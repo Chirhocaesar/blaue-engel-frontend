@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui";
+import StatusPill from "@/components/StatusPill";
 
 export const dynamic = "force-dynamic";
 
@@ -226,7 +227,9 @@ export default function MonthlyPage() {
                       <td className="p-2 border">{row.dateLabel}</td>
                       <td className="p-2 border">{row.timeLabel}</td>
                       <td className="p-2 border">{row.customerName}</td>
-                      <td className="p-2 border">{row.status}</td>
+                      <td className="p-2 border">
+                        <StatusPill status={row.status} />
+                      </td>
                       <td className="p-2 border">{row.duration.toFixed(2)}</td>
                       <td className="p-2 border">{row.km == null ? "—" : row.km.toFixed(1)}</td>
                     </tr>
