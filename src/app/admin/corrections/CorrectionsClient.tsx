@@ -25,6 +25,9 @@ type DayBundle = {
     startAt: string;
     endAt: string;
     status: string;
+    kilometers?: number | null;
+    kmAdjusted?: number | null;
+    kmFinal?: number | null;
     customer: { id: string; name: string; address: string; phone: string };
   }>;
   timeEntries: Array<{
@@ -41,7 +44,6 @@ type DayBundle = {
     createdAt: string;
     createdById: string | null;
   }>;
-  kmEntry: { id: string; km: number } | null;
   kmAdjustments: Array<{
     id: string;
     deltaKm: number;
@@ -126,7 +128,14 @@ export default function CorrectionsClient() {
       (sum, a) => sum + (a.deltaMinutes ?? 0),
       0
     );
-    const kmRecorded = bundle?.kmEntry?.km ?? null;
+    const kmRecordedRaw = (bundle?.assignments ?? []).reduce(
+      (sum, a) => sum + (typeof a.kilometers === "number" ? a.kilometers : 0),
+      0
+    );
+    const hasKmRecorded = (bundle?.assignments ?? []).some(
+      (a) => typeof a.kilometers === "number"
+    );
+    const kmRecorded = hasKmRecorded ? kmRecordedRaw : null;
     const kmAdjustments = (bundle?.kmAdjustments ?? []).reduce(
       (sum, a) => sum + (a.deltaKm ?? 0),
       0
@@ -153,7 +162,6 @@ export default function CorrectionsClient() {
       bundle.assignments.length > 0 ||
       bundle.timeEntries.length > 0 ||
       bundle.timeAdjustments.length > 0 ||
-      bundle.kmEntry !== null ||
       bundle.kmAdjustments.length > 0
     );
   }, [bundle]);
@@ -498,12 +506,15 @@ export default function CorrectionsClient() {
                     <th className="text-left p-2 border">Kunde</th>
                     <th className="text-left p-2 border">Zeit</th>
                     <th className="text-left p-2 border">Status</th>
+                    <th className="text-left p-2 border">KM (eingetragen)</th>
+                    <th className="text-left p-2 border">KM Korrektur</th>
+                    <th className="text-left p-2 border">KM final</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bundle.assignments.length === 0 ? (
                     <tr>
-                      <td className="p-2" colSpan={3}>
+                      <td className="p-2" colSpan={6}>
                         Keine Einsätze für diesen Tag.
                       </td>
                     </tr>
@@ -525,6 +536,13 @@ export default function CorrectionsClient() {
                           {formatDateTimeRange(a.startAt, a.endAt)}
                         </td>
                         <td className="p-2 border">{a.status}</td>
+                        <td className="p-2 border">
+                          {typeof a.kilometers === "number" ? formatKm(a.kilometers) : "—"}
+                        </td>
+                        <td className="p-2 border">{a.kmAdjusted ?? 0}</td>
+                        <td className="p-2 border">
+                          {a.kmFinal ?? (a.kilometers ?? 0) + (a.kmAdjusted ?? 0)}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -667,7 +685,7 @@ export default function CorrectionsClient() {
           <section className="rounded border p-4 space-y-3 min-h-[180px]">
             <h2 className="text-base font-semibold">KM</h2>
             <div className="text-sm text-gray-700">
-              Aktuell: {bundle.kmEntry ? `${formatKm(bundle.kmEntry.km)} km` : "nicht erfasst"}
+              KM (eingetragen): {summary.kmRecorded != null ? `${formatKm(summary.kmRecorded)} km` : "—"}
             </div>
 
             <div className="overflow-x-auto">
