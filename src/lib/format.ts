@@ -82,6 +82,11 @@ export function formatDateTimeRange(start?: DateInput, end?: DateInput): string 
   return `${formatDateTime(start)} – ${formatDateTime(end)}`;
 }
 
+export function isPlannedCountableStatus(status?: string | null): boolean {
+  if (!status) return true;
+  return String(status).toUpperCase() !== "CANCELLED";
+}
+
 export function formatMinutes(totalMinutes: MinuteInput): string {
   if (totalMinutes === null || totalMinutes === undefined || Number.isNaN(totalMinutes)) return "—";
   const sign = totalMinutes < 0 ? "-" : "";

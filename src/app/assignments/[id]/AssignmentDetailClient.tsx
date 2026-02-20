@@ -174,6 +174,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const [ackErr, setAckErr] = useState<string>("");
   const [doneLoading, setDoneLoading] = useState(false);
   const [doneErr, setDoneErr] = useState<string>("");
+  const [doneNote, setDoneNote] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [emergencyOpen, setEmergencyOpen] = useState(false);
@@ -331,6 +332,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const isConfirmed = statusU === "CONFIRMED";
   const isAssigned = statusU === "ASSIGNED";
   const canSign = isConfirmed || isDone;
+
+  const completionNote = useMemo(() => data?.notes?.trim() || "", [data?.notes]);
 
   async function loadAssignment() {
     setLoading(true);
@@ -878,15 +881,39 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     }
   }
 
+  async function handleDecline() {
+    if (!confirm("Termin wirklich absagen?")) return;
+    const reason = prompt("Grund (optional)")?.trim();
+    setAckErr("");
+    setAckLoading(true);
+    try {
+      const res = await fetch(`/api/me/assignments/${id}/ack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "DECLINE", reason: reason || undefined }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
+      await loadAssignment();
+    } catch (e: any) {
+      setAckErr(e?.message || "Fehler beim Absagen");
+    } finally {
+      setAckLoading(false);
+    }
+  }
+
   async function handleMarkDone() {
     setDoneErr("");
     setDoneLoading(true);
     try {
       const res = await fetch(`/api/me/assignments/${id}/done`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: doneNote.trim() || undefined }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
+      setDoneNote("");
       await loadAssignment();
     } catch (e: any) {
       setDoneErr(e?.message || "Fehler beim Abschließen");
@@ -1339,15 +1366,57 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
         <div className="mt-4 flex items-center gap-2 flex-wrap">
           {String(data?.status || "").toUpperCase() === "ASSIGNED" ? (
-            <Button
-              type="button"
-              onClick={handleAcknowledge}
-              disabled={ackLoading}
-              variant="outline"
-              size="sm"
-            >
-              {ackLoading ? "Bestätige…" : "Termin bestätigen"}
-            </Button>
+            <>
+              <Button
+                type="button"
+                onClick={handleAcknowledge}
+                disabled={ackLoading}
+                variant="outline"
+                size="sm"
+              >
+                {ackLoading ? "Bestätige…" : "Termin bestätigen"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDecline}
+                disabled={ackLoading}
+                variant="outline"
+                size="sm"
+              >
+                {ackLoading ? "Bitte warten…" : "Termin absagen"}
+              </Button>
+            </>
+          ) : null}
+
+          {isConfirmed && !isAdmin ? (
+            <>
+              <input
+                type="text"
+                value={doneNote}
+                onChange={(e) => setDoneNote(e.target.value)}
+                placeholder="Notiz (optional)"
+                className="min-h-[36px] rounded border px-2 py-2 text-sm"
+                disabled={doneLoading}
+              />
+              <Button
+                type="button"
+                onClick={handleMarkDone}
+                disabled={doneLoading}
+                variant="outline"
+                size="sm"
+              >
+                {doneLoading ? "Schließe ab…" : "Termin abschließen"}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDecline}
+                disabled={ackLoading}
+                variant="outline"
+                size="sm"
+              >
+                {ackLoading ? "Bitte warten…" : "Termin absagen"}
+              </Button>
+            </>
           ) : null}
 
           {ackErr ? <div className="text-sm text-red-600">{ackErr}</div> : null}
@@ -1524,6 +1593,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             <span className="font-semibold">{formatMinutes(totalWorkedMinutes)}</span>
           </div>
         </div>
+
+        {completionNote ? (
+          <div className="mt-2 text-sm text-gray-700">
+            <span className="text-gray-600">Notiz:</span> {completionNote}
+          </div>
+        ) : null}
 
         {teErr ? <div className="mt-2 text-sm text-red-600">{teErr}</div> : null}
 

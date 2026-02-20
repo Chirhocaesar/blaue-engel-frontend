@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Alert, Card } from "@/components/ui";
+import { isPlannedCountableStatus } from "@/lib/format";
 import PageHeader from "@/components/PageHeader";
 import StatusPill from "@/components/StatusPill";
 
@@ -135,7 +136,9 @@ export default function MonthlyPage() {
     let km = 0;
     monthAssignments.forEach((a) => {
       const hours = hoursBetween(a.startAt, a.endAt);
-      planned += hours;
+      if (isPlannedCountableStatus(a.status)) {
+        planned += hours;
+      }
       if (isDone(a.status)) {
         done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
@@ -159,10 +162,12 @@ export default function MonthlyPage() {
         const end = new Date(a.endAt);
         const dateLabel = start.toLocaleDateString("de-DE");
         const timeLabel = `${start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
-        const durationMinutes = minutesValue(a);
-        const duration = typeof durationMinutes === "number" && Number.isFinite(durationMinutes)
-          ? durationMinutes / 60
-          : hoursBetween(a.startAt, a.endAt);
+        const plannedHours = hoursBetween(a.startAt, a.endAt);
+        const doneMinutes = minutesValue(a);
+        const doneHoursValue = typeof doneMinutes === "number" && Number.isFinite(doneMinutes)
+          ? doneMinutes / 60
+          : null;
+        const doneHours = isDone(a.status) ? doneHoursValue : null;
         const km = typeof a.kmFinal === "number"
           ? a.kmFinal
           : typeof a.kilometers === "number"
@@ -174,7 +179,8 @@ export default function MonthlyPage() {
           timeLabel,
           customerName,
           status: a.status || "—",
-          duration,
+          plannedHours,
+          doneHours,
           km,
         };
       });
@@ -245,7 +251,8 @@ export default function MonthlyPage() {
                     <th className="text-left p-2 border">Zeit</th>
                     <th className="text-left p-2 border">Kunde</th>
                     <th className="text-left p-2 border">Status</th>
-                    <th className="text-right p-2 border">Dauer (Std.)</th>
+                    <th className="text-right p-2 border">Geplant (Std.)</th>
+                    <th className="text-right p-2 border">Erledigt (Std.)</th>
                     <th className="text-right p-2 border">KM (eingetragen)</th>
                   </tr>
                 </thead>
@@ -258,7 +265,10 @@ export default function MonthlyPage() {
                       <td className="p-2 border">
                         <StatusPill status={row.status} />
                       </td>
-                      <td className="p-2 border text-right tabular-nums">{row.duration.toFixed(2)}</td>
+                      <td className="p-2 border text-right tabular-nums">{row.plannedHours.toFixed(2)}</td>
+                      <td className="p-2 border text-right tabular-nums">
+                        {row.doneHours == null ? "—" : row.doneHours.toFixed(2)}
+                      </td>
                       <td className="p-2 border text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
                     </tr>
                   ))}

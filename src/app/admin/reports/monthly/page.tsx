@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Alert, Card } from "@/components/ui";
+import { isPlannedCountableStatus } from "@/lib/format";
 import StatusPill from "@/components/StatusPill";
 import PageHeader from "@/components/PageHeader";
 
@@ -181,7 +182,9 @@ export default function AdminMonthlyReportPage() {
       if (!empId) return;
       const row = map.get(empId) ?? { planned: 0, done: 0, km: 0 };
       const hours = hoursBetween(a.startAt, a.endAt);
-      row.planned += hours;
+      if (isPlannedCountableStatus(a.status)) {
+        row.planned += hours;
+      }
       if (isDone(a.status)) {
         row.done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
@@ -202,7 +205,9 @@ export default function AdminMonthlyReportPage() {
     let km = 0;
     filteredAssignments.forEach((a) => {
       const hours = hoursBetween(a.startAt, a.endAt);
-      planned += hours;
+      if (isPlannedCountableStatus(a.status)) {
+        planned += hours;
+      }
       if (isDone(a.status)) {
         done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"

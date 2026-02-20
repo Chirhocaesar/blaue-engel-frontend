@@ -41,6 +41,12 @@ function startOfDayLocal(d: Date) {
   return copy;
 }
 
+function endOfDayLocal(d: Date) {
+  const copy = new Date(d);
+  copy.setHours(23, 59, 59, 999);
+  return copy;
+}
+
 function dayKeyLocal(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -375,17 +381,18 @@ export default function PlannerPage() {
   useEffect(() => {
     let cancelled = false;
     if (!gridDays || gridDays.length === 0) return;
-    const start = dayKeyLocal(gridDays[0]);
-    const end = viewMode === "day"
-      ? dayKeyLocal(addDays(gridDays[0], 1))
-      : dayKeyLocal(gridDays[gridDays.length - 1]);
+    const startLocal = startOfDayLocal(gridDays[0]);
+    const endLocal = endOfDayLocal(viewMode === "day" ? gridDays[0] : gridDays[gridDays.length - 1]);
+    const start = startLocal.toISOString();
+    const end = endLocal.toISOString();
 
     const controller = new AbortController();
     setLoading(true);
 
     (async () => {
       try {
-        const res = await fetch(`/api/planner/assignments?start=${start}&end=${end}`, {
+        const res = await fetch(`/api/planner/assignments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`,
+        {
           signal: controller.signal,
         });
         if (!res.ok) {
@@ -884,7 +891,7 @@ export default function PlannerPage() {
                     <div className="mt-1">
                       {dayAssignments.length > 0 ? (
                         <div className="min-w-0 space-y-1">
-                          {dayAssignments.slice(0, 3).map((a) => {
+                          {dayAssignments.map((a) => {
                             const start = formatTime(a.startAt);
                             const end = formatTime(a.endAt);
                             const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
@@ -904,9 +911,6 @@ export default function PlannerPage() {
                             );
                           })}
 
-                          {dayAssignments.length > 3 && (
-                            <div className="text-[11px] text-gray-600">+{dayAssignments.length - 3} mehr</div>
-                          )}
                         </div>
                       ) : (
                         <div className="text-[11px] text-gray-400">—</div>
