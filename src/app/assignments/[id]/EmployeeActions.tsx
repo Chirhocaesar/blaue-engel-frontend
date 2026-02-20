@@ -17,10 +17,6 @@ export function EmployeeActions({
   const [busy, setBusy] = useState<null | "confirm" | "decline" | "sign">(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Decline UX
-  const [showDecline, setShowDecline] = useState(false);
-  const [declineReason, setDeclineReason] = useState("");
-
   // Signature pad
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
@@ -164,11 +160,7 @@ export function EmployeeActions({
   }
 
   async function decline() {
-    await postJson(
-      `/api/me/assignments/${assignmentId}/ack`,
-      { action: "DECLINE", reason: declineReason || undefined },
-      "decline"
-    );
+    await postJson(`/api/me/assignments/${assignmentId}/ack`, { action: "DECLINE" }, "decline");
   }
 
   async function submitSignature() {
@@ -210,11 +202,11 @@ export function EmployeeActions({
         </button>
 
         <button
-          onClick={() => setShowDecline((v) => !v)}
+          onClick={decline}
           disabled={!ackAllowed || !!busy}
           style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ccc" }}
         >
-          Ablehnen…
+          {busy === "decline" ? "Bitte warten…" : "Ablehnen"}
         </button>
 
         {s === "CONFIRMED" ? (
@@ -224,24 +216,6 @@ export function EmployeeActions({
         ) : null}
       </div>
 
-      {showDecline && ackAllowed ? (
-        <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input
-            value={declineReason}
-            onChange={(e) => setDeclineReason(e.target.value)}
-            placeholder="Grund (optional)"
-            style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #ccc", minWidth: 260 }}
-            disabled={!!busy}
-          />
-          <button
-            onClick={decline}
-            disabled={!!busy}
-            style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ccc" }}
-          >
-            {busy === "decline" ? "Bitte warten…" : "Ablehnen bestätigen"}
-          </button>
-        </div>
-      ) : null}
 
       {/* Signature */}
       <div style={{ marginTop: 16 }}>

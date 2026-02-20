@@ -172,9 +172,6 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   // employee actions
   const [ackLoading, setAckLoading] = useState(false);
   const [ackErr, setAckErr] = useState<string>("");
-  const [doneLoading, setDoneLoading] = useState(false);
-  const [doneErr, setDoneErr] = useState<string>("");
-  const [doneNote, setDoneNote] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [emergencyOpen, setEmergencyOpen] = useState(false);
@@ -883,14 +880,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
   async function handleDecline() {
     if (!confirm("Termin wirklich absagen?")) return;
-    const reason = prompt("Grund (optional)")?.trim();
     setAckErr("");
     setAckLoading(true);
     try {
       const res = await fetch(`/api/me/assignments/${id}/ack`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "DECLINE", reason: reason || undefined }),
+        body: JSON.stringify({ action: "DECLINE" }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
@@ -902,25 +898,6 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     }
   }
 
-  async function handleMarkDone() {
-    setDoneErr("");
-    setDoneLoading(true);
-    try {
-      const res = await fetch(`/api/me/assignments/${id}/done`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: doneNote.trim() || undefined }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
-      setDoneNote("");
-      await loadAssignment();
-    } catch (e: any) {
-      setDoneErr(e?.message || "Fehler beim Abschließen");
-    } finally {
-      setDoneLoading(false);
-    }
-  }
 
   async function handleKmSave() {
     setKmErr("");
@@ -1387,40 +1364,19 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               </Button>
             </>
           ) : null}
-
           {isConfirmed && !isAdmin ? (
-            <>
-              <input
-                type="text"
-                value={doneNote}
-                onChange={(e) => setDoneNote(e.target.value)}
-                placeholder="Notiz (optional)"
-                className="min-h-[36px] rounded border px-2 py-2 text-sm"
-                disabled={doneLoading}
-              />
-              <Button
-                type="button"
-                onClick={handleMarkDone}
-                disabled={doneLoading}
-                variant="outline"
-                size="sm"
-              >
-                {doneLoading ? "Schließe ab…" : "Termin abschließen"}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleDecline}
-                disabled={ackLoading}
-                variant="outline"
-                size="sm"
-              >
-                {ackLoading ? "Bitte warten…" : "Termin absagen"}
-              </Button>
-            </>
+            <Button
+              type="button"
+              onClick={handleDecline}
+              disabled={ackLoading}
+              variant="outline"
+              size="sm"
+            >
+              {ackLoading ? "Bitte warten…" : "Termin absagen"}
+            </Button>
           ) : null}
 
           {ackErr ? <div className="text-sm text-red-600">{ackErr}</div> : null}
-          {doneErr ? <div className="text-sm text-red-600">{doneErr}</div> : null}
         </div>
       </Card>
 
