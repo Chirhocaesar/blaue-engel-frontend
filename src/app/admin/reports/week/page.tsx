@@ -28,6 +28,9 @@ type Assignment = {
   kilometers?: number | null;
   kmAdjusted?: number | null;
   kmFinal?: number | null;
+  minutesRecorded?: number | null;
+  minutesAdjusted?: number | null;
+  minutesFinal?: number | null;
 };
 
 type ItemsResponse<T> = T[] | { items?: T[] };
@@ -64,6 +67,18 @@ function hoursBetween(startAt: string, endAt: string) {
   const end = new Date(endAt).getTime();
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
   return (end - start) / 3600000;
+}
+
+function minutesValue(a: Assignment) {
+  if (typeof a.minutesFinal === "number") return a.minutesFinal;
+  if (typeof a.minutesRecorded === "number") return a.minutesRecorded;
+  return null;
+}
+
+function doneHours(a: Assignment) {
+  const minutes = minutesValue(a);
+  if (typeof minutes === "number" && Number.isFinite(minutes)) return minutes / 60;
+  return hoursBetween(a.startAt, a.endAt);
 }
 
 function isDone(status?: string | null) {
@@ -211,7 +226,7 @@ export default function AdminWeeklyReportPage() {
       const hours = hoursBetween(a.startAt, a.endAt);
       row.planned += hours;
       if (isDone(a.status)) {
-        row.done += hours;
+        row.done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
           ? a.kmFinal
           : typeof a.kilometers === "number"
@@ -232,7 +247,7 @@ export default function AdminWeeklyReportPage() {
       const hours = hoursBetween(a.startAt, a.endAt);
       planned += hours;
       if (isDone(a.status)) {
-        done += hours;
+        done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
           ? a.kmFinal
           : typeof a.kilometers === "number"
