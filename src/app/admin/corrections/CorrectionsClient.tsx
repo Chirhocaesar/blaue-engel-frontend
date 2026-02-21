@@ -574,7 +574,7 @@ export default function CorrectionsClient() {
                   <tr className="bg-gray-50 text-gray-700">
                     {showTimeColumns ? (
                       <>
-                        <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Start</th>
+                        <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Beginn</th>
                         <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Ende</th>
                       </>
                     ) : null}

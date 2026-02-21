@@ -158,7 +158,7 @@ export default function AdminAssignmentNewClient() {
     const startIso = new Date(`${date}T${startTime}`).toISOString();
     const endIso = new Date(`${date}T${endTime}`).toISOString();
     if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
-      setError("Endzeit muss nach der Startzeit liegen.");
+      setError("Endzeit muss nach der Beginnzeit liegen.");
       return;
     }
 
@@ -174,7 +174,7 @@ export default function AdminAssignmentNewClient() {
             const repeatEnd = new Date(`${seriesRepeatUntil}T23:59:59.999`);
             const diffMs = repeatEnd.getTime() - startDay.getTime();
             if (Number.isNaN(diffMs) || diffMs < 0) {
-              throw new Error("Enddatum muss nach dem Start liegen.");
+              throw new Error("Enddatum muss nach dem Beginn liegen.");
             }
             const rangeDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
             if (rangeDays > 90) {
@@ -334,7 +334,7 @@ export default function AdminAssignmentNewClient() {
           </label>
 
           <label className="grid gap-1">
-            <span className="text-sm text-gray-700">Startzeit</span>
+            <span className="text-sm text-gray-700">Beginnzeit</span>
             {showNativeInputs ? (
               <Input
                 type="time"

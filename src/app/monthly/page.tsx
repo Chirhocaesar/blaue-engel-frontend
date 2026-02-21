@@ -196,7 +196,7 @@ export default function MonthlyPage() {
     <main className="space-y-4">
       <PageHeader
         title="Monatsübersicht"
-        subtitle="Deine Monatswerte."
+        subtitle="Ihre Monatswerte."
         actions={
           <Link href="/dashboard" className="rounded-xl border px-4 py-2 text-sm font-semibold">
             Dashboard
@@ -205,7 +205,7 @@ export default function MonthlyPage() {
       />
 
       <div className="text-sm text-gray-600">
-        Zeitraum: {monthLabel} · Mitarbeiter: Du
+        Zeitraum: {monthLabel} · Mitarbeiter: Sie
       </div>
 
       <div className="flex flex-wrap items-end gap-3">

@@ -100,7 +100,7 @@ export default async function AssignmentsPage({
             title="Einsätze"
             actions={
               <Link className="text-sm underline" href={dashboardPath}>
-                Dashboard
+                  Dashboard
               </Link>
             }
           />
@@ -113,8 +113,8 @@ export default async function AssignmentsPage({
           </Alert>
 
           <div className="mt-4">
-            <Link className="underline" href={dashboardPath}>
-              Zurück zum Dashboard
+              <Link className="underline" href={dashboardPath}>
+                Zurück zum Dashboard
             </Link>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default async function AssignmentsPage({
                   </p>
 
                   <p className="mt-1 text-sm opacity-80">
-                    <span className="font-medium">Start:</span>{" "}
+                    <span className="font-medium">Beginn:</span>{" "}
                     {formatDateTime(a.startAt)}
                   </p>
 

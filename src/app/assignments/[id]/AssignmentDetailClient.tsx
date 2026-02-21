@@ -481,7 +481,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     const startIso = new Date(`${editStartDate}T${editStartTime}`).toISOString();
     const endIso = new Date(`${editEndDate}T${editEndTime}`).toISOString();
     if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
-      setEditError("Endzeit muss nach der Startzeit liegen.");
+      setEditError("Endzeit muss nach der Beginnzeit liegen.");
       return;
     }
 
@@ -637,7 +637,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       return;
     }
     if (!teStartTime || !teEndTime) {
-      setTeErr("Bitte Start- und Endzeit angeben.");
+      setTeErr("Bitte Beginn- und Endzeit angeben.");
       return;
     }
 
@@ -1237,7 +1237,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Start</span>
+                  <span className="text-xs text-gray-600">Beginn</span>
                   <input
                     type="date"
                     lang="de-DE"
@@ -1580,7 +1580,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-600">Start</label>
+                <label className="text-xs text-gray-600">Beginn</label>
                 <select
                   value={teStartTime}
                   onChange={(e) => setTeStartTime(e.target.value)}
@@ -1703,7 +1703,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           Achtung: Nach dem Speichern der Unterschrift werden Zeiteinträge und Kilometer für diesen Tag gesperrt und können nicht mehr geändert werden.
         </p>
         {!latestSignature ? (
-          <p className="mt-1 text-sm text-gray-600">Bitte hier unterschreiben und speichern. (MVP)</p>
+          <p className="mt-1 text-sm text-gray-600">Bitte hier unterschreiben und speichern. (Testversion)</p>
         ) : null}
 
         {latestSignature ? (

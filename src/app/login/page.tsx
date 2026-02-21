@@ -60,7 +60,7 @@ export default function LoginPage() {
         window.location.href = "/dashboard";
       }
     } catch (err: any) {
-      setError(err?.message ?? "Network error");
+      setError(err?.message ?? "Netzwerkfehler");
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export default function LoginPage() {
       <div>
         <h1 className="text-2xl font-bold">Anmelden</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Bitte melde dich mit deinen Zugangsdaten an.
+          Bitte melden Sie sich mit Ihren Zugangsdaten an.
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export default function LoginPage() {
         </button>
 
         <p className="text-xs text-gray-500">
-          Bei Problemen bitte beim Admin melden.
+          Bei Problemen wenden Sie sich bitte an den Admin.
         </p>
       </form>
     </main>

@@ -499,7 +499,7 @@ export default function PlannerPage() {
       const repeatEnd = new Date(`${createRepeatUntil}T23:59:59.999`);
       const diffMs = repeatEnd.getTime() - startDay.getTime();
       if (Number.isNaN(diffMs) || diffMs < 0) {
-        setCreateError("Wiederholen bis muss nach dem Start liegen.");
+        setCreateError("Wiederholen bis muss nach dem Beginn liegen.");
         return;
       }
       const rangeDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -1211,7 +1211,7 @@ export default function PlannerPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Start</span>
+                  <span className="text-xs text-gray-600">Beginn</span>
                   <input
                     type="time"
                     lang="de-DE"
@@ -1316,7 +1316,7 @@ export default function PlannerPage() {
 
       <Card className="mt-6">
         <h2 className="text-base font-semibold">Feiertage (Baden-Württemberg)</h2>
-        <p className="mt-1 text-sm text-gray-600">Nur visuelle Markierung (MVP). Später direkt im Kalender.</p>
+        <p className="mt-1 text-sm text-gray-600">Nur visuelle Markierung (Testversion). Später direkt im Kalender.</p>
 
         {upcoming.length === 0 ? (
           <p className="mt-3 text-sm">Keine weiteren Feiertage gefunden.</p>

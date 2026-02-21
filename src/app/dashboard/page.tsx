@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     <main className="space-y-4">
       <PageHeader
         title="Dashboard"
-        subtitle="Wähle eine Funktion aus."
+        subtitle="Bitte wählen Sie eine Funktion aus."
       />
 
       <div className="space-y-3">
@@ -45,12 +45,12 @@ export default async function DashboardPage() {
         <CardLink
           href="/assignments"
           title="Einsätze"
-          desc="Deine geplanten Einsätze ansehen und bestätigen."
+          desc="Ihre geplanten Einsätze ansehen und bestätigen."
         />
         <CardLink
           href="/monthly"
           title="Monatsübersicht"
-          desc="Deine Monatswerte und erledigte Kilometer."
+          desc="Ihre Monatswerte und erledigten Kilometer."
         />
       </div>
 

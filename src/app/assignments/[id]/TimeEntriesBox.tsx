@@ -214,7 +214,7 @@ export function TimeEntriesBox({
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <label style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Start (optional)</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Beginn (optional)</span>
               <input
                 placeholder="09:00"
                 value={startTime}
@@ -271,7 +271,7 @@ export function TimeEntriesBox({
 
                 {(t.startTime || t.endTime) ? (
                   <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
-                    {t.startTime ? `Start: ${t.startTime}` : null}
+                    {t.startTime ? `Beginn: ${t.startTime}` : null}
                     {t.startTime && t.endTime ? " · " : null}
                     {t.endTime ? `Ende: ${t.endTime}` : null}
                   </div>
