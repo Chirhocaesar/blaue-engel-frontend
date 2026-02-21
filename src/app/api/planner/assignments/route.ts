@@ -51,6 +51,7 @@ export async function GET(req: Request) {
   const qs = new URLSearchParams({
     from: startDate.toISOString(),
     to: endDate.toISOString(),
+    limit: "200",
   }).toString();
   const upstreamUrl = `${API_BASE}${path}?${qs}`;
 

@@ -331,10 +331,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const canSign = isConfirmed || isDone;
 
   const completionNote = useMemo(() => {
-    const assignmentNote = data?.notes?.trim();
-    if (assignmentNote) return assignmentNote;
     return timeEntries.find((t) => t.notes && t.notes.trim())?.notes?.trim() || "";
-  }, [data?.notes, timeEntries]);
+  }, [timeEntries]);
 
   async function loadAssignment() {
     setLoading(true);
@@ -840,6 +838,10 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
     if (!hasInk) {
       setSigErr("Bitte unterschreiben (nicht leer).");
+      return;
+    }
+
+    if (!confirm("Unterschrift speichern? Danach sind Zeiteintraege und Kilometer fuer diesen Tag gesperrt.")) {
       return;
     }
 
