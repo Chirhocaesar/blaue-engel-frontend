@@ -383,9 +383,10 @@ export default function AdminWeeklyReportPage() {
                                 <div className="space-y-1">
                                   {list.map((a) => {
                                     const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+                                    const timeLabel = isCancelled(a.status) ? "—" : formatTimeRange(a);
                                     return (
                                       <div key={a.id} className="rounded border bg-white px-2 py-1">
-                                        <div className="text-xs text-gray-600">{formatTimeRange(a)}</div>
+                                        <div className="text-xs text-gray-600">{timeLabel}</div>
                                         <div className="text-sm font-medium truncate">{customerName}</div>
                                         <div className="mt-1">
                                           <StatusPill status={a.status} />

@@ -166,12 +166,12 @@ export default function MonthlyPage() {
         const end = new Date(a.endAt);
         const dateLabel = start.toLocaleDateString("de-DE");
         const timeLabel = `${start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
-        const plannedHours = hoursBetween(a.startAt, a.endAt);
+        const plannedHours = isCancelled(a.status) ? null : hoursBetween(a.startAt, a.endAt);
         const doneMinutes = minutesValue(a);
         const doneHoursValue = typeof doneMinutes === "number" && Number.isFinite(doneMinutes)
           ? doneMinutes / 60
           : null;
-        const doneHours = isDone(a.status) ? doneHoursValue : null;
+        const doneHours = isDone(a.status) && !isCancelled(a.status) ? doneHoursValue : null;
         const km = isCancelled(a.status)
           ? null
           : typeof a.kmFinal === "number"
@@ -271,7 +271,9 @@ export default function MonthlyPage() {
                       <td className="p-2 border">
                         <StatusPill status={row.status} />
                       </td>
-                      <td className="p-2 border text-right tabular-nums">{row.plannedHours.toFixed(2)}</td>
+                      <td className="p-2 border text-right tabular-nums">
+                        {row.plannedHours == null ? "—" : row.plannedHours.toFixed(2)}
+                      </td>
                       <td className="p-2 border text-right tabular-nums">
                         {row.doneHours == null ? "—" : row.doneHours.toFixed(2)}
                       </td>

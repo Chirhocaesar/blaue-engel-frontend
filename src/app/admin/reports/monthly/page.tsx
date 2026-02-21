@@ -236,9 +236,11 @@ export default function AdminMonthlyReportPage() {
         const dateLabel = start.toLocaleDateString("de-DE");
         const timeLabel = `${start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}–${end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
         const durationMinutes = minutesValue(a);
-        const duration = typeof durationMinutes === "number" && Number.isFinite(durationMinutes)
-          ? durationMinutes / 60
-          : hoursBetween(a.startAt, a.endAt);
+        const duration = isCancelled(a.status)
+          ? null
+          : typeof durationMinutes === "number" && Number.isFinite(durationMinutes)
+            ? durationMinutes / 60
+            : hoursBetween(a.startAt, a.endAt);
         const km = isCancelled(a.status)
           ? null
           : typeof a.kmFinal === "number"
@@ -357,7 +359,7 @@ export default function AdminMonthlyReportPage() {
                         <td className="p-2 align-top">
                           <StatusPill status={row.status} />
                         </td>
-                        <td className="p-2 align-top text-right tabular-nums">{row.duration.toFixed(2)}</td>
+                        <td className="p-2 align-top text-right tabular-nums">{row.duration == null ? "—" : row.duration.toFixed(2)}</td>
                         <td className="p-2 align-top text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
                       </tr>
                     ))}
