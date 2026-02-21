@@ -661,6 +661,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           assignmentId: id,
           date,
           minutes,
+          notes: teNotes.trim() || null,
         }),
       });
       const json = await res.json().catch(() => ({}));
