@@ -126,7 +126,7 @@ export default function AdminWeeklyReportPage() {
     (async () => {
       try {
         const assignmentsRes = await fetch(
-          `/api/admin/assignments?start=${ymdLocal(start)}&end=${ymdLocal(end)}`,
+          `/api/admin/assignments?from=${ymdLocal(start)}&to=${ymdLocal(end)}`,
           { cache: "no-store" }
         );
         const assignmentsJson = await assignmentsRes.json().catch(() => ({}));
