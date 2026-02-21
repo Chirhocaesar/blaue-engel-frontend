@@ -83,6 +83,10 @@ function isDone(status?: string | null) {
   return String(status || "").toUpperCase() === "DONE";
 }
 
+function isCancelled(status?: string | null) {
+  return String(status || "").toUpperCase() === "CANCELLED";
+}
+
 export default function AdminMonthlyReportPage() {
   const [month, setMonth] = useState(() => monthValue(new Date()));
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -185,7 +189,7 @@ export default function AdminMonthlyReportPage() {
       if (isPlannedCountableStatus(a.status)) {
         row.planned += hours;
       }
-      if (isDone(a.status)) {
+      if (isDone(a.status) && !isCancelled(a.status)) {
         row.done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
           ? a.kmFinal
@@ -208,7 +212,7 @@ export default function AdminMonthlyReportPage() {
       if (isPlannedCountableStatus(a.status)) {
         planned += hours;
       }
-      if (isDone(a.status)) {
+      if (isDone(a.status) && !isCancelled(a.status)) {
         done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
           ? a.kmFinal
@@ -235,11 +239,13 @@ export default function AdminMonthlyReportPage() {
         const duration = typeof durationMinutes === "number" && Number.isFinite(durationMinutes)
           ? durationMinutes / 60
           : hoursBetween(a.startAt, a.endAt);
-        const km = typeof a.kmFinal === "number"
-          ? a.kmFinal
-          : typeof a.kilometers === "number"
-            ? a.kilometers
-            : null;
+        const km = isCancelled(a.status)
+          ? null
+          : typeof a.kmFinal === "number"
+            ? a.kmFinal
+            : typeof a.kilometers === "number"
+              ? a.kilometers
+              : null;
         const employeeLabel = a.employee?.fullName || a.employee?.email || "—";
         return {
           id: a.id,

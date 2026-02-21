@@ -330,7 +330,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   const isAssigned = statusU === "ASSIGNED";
   const canSign = isConfirmed || isDone;
 
-  const completionNote = useMemo(() => data?.notes?.trim() || "", [data?.notes]);
+  const completionNote = useMemo(() => {
+    const assignmentNote = data?.notes?.trim();
+    if (assignmentNote) return assignmentNote;
+    return timeEntries.find((t) => t.notes && t.notes.trim())?.notes?.trim() || "";
+  }, [data?.notes, timeEntries]);
 
   async function loadAssignment() {
     setLoading(true);

@@ -75,6 +75,10 @@ function isDone(status?: string | null) {
   return String(status || "").toUpperCase() === "DONE";
 }
 
+function isCancelled(status?: string | null) {
+  return String(status || "").toUpperCase() === "CANCELLED";
+}
+
 export default function MonthlyPage() {
   const [month, setMonth] = useState(() => monthValue(new Date()));
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -139,7 +143,7 @@ export default function MonthlyPage() {
       if (isPlannedCountableStatus(a.status)) {
         planned += hours;
       }
-      if (isDone(a.status)) {
+      if (isDone(a.status) && !isCancelled(a.status)) {
         done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
           ? a.kmFinal
@@ -168,11 +172,13 @@ export default function MonthlyPage() {
           ? doneMinutes / 60
           : null;
         const doneHours = isDone(a.status) ? doneHoursValue : null;
-        const km = typeof a.kmFinal === "number"
-          ? a.kmFinal
-          : typeof a.kilometers === "number"
-            ? a.kilometers
-            : null;
+        const km = isCancelled(a.status)
+          ? null
+          : typeof a.kmFinal === "number"
+            ? a.kmFinal
+            : typeof a.kilometers === "number"
+              ? a.kilometers
+              : null;
         return {
           id: a.id,
           dateLabel,

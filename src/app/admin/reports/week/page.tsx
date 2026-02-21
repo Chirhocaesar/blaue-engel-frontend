@@ -86,6 +86,10 @@ function isDone(status?: string | null) {
   return String(status || "").toUpperCase() === "DONE";
 }
 
+function isCancelled(status?: string | null) {
+  return String(status || "").toUpperCase() === "CANCELLED";
+}
+
 export default function AdminWeeklyReportPage() {
   const [weekStart, setWeekStart] = useState(() => ymdLocal(startOfWeek(new Date())));
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -228,7 +232,7 @@ export default function AdminWeeklyReportPage() {
       if (isPlannedCountableStatus(a.status)) {
         row.planned += hours;
       }
-      if (isDone(a.status)) {
+      if (isDone(a.status) && !isCancelled(a.status)) {
         row.done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
           ? a.kmFinal
@@ -251,7 +255,7 @@ export default function AdminWeeklyReportPage() {
       if (isPlannedCountableStatus(a.status)) {
         planned += hours;
       }
-      if (isDone(a.status)) {
+      if (isDone(a.status) && !isCancelled(a.status)) {
         done += doneHours(a);
         const kmValue = typeof a.kmFinal === "number"
           ? a.kmFinal
