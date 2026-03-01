@@ -12,6 +12,7 @@ type AdminUser = {
   id: string;
   email?: string | null;
   fullName?: string | null;
+  phone?: string | null;
   isActive?: boolean | null;
 };
 
@@ -23,6 +24,7 @@ type Customer = {
   insuranceNumber?: string | null;
   healthInsurance?: string | null;
   careLevel?: string | null;
+  notes?: string | null;
   birthDate?: string | null;
   customerType?: "KASS" | "PRIVAT" | null;
   adminNotes?: string | null;
@@ -330,6 +332,7 @@ export default function MasterdataPage() {
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showCustomerEditModal, setShowCustomerEditModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -485,6 +488,35 @@ export default function MasterdataPage() {
       raw: u,
     }));
   }, [users]);
+
+  const normalizedSearchTerm = useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm]);
+
+  const filteredUserRows = useMemo(() => {
+    if (!normalizedSearchTerm) return userRows;
+    return userRows.filter((u) => {
+      const values = [u.name, u.email, u.raw.phone ?? ""];
+      return values.some((value) =>
+        String(value ?? "").toLowerCase().includes(normalizedSearchTerm)
+      );
+    });
+  }, [userRows, normalizedSearchTerm]);
+
+  const filteredCustomers = useMemo(() => {
+    if (!normalizedSearchTerm) return customers;
+    return customers.filter((c) => {
+      const values = [
+        c.name,
+        c.address,
+        c.phone,
+        c.insuranceNumber,
+        c.notes,
+        c.adminNotes,
+      ];
+      return values.some((value) =>
+        String(value ?? "").toLowerCase().includes(normalizedSearchTerm)
+      );
+    });
+  }, [customers, normalizedSearchTerm]);
 
   const empNameTrim = empName.trim();
   const empEmailTrim = empEmail.trim();
@@ -957,6 +989,15 @@ export default function MasterdataPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder={tab === "customers" ? "Kunden durchsuchen…" : "Mitarbeiter durchsuchen…"}
+          className="min-w-[240px] max-w-md"
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           className={`rounded-md border px-3 py-2 text-sm font-semibold ${
@@ -1013,12 +1054,12 @@ export default function MasterdataPage() {
 
           {usersLoading ? (
             <StateNotice variant="loading" message="Lade…" />
-          ) : userRows.length === 0 ? (
+          ) : filteredUserRows.length === 0 ? (
             <StateNotice variant="empty" message="Keine Eintraege vorhanden." />
           ) : (
             <>
-              <div className="space-y-3 sm:hidden">
-                {userRows.map((u) => (
+              <div className="space-y-3 sm:hidden max-h-[60vh] overflow-auto rounded border p-2">
+                {filteredUserRows.map((u) => (
                   <Card key={u.id} className="space-y-2">
                     <div>
                       <div className="text-sm text-gray-600">Name</div>
@@ -1084,20 +1125,20 @@ export default function MasterdataPage() {
                   </Card>
                 ))}
               </div>
-              <div className="hidden sm:block overflow-x-auto rounded border">
+              <div className="hidden sm:block max-h-[60vh] overflow-auto rounded border">
                 <table className="min-w-full text-sm border">
-                  <thead className="bg-gray-50 text-gray-700">
+                  <thead className="sticky top-0 z-10 bg-white text-gray-700">
                     <tr>
-                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Name</th>
-                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">E-Mail</th>
+                      <th className="p-2 text-left border">Name</th>
+                      <th className="p-2 text-left border">E-Mail</th>
                       {includeInactiveEmployees ? (
-                        <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Status</th>
+                        <th className="p-2 text-left border">Status</th>
                       ) : null}
-                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Aktionen</th>
+                      <th className="p-2 text-left border">Aktionen</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {userRows.map((u) => (
+                    {filteredUserRows.map((u) => (
                       <tr key={u.id} className="border-t odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         <td className="p-2 border">{u.name}</td>
                         <td className="p-2 border">{u.email}</td>
@@ -1205,12 +1246,12 @@ export default function MasterdataPage() {
 
           {customersLoading ? (
             <StateNotice variant="loading" message="Lade…" />
-          ) : customers.length === 0 ? (
+          ) : filteredCustomers.length === 0 ? (
             <StateNotice variant="empty" message="Keine Eintraege vorhanden." />
           ) : (
             <>
-              <div className="space-y-3 sm:hidden">
-                {customers.map((c) => (
+              <div className="space-y-3 sm:hidden max-h-[60vh] overflow-auto rounded border p-2">
+                {filteredCustomers.map((c) => (
                   <Card
                     key={c.id}
                     className="space-y-2 cursor-pointer"
@@ -1308,21 +1349,21 @@ export default function MasterdataPage() {
                   </Card>
                 ))}
               </div>
-              <div className="hidden sm:block overflow-x-auto rounded border">
+              <div className="hidden sm:block max-h-[60vh] overflow-auto rounded border">
                 <table className="min-w-full text-sm border">
-                  <thead className="bg-gray-50 text-gray-700">
+                  <thead className="sticky top-0 z-10 bg-white text-gray-700">
                     <tr>
-                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Name</th>
-                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Adresse</th>
+                      <th className="p-2 text-left border">Name</th>
+                      <th className="p-2 text-left border">Adresse</th>
                       {includeInactiveCustomers ? (
-                        <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Status</th>
+                        <th className="p-2 text-left border">Status</th>
                       ) : null}
-                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Telefon</th>
-                      <th className="sticky top-0 z-10 bg-gray-50 p-2 text-left border">Aktionen</th>
+                      <th className="p-2 text-left border">Telefon</th>
+                      <th className="p-2 text-left border">Aktionen</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {customers.map((c) => (
+                    {filteredCustomers.map((c) => (
                       <tr key={c.id} className="border-t odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
                         <td className="p-2 border">
                           {c.id ? (
