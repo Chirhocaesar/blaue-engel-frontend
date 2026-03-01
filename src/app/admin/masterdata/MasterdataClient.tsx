@@ -406,15 +406,43 @@ export default function MasterdataPage() {
     setCustomersLoading(true);
     setCustomersError(null);
     try {
-      const qs = new URLSearchParams({ limit: "50" });
-      if (includeInactiveCustomers) qs.set("includeInactive", "1");
-      const res = await fetch(`/api/admin/customers?${qs.toString()}`, { cache: "no-store" });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
-      const items = getCustomers(json).map((c) => ({
-        ...c,
-        id: normalizeCustomerId(c) || c.id,
-      }));
+      const allItems: Customer[] = [];
+      let cursor: string | null = null;
+      let pageCount = 0;
+
+      while (true) {
+        const qs = new URLSearchParams({ limit: "50" });
+        if (includeInactiveCustomers) qs.set("includeInactive", "1");
+        if (cursor) qs.set("cursor", cursor);
+
+        const res = await fetch(`/api/admin/customers?${qs.toString()}`, { cache: "no-store" });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+
+        const pageItems = getCustomers(json).map((c) => ({
+          ...c,
+          id: normalizeCustomerId(c) || c.id,
+        }));
+        allItems.push(...pageItems);
+
+        const nextCursor =
+          typeof (json as { nextCursor?: unknown })?.nextCursor === "string" &&
+          (json as { nextCursor?: string }).nextCursor
+            ? (json as { nextCursor: string }).nextCursor
+            : null;
+
+        cursor = nextCursor;
+        pageCount += 1;
+        if (!cursor || pageCount >= 200) break;
+      }
+
+      const uniqueById = new Map<string, Customer>();
+      for (const item of allItems) {
+        if (!item.id) continue;
+        if (!uniqueById.has(item.id)) uniqueById.set(item.id, item);
+      }
+
+      const items = Array.from(uniqueById.values());
       setCustomers(items);
     } catch (e: any) {
       setCustomersError(e?.message ?? "Kunden konnten nicht geladen werden.");
