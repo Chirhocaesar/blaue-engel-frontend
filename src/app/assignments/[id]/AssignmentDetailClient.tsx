@@ -424,7 +424,17 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
 
-      const items: TimeEntry[] = Array.isArray(json) ? json : json?.items ?? json?.timeEntries ?? [];
+      const rawItems: any[] = Array.isArray(json) ? json : json?.items ?? json?.timeEntries ?? [];
+      const items: TimeEntry[] = rawItems.map((t: any) => ({
+        id: t.id,
+        date: ymdFromDateInput(t.date),
+        minutes: typeof t.minutes === "number" ? Math.max(0, Math.round(t.minutes)) : undefined,
+        startAt: t.startAt ?? undefined,
+        endAt: t.endAt ?? undefined,
+        startTime: t.startTime ?? null,
+        endTime: t.endTime ?? null,
+        notes: t.notes ?? null,
+      }));
       items.sort((a, b) => {
         const ta = a.startAt ? new Date(a.startAt).getTime() : a.date ? new Date(a.date).getTime() : 0;
         const tb = b.startAt ? new Date(b.startAt).getTime() : b.date ? new Date(b.date).getTime() : 0;
