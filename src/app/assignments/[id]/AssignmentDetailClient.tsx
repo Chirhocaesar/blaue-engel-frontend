@@ -250,26 +250,6 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     return `${s}–${e}`;
   }, [data?.startAt, data?.endAt]);
 
-  const recordedRange = useMemo(() => {
-    const validEntries = timeEntries
-      .filter((entry) => Boolean(entry.startAt && entry.endAt))
-      .sort((a, b) => {
-        const aTime = a.startAt ? new Date(a.startAt).getTime() : 0;
-        const bTime = b.startAt ? new Date(b.startAt).getTime() : 0;
-        return aTime - bTime;
-      });
-
-    if (validEntries.length === 0) return "";
-
-    const first = validEntries[0];
-    const last = validEntries[validEntries.length - 1];
-    if (!first.startAt || !last.endAt) return "";
-
-    return `${formatTime(first.startAt)}–${formatTime(last.endAt)}`;
-  }, [timeEntries]);
-
-  const displayedTimeRange = recordedRange || plannedRange;
-
   const plannedDuration = useMemo(() => {
     if (!data?.startAt || !data?.endAt) return "";
     return formatMinutes(durationMinutes(data.startAt, data.endAt));
@@ -1145,9 +1125,9 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
           <div>
             <div className="text-gray-600">Zeit</div>
-            <div className="font-medium">{displayedTimeRange}</div>
-            {recordedRange ? (
-              <div className="text-xs text-gray-500">Geplant: {plannedRange}</div>
+            <div className="font-medium">{plannedRange}</div>
+            {timeEntries.length > 0 ? (
+              <div className="text-xs text-gray-500">Eingetragen: {formatMinutes(totalWorkedMinutes)}</div>
             ) : null}
           </div>
 
