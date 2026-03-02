@@ -598,6 +598,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             minutes: typeof t.minutes === "number" ? Math.max(0, Math.round(t.minutes)) : undefined,
             startAt: t.startAt ?? undefined,
             endAt: t.endAt ?? undefined,
+            startTime: t.startTime ?? null,
+            endTime: t.endTime ?? null,
             notes: t.notes ?? null,
           }));
           items.sort((a, b) => {
@@ -689,6 +691,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           assignmentId: id,
           date,
           minutes,
+          startTime: teStartTime,
+          endTime: teEndTime,
           notes: teNotes.trim() || null,
         }),
       });
