@@ -250,6 +250,34 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     return `${s}–${e}`;
   }, [data?.startAt, data?.endAt]);
 
+  const enteredRange = useMemo(() => {
+    function resolveStart(entry: TimeEntry): string | null {
+      if (entry.startAt) return entry.startAt;
+      if (entry.date && entry.startTime) return new Date(`${entry.date}T${entry.startTime}`).toISOString();
+      return null;
+    }
+
+    function resolveEnd(entry: TimeEntry): string | null {
+      if (entry.endAt) return entry.endAt;
+      if (entry.date && entry.endTime) return new Date(`${entry.date}T${entry.endTime}`).toISOString();
+      return null;
+    }
+
+    const withRange = timeEntries
+      .map((entry) => {
+        const start = resolveStart(entry);
+        const end = resolveEnd(entry);
+        return { start, end };
+      })
+      .filter((entry): entry is { start: string; end: string } => Boolean(entry.start && entry.end))
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+    if (withRange.length === 0) return "";
+    const first = withRange[0];
+    const last = withRange[withRange.length - 1];
+    return `${formatTime(first.start)}–${formatTime(last.end)}`;
+  }, [timeEntries]);
+
   const plannedDuration = useMemo(() => {
     if (!data?.startAt || !data?.endAt) return "";
     return formatMinutes(durationMinutes(data.startAt, data.endAt));
@@ -1126,8 +1154,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           <div>
             <div className="text-gray-600">Zeit</div>
             <div className="font-medium">{plannedRange}</div>
-            {timeEntries.length > 0 ? (
-              <div className="text-xs text-gray-500">Eingetragen: {formatMinutes(totalWorkedMinutes)}</div>
+            {enteredRange ? (
+              <div className="text-xs text-gray-500">Eingetragen: {enteredRange}</div>
             ) : null}
           </div>
 
