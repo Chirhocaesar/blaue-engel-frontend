@@ -48,6 +48,10 @@ type DayBundle = {
   }>;
   kmAdjustments: Array<{
     id: string;
+    assignmentId?: string | null;
+    assignmentStartAt?: string | null;
+    assignmentEndAt?: string | null;
+    assignmentCustomerName?: string | null;
     deltaKm: number;
     reason: string;
     createdAt: string;
@@ -102,6 +106,7 @@ export default function CorrectionsClient() {
 
   const [deltaKm, setDeltaKm] = useState("");
   const [kmReason, setKmReason] = useState("");
+  const [selectedKmAssignmentId, setSelectedKmAssignmentId] = useState("");
   const [kmFormError, setKmFormError] = useState<string | null>(null);
   const [kmSubmitting, setKmSubmitting] = useState(false);
   const [kmSavedAt, setKmSavedAt] = useState<number | null>(null);
@@ -263,7 +268,14 @@ export default function CorrectionsClient() {
     setDeltaKm("");
     setKmReason("");
     setKmFormError(null);
+    setSelectedKmAssignmentId(bundle.assignments[0]?.id ?? "");
   }, [bundle?.employeeId, bundle?.date]);
+
+  useEffect(() => {
+    if (!bundle) return;
+    if (selectedKmAssignmentId && bundle.assignments.some((a) => a.id === selectedKmAssignmentId)) return;
+    setSelectedKmAssignmentId(bundle.assignments[0]?.id ?? "");
+  }, [bundle, selectedKmAssignmentId]);
 
   useEffect(() => {
     if (!timeSavedAt) return;
@@ -321,6 +333,7 @@ export default function CorrectionsClient() {
     if (kmDeltaInvalid) return setKmFormError("KM-Differenz ungültig");
     const delta = parseInt(deltaKm, 10);
     if (!kmReason.trim()) return setKmFormError("Begründung erforderlich");
+    if (!selectedKmAssignmentId) return setKmFormError("Bitte einen Einsatz für die KM-Korrektur auswählen");
 
     setKmSubmitting(true);
     try {
@@ -328,6 +341,7 @@ export default function CorrectionsClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          assignmentId: selectedKmAssignmentId,
           userId: employeeId,
           date: dateIso,
           effectiveDate: dateIso,
@@ -516,12 +530,13 @@ export default function CorrectionsClient() {
                     <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM (eingetragen)</th>
                     <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM Korrektur</th>
                     <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM final</th>
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Aktion</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bundle.assignments.length === 0 ? (
                     <tr>
-                      <td className="p-2" colSpan={6}>
+                      <td className="p-2" colSpan={7}>
                         Keine Einsätze für diesen Tag.
                       </td>
                     </tr>
@@ -551,6 +566,16 @@ export default function CorrectionsClient() {
                         <td className="p-2 border text-right tabular-nums">{a.kmAdjusted ?? 0}</td>
                         <td className="p-2 border text-right tabular-nums">
                           {a.kmFinal ?? (a.kilometers ?? 0) + (a.kmAdjusted ?? 0)}
+                        </td>
+                        <td className="p-2 border">
+                          <button
+                            type="button"
+                            className={`rounded border px-2 py-1 text-xs ${selectedKmAssignmentId === a.id ? "bg-gray-900 text-white" : "hover:bg-gray-50"}`}
+                            onClick={() => setSelectedKmAssignmentId(a.id)}
+                            disabled={disableInputs}
+                          >
+                            {selectedKmAssignmentId === a.id ? "Ausgewählt" : "KM korrigieren"}
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -705,6 +730,7 @@ export default function CorrectionsClient() {
               <table className="w-full text-sm border">
                 <thead>
                   <tr className="bg-gray-50 text-gray-700">
+                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Bezug</th>
                     <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Delta</th>
                     <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Grund</th>
                     <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Erstellt</th>
@@ -713,13 +739,18 @@ export default function CorrectionsClient() {
                 <tbody>
                   {bundle.kmAdjustments.length === 0 ? (
                     <tr>
-                      <td className="p-2" colSpan={3}>
+                      <td className="p-2" colSpan={4}>
                         Keine KM-Korrekturen.
                       </td>
                     </tr>
                   ) : (
                     bundle.kmAdjustments.map((a) => (
                       <tr key={a.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
+                        <td className="p-2 border">
+                          {a.assignmentId
+                            ? `${a.assignmentCustomerName ?? "Einsatz"}${a.assignmentStartAt && a.assignmentEndAt ? ` · ${formatDateTimeRange(a.assignmentStartAt, a.assignmentEndAt)}` : ""}`
+                            : "Tag (Legacy)"}
+                        </td>
                         <td className="p-2 border">{a.deltaKm}</td>
                         <td className="p-2 border">{a.reason}</td>
                         <td className="p-2 border">{formatDateTime(a.createdAt)}</td>
@@ -731,6 +762,25 @@ export default function CorrectionsClient() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <label className="grid gap-1 sm:col-span-2">
+                <span>Einsatz für KM-Korrektur</span>
+                <select
+                  value={selectedKmAssignmentId}
+                  onChange={(e) => setSelectedKmAssignmentId(e.target.value)}
+                  disabled={disableInputs || bundle.assignments.length === 0}
+                  className="rounded border px-2 py-2"
+                >
+                  {bundle.assignments.length === 0 ? (
+                    <option value="">Keine Einsätze verfügbar</option>
+                  ) : (
+                    bundle.assignments.map((assignment) => (
+                      <option key={assignment.id} value={assignment.id}>
+                        {assignment.customer?.name} · {formatDateTimeRange(assignment.startAt, assignment.endAt)}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
               <label className="grid gap-1">
                 <span>KM-Differenz</span>
                 <input
