@@ -100,6 +100,7 @@ export default function CorrectionsClient() {
 
   const [deltaMinutes, setDeltaMinutes] = useState("");
   const [timeReason, setTimeReason] = useState("");
+  const [selectedTimeAssignmentId, setSelectedTimeAssignmentId] = useState("");
   const [timeFormError, setTimeFormError] = useState<string | null>(null);
   const [timeSubmitting, setTimeSubmitting] = useState(false);
   const [timeSavedAt, setTimeSavedAt] = useState<number | null>(null);
@@ -265,11 +266,22 @@ export default function CorrectionsClient() {
     setDeltaMinutes("");
     setTimeReason("");
     setTimeFormError(null);
+    const preferredTimeAssignmentId =
+      assignmentIdParam && bundle.assignments.some((a) => a.id === assignmentIdParam)
+        ? assignmentIdParam
+        : bundle.assignments[0]?.id ?? "";
+    setSelectedTimeAssignmentId(preferredTimeAssignmentId);
     setDeltaKm("");
     setKmReason("");
     setKmFormError(null);
     setSelectedKmAssignmentId(bundle.assignments[0]?.id ?? "");
-  }, [bundle?.employeeId, bundle?.date]);
+  }, [bundle?.employeeId, bundle?.date, assignmentIdParam]);
+
+  useEffect(() => {
+    if (!bundle) return;
+    if (selectedTimeAssignmentId && bundle.assignments.some((a) => a.id === selectedTimeAssignmentId)) return;
+    setSelectedTimeAssignmentId(bundle.assignments[0]?.id ?? "");
+  }, [bundle, selectedTimeAssignmentId]);
 
   useEffect(() => {
     if (!bundle) return;
@@ -295,17 +307,17 @@ export default function CorrectionsClient() {
     if (timeDeltaInvalid) return setTimeFormError("Minuten-Differenz ungültig");
     const delta = parseInt(deltaMinutes, 10);
     if (!timeReason.trim()) return setTimeFormError("Begründung erforderlich");
+    if (!selectedTimeAssignmentId) {
+      return setTimeFormError("Bitte einen Einsatz für die Zeit-Korrektur auswählen");
+    }
 
     setTimeSubmitting(true);
     try {
-      const assignmentId = bundle?.assignments?.[0]?.id;
-      if (!assignmentId) throw new Error("Kein Einsatz für den Tag gefunden");
-
       const res = await fetch(`/api/admin/time-adjustments`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          assignmentId,
+          assignmentId: selectedTimeAssignmentId,
           userId: employeeId,
           date: dateIso,
           effectiveDate: dateIso,
@@ -591,6 +603,28 @@ export default function CorrectionsClient() {
             <h2 className="text-base font-semibold">Zeit</h2>
             <div className="text-sm text-gray-700">
               Geplant: {formatMinutes(summary.planned)} · Erfasst: {formatMinutes(summary.recorded)} · Korrektur: {formatSignedMinutes(summary.adjustments)} · Final: {formatMinutes(summary.final)}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <label className="grid gap-1 sm:col-span-2">
+                <span>Einsatz für Zeit-Korrektur</span>
+                <select
+                  value={selectedTimeAssignmentId}
+                  onChange={(e) => setSelectedTimeAssignmentId(e.target.value)}
+                  disabled={disableInputs || bundle.assignments.length === 0}
+                  className="rounded border px-2 py-2"
+                >
+                  {bundle.assignments.length === 0 ? (
+                    <option value="">Keine Einsätze verfügbar</option>
+                  ) : (
+                    bundle.assignments.map((assignment) => (
+                      <option key={assignment.id} value={assignment.id}>
+                        {assignment.customer?.name} · {formatDateTimeRange(assignment.startAt, assignment.endAt)}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
             </div>
 
             <div className="overflow-x-auto">
