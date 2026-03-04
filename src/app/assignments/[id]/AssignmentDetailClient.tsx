@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatDate,
@@ -141,6 +141,7 @@ function isoDayLocalFromIsoDateTime(iso: string) {
 }
 
 export default function AssignmentDetailClient({ id }: { id: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -321,6 +322,14 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     if (!empId || !day) return "/admin/corrections";
     return `/admin/corrections?employeeId=${encodeURIComponent(empId)}&date=${encodeURIComponent(day)}&aid=${encodeURIComponent(id)}`;
   }, [data?.employeeId, data?.startAt, id]);
+
+  function backToPlanner() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/planner");
+  }
 
   const latestSignature = useMemo(() => {
     if (data?.latestSignature) return data.latestSignature as any;
@@ -1023,9 +1032,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           <div className="font-semibold">Fehler</div>
           <div className="mt-1 text-sm text-gray-700">{err || "Nicht gefunden"}</div>
           <div className="mt-4">
-            <Link href="/planner" className="rounded border px-3 py-2 text-sm inline-block">
+            <button
+              type="button"
+              onClick={backToPlanner}
+              className="rounded border px-3 py-2 text-sm inline-block"
+            >
               ← Zur Planung
-            </Link>
+            </button>
           </div>
         </Card>
       </main>
@@ -1068,9 +1081,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             </a>
           ) : null}
 
-          <Link href="/planner" className="rounded border px-3 py-2 text-sm hover:bg-gray-50">
+          <button
+            type="button"
+            onClick={backToPlanner}
+            className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+          >
             ← Planung
-          </Link>
+          </button>
           {isAdmin ? (
             <Link
               href={correctionsHref}
@@ -1239,12 +1256,6 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 {adminListsError}
               </Alert>
             ) : null}
-            {isLocked ? (
-              <div className="mt-2 text-xs text-gray-600">
-                Gesperrt nach Unterschrift – nur Admin-Korrektur moeglich.
-              </div>
-            ) : null}
-
             {editMode ? (
               <form className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={submitAdminEdit}>
                 <label className="grid gap-1">
@@ -1253,7 +1264,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     value={editCustomerId}
                     onChange={(e) => setEditCustomerId(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked || adminListsLoading}
+                    disabled={editSaving || editLocked || adminListsLoading}
                   >
                     <option value="">Bitte wählen…</option>
                     {adminCustomers.map((c) => (
@@ -1270,7 +1281,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     value={editEmployeeId}
                     onChange={(e) => setEditEmployeeId(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked || adminListsLoading}
+                    disabled={editSaving || editLocked || adminListsLoading}
                   >
                     <option value="">Bitte wählen…</option>
                     {adminEmployees.map((e) => (
@@ -1289,13 +1300,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     value={editStartDate}
                     onChange={(e) => setEditStartDate(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked}
+                    disabled={editSaving || editLocked}
                   />
                   <select
                     value={editStartTime}
                     onChange={(e) => setEditStartTime(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked}
+                    disabled={editSaving || editLocked}
                   >
                     <option value="">Bitte wählen…</option>
                     {timeOptions.map((opt) => (
@@ -1314,13 +1325,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     value={editEndDate}
                     onChange={(e) => setEditEndDate(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked}
+                    disabled={editSaving || editLocked}
                   />
                   <select
                     value={editEndTime}
                     onChange={(e) => setEditEndTime(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked}
+                    disabled={editSaving || editLocked}
                   >
                     <option value="">Bitte wählen…</option>
                     {timeOptions.map((opt) => (
@@ -1338,7 +1349,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked}
+                    disabled={editSaving || editLocked}
                   />
                 </label>
 
@@ -1348,7 +1359,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
                     className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
-                    disabled={editSaving || editLocked || isLocked}
+                    disabled={editSaving || editLocked}
                   >
                     <option value="PLANNED">{statusLabelDe("PLANNED")}</option>
                     <option value="ASSIGNED">{statusLabelDe("ASSIGNED")}</option>
@@ -1373,7 +1384,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                       variant="outline"
                       size="sm"
                       onClick={handleAdminCancel}
-                      disabled={cancelSaving || editSaving || editLocked || isLocked || isCancelled || isDone}
+                      disabled={cancelSaving || editSaving || editLocked || isCancelled || isDone}
                     >
                       {cancelSaving ? "Sage ab…" : "Termin absagen"}
                     </Button>
@@ -1382,7 +1393,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                       variant="outline"
                       size="sm"
                       className="w-full sm:w-auto"
-                      disabled={editSaving || editLocked || isLocked}
+                      disabled={editSaving || editLocked}
                     >
                       {editSaving ? "Speichern…" : "Speichern"}
                     </Button>

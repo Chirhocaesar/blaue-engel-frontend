@@ -1031,13 +1031,14 @@ export default function PlannerPage() {
                               <Link
                                 key={a.id}
                                 href={`/assignments/${a.id}`}
-                                className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-0.5 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
-                                style={{ top: topPx, height: Math.max(42, heightPx) }}
+                                className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-1 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
+                                style={{ top: topPx, height: Math.max(58, heightPx) }}
                                 title={`${startLabel}–${endLabel} ${customerName}`}
                               >
-                                <div className="truncate">{`${startLabel}–${endLabel} ${customerName}`}</div>
+                                <div className="whitespace-normal break-words">{`${startLabel}–${endLabel}`}</div>
+                                <div className="whitespace-normal break-words">{customerName}</div>
                                 {customerAddressLine ? (
-                                  <div className="truncate text-[10px] text-gray-600">{customerAddressLine}</div>
+                                  <div className="whitespace-normal break-words text-[10px] text-gray-600">{customerAddressLine}</div>
                                 ) : null}
                               </Link>
                             );
