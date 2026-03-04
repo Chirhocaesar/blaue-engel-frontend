@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useMemo, useState, useEffect } from "react";
 import { getUpcomingBwHolidays, getBwHolidayLabelByIsoDate } from "@/lib/holidays-bw";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { formatDate, formatDayMonth, formatMonthYear, formatTime, formatWeekdayShort } from "@/lib/format";
 import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
@@ -101,6 +102,15 @@ function buildWeekGrid(weekStart: Date) {
   return days;
 }
 
+function parseYmdLocal(value?: string | null) {
+  if (!value) return null;
+  const [y, m, d] = value.split("-").map((part) => parseInt(part, 10));
+  if (!y || !m || !d) return null;
+  const parsed = new Date(y, m - 1, d);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
 type Assignment = {
   id: string;
   startAt: string;
@@ -194,6 +204,7 @@ const START_HOUR = 6;
 const END_HOUR = 20;
 
 export default function PlannerPage() {
+  const searchParams = useSearchParams();
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -251,6 +262,57 @@ export default function PlannerPage() {
   const [kmSaving, setKmSaving] = useState<boolean>(false);
   const [kmSavedAt, setKmSavedAt] = useState<number | null>(null);
   const [kmError, setKmError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const queryView = searchParams.get("view");
+    const queryDate = parseYmdLocal(searchParams.get("date"));
+    const queryEmployeeId = searchParams.get("employeeId");
+
+    if (queryEmployeeId !== null && queryEmployeeId !== employeeFilterId) {
+      setEmployeeFilterId(queryEmployeeId);
+    }
+
+    if (queryView === "week") {
+      if (queryDate) setWeekStart(startOfWeek(queryDate));
+      if (viewMode !== "week") setViewMode("week");
+      return;
+    }
+
+    if (queryView === "day") {
+      if (queryDate) setDayStart(startOfDayLocal(queryDate));
+      if (viewMode !== "day") setViewMode("day");
+      return;
+    }
+
+    if (queryView === "month") {
+      if (queryDate) setViewMonth(new Date(queryDate.getFullYear(), queryDate.getMonth(), 1));
+      if (viewMode !== "month") setViewMode("month");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const plannerReturnTo = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("view", viewMode);
+
+    if (viewMode === "month") {
+      params.set("date", dayKeyLocal(viewMonth));
+    } else if (viewMode === "week") {
+      params.set("date", dayKeyLocal(weekStart));
+    } else {
+      params.set("date", dayKeyLocal(dayStart));
+    }
+
+    if (isAdmin && employeeFilterId) {
+      params.set("employeeId", employeeFilterId);
+    }
+
+    return `/planner?${params.toString()}`;
+  }, [viewMode, viewMonth, weekStart, dayStart, isAdmin, employeeFilterId]);
+
+  function assignmentDetailHref(assignmentId: string) {
+    return `/assignments/${assignmentId}?returnTo=${encodeURIComponent(plannerReturnTo)}`;
+  }
 
   const visibleAssignmentsByDate = useMemo(() => {
     if (!isAdmin || !employeeFilterId) return assignmentsByDate;
@@ -902,7 +964,7 @@ export default function PlannerPage() {
                             return (
                               <Link
                                 key={a.id}
-                                href={`/assignments/${a.id}`}
+                                href={assignmentDetailHref(a.id)}
                                 className={`w-full min-w-0 truncate rounded-md border-l-4 px-2 py-1 text-[11px] leading-tight hover:bg-gray-200 ${colorCls}`}
                                 title={`${start}–${end} ${customerName}`}
                               >
@@ -1030,7 +1092,7 @@ export default function PlannerPage() {
                             return (
                               <Link
                                 key={a.id}
-                                href={`/assignments/${a.id}`}
+                                href={assignmentDetailHref(a.id)}
                                 className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-1 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
                                 style={{ top: topPx, height: Math.max(58, heightPx) }}
                                 title={`${startLabel}–${endLabel} ${customerName}`}
@@ -1130,7 +1192,7 @@ export default function PlannerPage() {
                           return (
                             <Link
                               key={a.id}
-                              href={`/assignments/${a.id}`}
+                              href={assignmentDetailHref(a.id)}
                               className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-1 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
                               style={{ top: topPx, height: Math.max(42, heightPx) }}
                               title={`${startLabel}–${endLabel} ${customerName}`}

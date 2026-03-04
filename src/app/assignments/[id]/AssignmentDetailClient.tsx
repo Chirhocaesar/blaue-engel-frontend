@@ -324,6 +324,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
   }, [data?.employeeId, data?.startAt, id]);
 
   function backToPlanner() {
+    const returnTo = searchParams.get("returnTo");
+    if (returnTo && returnTo.startsWith("/planner")) {
+      router.push(returnTo);
+      return;
+    }
+
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;

@@ -48,18 +48,40 @@ export async function GET(req: Request) {
     );
   }
 
-  const qs = new URLSearchParams({
+  const baseParams = {
     from: startDate.toISOString(),
     to: endDate.toISOString(),
     limit: "200",
-  }).toString();
-  const upstreamUrl = `${API_BASE}${path}?${qs}`;
+  };
 
-  const res = await fetch(upstreamUrl, {
-    headers: { Authorization: `Bearer ${access}` },
-    cache: "no-store",
-  });
+  const allItems: any[] = [];
+  let cursor: string | null = null;
 
-  const data = await res.json().catch(() => ({}));
-  return NextResponse.json(data, { status: res.status });
+  for (let page = 0; page < 100; page += 1) {
+    const qs = new URLSearchParams(baseParams);
+    if (cursor) qs.set("cursor", cursor);
+
+    const upstreamUrl = `${API_BASE}${path}?${qs.toString()}`;
+    const res = await fetch(upstreamUrl, {
+      headers: { Authorization: `Bearer ${access}` },
+      cache: "no-store",
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+    allItems.push(...items);
+
+    const nextCursor = Array.isArray(data) ? null : data?.nextCursor ?? null;
+    if (!nextCursor || items.length === 0) {
+      break;
+    }
+
+    cursor = nextCursor;
+  }
+
+  return NextResponse.json({ items: allItems, nextCursor: null }, { status: 200 });
 }
