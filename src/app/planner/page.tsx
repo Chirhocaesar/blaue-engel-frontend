@@ -200,8 +200,8 @@ function buildCustomerOptionsFromCustomers(customers: CustomerMinimal[]) {
 }
 
 const ROW_H = 28; // px per 30 minutes
-const START_HOUR = 6;
-const END_HOUR = 20;
+const START_HOUR = 0;
+const END_HOUR = 24;
 
 export default function PlannerPage() {
   const searchParams = useSearchParams();
