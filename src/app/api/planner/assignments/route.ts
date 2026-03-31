@@ -41,6 +41,9 @@ export async function GET(req: Request) {
 
   const startDate = new Date(startRaw);
   const endDate = new Date(endRaw);
+  // Date-only strings parse to midnight UTC; extend to end-of-day so the
+  // backend lte filter includes assignments that start during the last day.
+  endDate.setUTCHours(23, 59, 59, 999);
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
     return NextResponse.json(
       { message: "Ungueltige Start/Ende-Parameter" },
