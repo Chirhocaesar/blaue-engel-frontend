@@ -1,6 +1,6 @@
 // src/lib/api.ts
 export const API_BASE_URL =
-  process.env.API_BASE_URL || "https://api.blaueengelhaushaltshilfe.de";
+  process.env.API_BASE_URL;
 
 export type ApiError = {
   status: number;

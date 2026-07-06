@@ -7,8 +7,8 @@ services:
     container_name: blaue-engel-frontend
     restart: unless-stopped
     environment:
-      API_BASE_URL: https://api.blaueengelhaushaltshilfe.de
-      NEXT_PUBLIC_API_BASE_URL: https://api.blaueengelhaushaltshilfe.de
+      API_BASE_URL: https://api-service-app-demo.digitboostsolutions.com
+      NEXT_PUBLIC_API_BASE_URL: https://api-service-app-demo.digitboostsolutions.com
       NODE_ENV: production
     networks:
       - proxy

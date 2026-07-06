@@ -27,7 +27,7 @@ export default async function HealthPage() {
   return (
     <main style={{ padding: 16, fontFamily: "system-ui" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700 }}>
-        Blaue Engel – Frontend-API-Pruefung
+        DigitBoost Service App Demo – API Health Check
       </h1>
 
       <p>API-Basis-URL: <code>{baseUrl}</code></p>

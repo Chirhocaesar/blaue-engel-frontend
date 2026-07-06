@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const API_BASE =
-  process.env.API_BASE ?? "https://api.blaueengelhaushaltshilfe.de";
+  process.env.API_BASE_URL;
 
 async function requireAdmin() {
   const cookieStore = await cookies();

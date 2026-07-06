@@ -2,8 +2,8 @@ import "./globals.css";
 import { cookies } from "next/headers";
 
 export const metadata = {
-  title: "Blaue Engel Haushaltshilfe J.P.",
-  description: "Blaue Engel Haushaltshilfe J.P. – Einsatzplanung",
+  title: "DigitBoost Service App Demo",
+  description: "Demo service operations platform by DigitBoost Solutions",
 };
 
 export default async function RootLayout({
@@ -20,7 +20,7 @@ export default async function RootLayout({
         <header className="border-b">
           <div className="mx-auto max-w-md px-4 py-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-lg font-semibold">Blaue Engel Haushaltshilfe J.P.</div>
+              <div className="text-lg font-semibold">DigitBoost Service App Demo</div>
               <div className="text-sm text-gray-600">Mitarbeiter-App</div>
             </div>
             {isLoggedIn ? (
@@ -38,14 +38,14 @@ export default async function RootLayout({
 
         <footer className="mx-auto max-w-md px-4 py-6 text-xs text-gray-500">
           <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-            <span>© {new Date().getFullYear()} Blaue Engel Haushaltshilfe J.P.</span>
+            <span>© {new Date().getFullYear()} DigitBoost Solutions</span>
             <a
-              href="https://digitboostsolutions.com/projekte/blaue-engel-haushaltshilfe/"
+              href="https://digitboostsolutions.com"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-gray-700"
             >
-              Entwickelt von DigitBOOST Solutions
+              DigitBoost Solutions
             </a>
           </div>
         </footer>

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 const API_BASE =
-  process.env.API_BASE_URL ?? "https://api.blaueengelhaushaltshilfe.de";
+  process.env.API_BASE_URL;
 
 export async function GET(req: Request) {
   const cookieStore = await cookies();
