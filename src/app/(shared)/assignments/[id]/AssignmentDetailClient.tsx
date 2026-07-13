@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, MapPin, Phone } from "lucide-react";
 import {
   formatDate,
   formatDateTime,
@@ -1023,37 +1024,41 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
     }
   }
 
+  const actionBtn =
+    "inline-flex items-center gap-2 rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep";
+
   if (loading) {
     return (
-      <main className="min-h-screen p-4">
+      <div className="mx-auto max-w-5xl">
         <StateNotice variant="loading" message="Lade…" />
-      </main>
+      </div>
     );
   }
 
   if (err || !data) {
     return (
-      <main className="min-h-screen p-4">
+      <div className="mx-auto max-w-5xl">
         <Card>
           <div className="font-semibold">Fehler</div>
-          <div className="mt-1 text-sm text-gray-700">{err || "Nicht gefunden"}</div>
+          <div className="mt-1 text-sm text-muted">{err || "Nicht gefunden"}</div>
           <div className="mt-4">
             <button
               type="button"
               onClick={backToPlanner}
-              className="rounded border px-3 py-2 text-sm inline-block"
+              className="inline-flex items-center gap-2 rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
             >
-              ← Zur Planung
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
+              Zur Planung
             </button>
           </div>
         </Card>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-4">
-      <div className="space-y-6">
+    <main className="mx-auto max-w-5xl">
+      <div className="space-y-5">
         {showCreated ? (
           <Alert variant="success">
             Gespeichert ✓
@@ -1061,44 +1066,37 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         ) : null}
         <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl font-semibold">{customerName}</h1>
-          {customerAddress ? <div className="text-sm text-gray-700">{customerAddress}</div> : null}
-          {customerPhone ? <div className="text-sm text-gray-700">{customerPhone}</div> : null}
-          {employeeName ? <div className="text-sm text-gray-700">{employeeName}</div> : null}
+          <h1 className="text-3xl font-bold leading-[1.1] text-ink">{customerName}</h1>
+          <div className="mt-1 space-y-0.5 text-[13.5px] text-muted">
+            {customerAddress ? <div>{customerAddress}</div> : null}
+            {customerPhone ? <div>{customerPhone}</div> : null}
+            {employeeName ? <div>{employeeName}</div> : null}
+          </div>
         </div>
 
         <div className="flex gap-2 flex-wrap">
           {mapsHref ? (
-            <a
-              href={mapsHref}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-            >
-              🗺️ Navigation öffnen
+            <a href={mapsHref} target="_blank" rel="noreferrer" className={actionBtn}>
+              <MapPin className="h-4 w-4 text-accent-deep" strokeWidth={1.8} />
+              Navigation öffnen
             </a>
           ) : (
-            <span className="rounded border px-3 py-2 text-sm text-gray-400">—</span>
+            <span className="rounded-field border border-line px-3 py-2 text-sm text-faint">—</span>
           )}
 
           {customerPhone ? (
-            <a href={telHref} className="rounded border px-3 py-2 text-sm hover:bg-gray-50">
-              📞 Anrufen
+            <a href={telHref} className={actionBtn}>
+              <Phone className="h-4 w-4 text-accent-deep" strokeWidth={1.8} />
+              Anrufen
             </a>
           ) : null}
 
-          <button
-            type="button"
-            onClick={backToPlanner}
-            className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-          >
-            ← Planung
+          <button type="button" onClick={backToPlanner} className={actionBtn}>
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
+            Planung
           </button>
           {isAdmin ? (
-            <Link
-              href={correctionsHref}
-              className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-            >
+            <Link href={correctionsHref} className={actionBtn}>
               Admin-Korrekturen
             </Link>
           ) : null}
@@ -1107,7 +1105,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
       <Card variant="subtle" className="mt-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-800">Notfallkontakte</h3>
+          <h3 className="text-base font-semibold text-ink">Notfallkontakte</h3>
           <div className="flex items-center">
             <Pill className="ml-2">
               {ecLoading ? "…" : emergencyContacts.length}
@@ -1135,14 +1133,14 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         </div>
 
         {ecError ? <div className="mt-2 text-xs text-red-600">{ecError}</div> : null}
-        {ecLoading ? <div className="mt-2 text-sm text-gray-600">Lade…</div> : null}
+        {ecLoading ? <div className="mt-2 text-sm text-muted">Lade…</div> : null}
 
         {!ecLoading && !emergencyOpen && emergencyContacts.length === 1 ? (
-          <div className="mt-1 text-xs text-gray-600">1 Kontakt vorhanden</div>
+          <div className="mt-1 text-xs text-muted">1 Kontakt vorhanden</div>
         ) : null}
 
         {!ecLoading && emergencyContacts.length === 0 ? (
-          <div className="mt-2 text-sm text-gray-600">Keine Notfallkontakte hinterlegt.</div>
+          <div className="mt-2 text-sm text-muted">Keine Notfallkontakte hinterlegt.</div>
         ) : null}
 
         {emergencyOpen && emergencyContacts.length > 0 ? (
@@ -1157,13 +1155,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                   <div className="min-w-0">
                     <div className="font-medium truncate">{c.name}</div>
                     {c.relation ? (
-                      <div className="text-xs text-gray-600">{c.relation}</div>
+                      <div className="text-xs text-muted">{c.relation}</div>
                     ) : null}
-                    <div className="text-xs text-gray-600">{c.phone}</div>
+                    <div className="text-xs text-muted">{c.phone}</div>
                   </div>
                   {tel ? (
                     <a
-                      className="inline-flex h-8 w-8 items-center justify-center rounded border text-gray-700 hover:bg-gray-50"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded border text-muted hover:bg-tint"
                       href={`tel:${tel}`}
                       aria-label="Anrufen"
                       title="Anrufen"
@@ -1184,25 +1182,25 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       <Card className="mt-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div>
-            <div className="text-gray-600">Datum</div>
+            <div className="text-muted">Datum</div>
             <div className="font-medium">{assignmentDate}</div>
           </div>
 
           <div>
-            <div className="text-gray-600">Zeit</div>
+            <div className="text-muted">Zeit</div>
             <div className="font-medium">{plannedRange}</div>
             {enteredRange ? (
-              <div className="text-xs text-gray-500">Eingetragen: {enteredRange}</div>
+              <div className="text-xs text-faint">Eingetragen: {enteredRange}</div>
             ) : null}
           </div>
 
           <div>
-            <div className="text-gray-600">Arbeitsdauer (geplant)</div>
+            <div className="text-muted">Arbeitsdauer (geplant)</div>
             <div className="font-medium">{plannedDuration}</div>
           </div>
 
           <div>
-            <div className="text-gray-600">Status</div>
+            <div className="text-muted">Status</div>
             <div className="font-medium flex items-center gap-2 flex-wrap">
               <StatusPill status={data.status} />
               {isLocked ? (
@@ -1216,12 +1214,12 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               ) : null}
             </div>
             {isLocked ? (
-              <div className="mt-1 text-xs text-gray-600">
+              <div className="mt-1 text-xs text-muted">
                 Gesperrt nach Unterschrift – Änderungen nur durch Admin-Korrektur möglich.
               </div>
             ) : null}
             {data?.updatedAt ? (
-              <div className="mt-1 text-xs text-gray-500">
+              <div className="mt-1 text-xs text-faint">
                 Letzte Änderung: {formatDateTime(data.updatedAt)}
               </div>
             ) : null}
@@ -1230,7 +1228,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
         {data.notes ? (
           <div className="mt-4">
-            <div className="text-sm text-gray-600">Notiz</div>
+            <div className="text-sm text-muted">Notiz</div>
             <div className="text-sm">{data.notes}</div>
           </div>
         ) : null}
@@ -1250,8 +1248,8 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               </Button>
             </div>
 
-            {editSaved ? <div className="mt-2 text-xs text-green-700">Gespeichert ✓</div> : null}
-            {cancelSaved ? <div className="mt-2 text-xs text-green-700">Termin abgesagt ✓</div> : null}
+            {editSaved ? <div className="mt-2 text-xs text-st-green">Gespeichert ✓</div> : null}
+            {cancelSaved ? <div className="mt-2 text-xs text-st-green">Termin abgesagt ✓</div> : null}
             {editError ? (
               <Alert variant="error" className="mt-2 text-xs">
                 {editError}
@@ -1265,11 +1263,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             {editMode ? (
               <form className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={submitAdminEdit}>
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Kunde</span>
+                  <span className="text-xs text-muted">Kunde</span>
                   <select
                     value={editCustomerId}
                     onChange={(e) => setEditCustomerId(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked || adminListsLoading}
                   >
                     <option value="">Bitte wählen…</option>
@@ -1282,11 +1280,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Mitarbeiter</span>
+                  <span className="text-xs text-muted">Mitarbeiter</span>
                   <select
                     value={editEmployeeId}
                     onChange={(e) => setEditEmployeeId(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked || adminListsLoading}
                   >
                     <option value="">Bitte wählen…</option>
@@ -1299,19 +1297,19 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Beginn</span>
+                  <span className="text-xs text-muted">Beginn</span>
                   <input
                     type="date"
                     lang="de-DE"
                     value={editStartDate}
                     onChange={(e) => setEditStartDate(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked}
                   />
                   <select
                     value={editStartTime}
                     onChange={(e) => setEditStartTime(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked}
                   >
                     <option value="">Bitte wählen…</option>
@@ -1324,19 +1322,19 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Ende</span>
+                  <span className="text-xs text-muted">Ende</span>
                   <input
                     type="date"
                     lang="de-DE"
                     value={editEndDate}
                     onChange={(e) => setEditEndDate(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked}
                   />
                   <select
                     value={editEndTime}
                     onChange={(e) => setEditEndTime(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked}
                   >
                     <option value="">Bitte wählen…</option>
@@ -1349,22 +1347,22 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </label>
 
                 <label className="grid gap-1 sm:col-span-2">
-                  <span className="text-xs text-gray-600">Notiz</span>
+                  <span className="text-xs text-muted">Notiz</span>
                   <textarea
                     rows={2}
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked}
                   />
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Status</span>
+                  <span className="text-xs text-muted">Status</span>
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
+                    className="min-h-[40px] w-full rounded-field border border-line-strong bg-card px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                     disabled={editSaving || editLocked}
                   >
                     <option value="PLANNED">{statusLabelDe("PLANNED")}</option>
@@ -1455,25 +1453,25 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
         <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
           <div className="col-span-2 flex items-baseline justify-between">
-            <div className="text-gray-600">Geplant</div>
+            <div className="text-muted">Geplant</div>
             <div className="font-medium">{formatMinutes(summary.planned)}</div>
           </div>
 
           <div className="flex items-baseline justify-between">
-            <div className="text-gray-600">Erfasst</div>
+            <div className="text-muted">Erfasst</div>
             <div className="font-medium">{formatMinutes(summary.recorded)}</div>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="text-gray-600">KM erfasst</div>
+            <div className="text-muted">KM erfasst</div>
             <div className="font-medium">{summary.kmRecorded ?? 0}</div>
           </div>
 
           <div className="flex items-baseline justify-between">
-            <div className="text-gray-600">Korrektur</div>
+            <div className="text-muted">Korrektur</div>
             <div className="font-medium">{formatSignedMinutes(summary.adjustments)}</div>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="text-gray-600">KM Korrektur</div>
+            <div className="text-muted">KM Korrektur</div>
             <div className="font-medium">
               {(summary.kmAdjustments ?? 0) >= 0 ? "+" : ""}
               {summary.kmAdjustments ?? 0}
@@ -1481,11 +1479,11 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           </div>
 
           <div className="flex items-baseline justify-between">
-            <div className="text-gray-600">Final</div>
+            <div className="text-muted">Final</div>
             <div className="font-semibold">{formatMinutes(summary.final)}</div>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="text-gray-600">KM final</div>
+            <div className="text-muted">KM final</div>
             <div className="font-semibold">{summary.kmFinal ?? summary.kmRecorded ?? 0}</div>
           </div>
         </div>
@@ -1494,34 +1492,34 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       {/* KM PER DAY */}
       <Card className="mt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h2 className="text-base font-semibold">
+          <h2 className="text-base font-semibold text-ink">
             Kilometer (Tag)
             {lockAfterSignatureActive ? (
-              <span className="ml-1 inline-flex items-center text-gray-600" aria-label="Gesperrt" title="Gesperrt">
+              <span className="ml-1 inline-flex items-center text-muted" aria-label="Gesperrt" title="Gesperrt">
                 <span aria-hidden="true">🔒</span>
               </span>
             ) : null}
           </h2>
           {isAdmin ? (
-            <span className="rounded border px-2 py-0.5 text-xs text-gray-600">Nur Anzeige</span>
+            <span className="rounded-full border border-line-strong px-2 py-0.5 text-xs text-muted">Nur Anzeige</span>
           ) : null}
-          {kmDate ? <div className="text-sm text-gray-600">{kmDate}</div> : null}
+          {kmDate ? <div className="text-sm text-muted">{kmDate}</div> : null}
         </div>
 
         <div className="mt-3 flex items-center gap-2 flex-wrap">
           {isAdmin ? (
             <>
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-muted">
                 {kmLoadState === "error"
                   ? "Fehler beim Laden"
                   : data?.kilometers != null
                     ? String(data.kilometers)
                     : "Nicht erfasst"}
               </div>
-              <span className="rounded border px-2 py-0.5 text-xs text-gray-600">Nur Anzeige</span>
+              <span className="rounded-full border border-line-strong px-2 py-0.5 text-xs text-muted">Nur Anzeige</span>
             </>
           ) : isReceiptMode ? (
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-muted">
               {kmLoadState === "error"
                 ? "Fehler beim Laden"
                 : data?.kilometers != null
@@ -1531,7 +1529,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           ) : (
             <>
               {kmLoadState === "error" ? (
-                <div className="text-sm text-gray-700">Fehler beim Laden</div>
+                <div className="text-sm text-muted">Fehler beim Laden</div>
               ) : (
                 <input
                   type="number"
@@ -1564,18 +1562,18 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </div>
               ) : null}
               {isAssigned ? (
-                <div className="mt-2 text-sm text-gray-600">
+                <div className="mt-2 text-sm text-muted">
                   Bitte zuerst bestätigen, um Zeiten/Kilometer einzutragen.
                 </div>
               ) : null}
 
-              {kmSavedAt ? <div className="text-sm text-green-700">✓ Kilometer gespeichert</div> : null}
+              {kmSavedAt ? <div className="text-sm text-st-green">✓ Kilometer gespeichert</div> : null}
             </>
           )}
         </div>
 
         {isLocked || isKmLockedBySignature ? (
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-muted">
             Gesperrt nach Unterschrift: Kilometer (tagesbasiert) und Zeiteinträge sind nach jeder Unterschrift an diesem Tag gesperrt. Änderungen nur via Admin-Korrektur.{" "}
             {isAdmin ? (
               <>
@@ -1588,9 +1586,9 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         ) : null}
 
         {isAdmin ? (
-          <div className="mt-2 flex items-center gap-2 flex-wrap text-xs text-gray-600">
+          <div className="mt-2 flex items-center gap-2 flex-wrap text-xs text-muted">
             <span>Änderungen nur über Korrekturen möglich.</span>
-            <Link href="/admin/corrections" className="rounded border px-2 py-1 text-xs">
+            <Link href="/admin/corrections" className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep">
               Zu Korrekturen
             </Link>
           </div>
@@ -1602,26 +1600,26 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
       {/* TIME ENTRIES */}
       <Card className="mt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h2 className="text-base font-semibold">
+          <h2 className="text-base font-semibold text-ink">
             Zeiteinträge
             {lockAfterSignatureActive ? (
-              <span className="ml-1 inline-flex items-center text-gray-600" aria-label="Gesperrt" title="Gesperrt">
+              <span className="ml-1 inline-flex items-center text-muted" aria-label="Gesperrt" title="Gesperrt">
                 <span aria-hidden="true">🔒</span>
               </span>
             ) : null}
           </h2>
           {isAdmin ? (
-            <span className="rounded border px-2 py-0.5 text-xs text-gray-600">Nur Anzeige</span>
+            <span className="rounded-full border border-line-strong px-2 py-0.5 text-xs text-muted">Nur Anzeige</span>
           ) : null}
-          <div className="text-sm text-gray-700">
-            <span className="text-gray-600">Gesamt:</span>{" "}
+          <div className="text-sm text-muted">
+            <span className="text-muted">Gesamt:</span>{" "}
             <span className="font-semibold">{formatMinutes(totalWorkedMinutes)}</span>
           </div>
         </div>
 
         {completionNote ? (
-          <div className="mt-2 text-sm text-gray-700">
-            <span className="text-gray-600">Notiz:</span> {completionNote}
+          <div className="mt-2 text-sm text-muted">
+            <span className="text-muted">Notiz:</span> {completionNote}
           </div>
         ) : null}
 
@@ -1631,7 +1629,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
           <>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
               <div>
-                <label className="text-xs text-gray-600">Datum</label>
+                <label className="text-xs text-muted">Datum</label>
                 <input
                   type="date"
                   lang="de-DE"
@@ -1642,7 +1640,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-600">Beginn</label>
+                <label className="text-xs text-muted">Beginn</label>
                 <select
                   value={teStartTime}
                   onChange={(e) => setTeStartTime(e.target.value)}
@@ -1658,7 +1656,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-600">Ende</label>
+                <label className="text-xs text-muted">Ende</label>
                 <select
                   value={teEndTime}
                   onChange={(e) => setTeEndTime(e.target.value)}
@@ -1688,7 +1686,7 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
             </div>
 
             <div className="mt-2">
-              <label className="text-xs text-gray-600">Notiz (optional)</label>
+              <label className="text-xs text-muted">Notiz (optional)</label>
               <input
                 type="text"
                 value={teNotes}
@@ -1702,22 +1700,22 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
         ) : null}
 
         {isAssigned && !isReceiptMode && !isAdmin ? (
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-muted">
             Bitte zuerst bestätigen, um Zeiten/Kilometer einzutragen.
           </div>
         ) : null}
 
         {isAdmin ? (
-          <div className="mt-2 flex items-center gap-2 flex-wrap text-xs text-gray-600">
+          <div className="mt-2 flex items-center gap-2 flex-wrap text-xs text-muted">
             <span>Änderungen nur über Korrekturen möglich.</span>
-            <Link href="/admin/corrections" className="rounded border px-2 py-1 text-xs">
+            <Link href="/admin/corrections" className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep">
               Zu Korrekturen
             </Link>
           </div>
         ) : null}
 
         {isSigned ? (
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-muted">
             Gesperrt nach Unterschrift: Kilometer (tagesbasiert) und Zeiteinträge sind nach jeder Unterschrift an diesem Tag gesperrt. Änderungen nur via Admin-Korrektur. Bitte Admin kontaktieren.
           </div>
         ) : null}
@@ -1747,9 +1745,9 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                   <li key={t.id} className="rounded border px-3 py-2 text-sm">
                     <div className="flex items-center justify-between gap-2">
                       <div className="font-medium">{leftLabel}</div>
-                      <div className="text-gray-700">{formatMinutes(mins)}</div>
+                      <div className="text-muted">{formatMinutes(mins)}</div>
                     </div>
-                    {t.notes ? <div className="mt-1 text-gray-600 text-xs">{t.notes}</div> : null}
+                    {t.notes ? <div className="mt-1 text-muted text-xs">{t.notes}</div> : null}
                   </li>
                 );
               })}
@@ -1760,17 +1758,17 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
 
       {/* SIGNATURE */}
       <Card className="mt-4">
-        <h2 className="text-base font-semibold">Unterschrift</h2>
+        <h2 className="text-base font-semibold text-ink">Unterschrift</h2>
         <p className="mt-1 text-sm text-red-600">
           Achtung: Nach dem Speichern der Unterschrift werden Zeiteinträge und Kilometer für diesen Tag gesperrt und können nicht mehr geändert werden.
         </p>
         {!latestSignature ? (
-          <p className="mt-1 text-sm text-gray-600">Bitte hier unterschreiben und speichern. (Testversion)</p>
+          <p className="mt-1 text-sm text-muted">Bitte hier unterschreiben und speichern. (Testversion)</p>
         ) : null}
 
         {latestSignature ? (
-          <div className="mt-3 rounded border p-3 bg-gray-50">
-            <div className="text-xs text-gray-600">Vorhandene Unterschrift</div>
+          <div className="mt-3 rounded border p-3 bg-tint">
+            <div className="text-xs text-muted">Vorhandene Unterschrift</div>
             <div className="mt-1 text-sm">
               {latestSignature.signedAt
                 ? `Gespeichert: ${formatDate(latestSignature.signedAt)}`
@@ -1781,10 +1779,10 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
               <img
                 src={latestSignatureImage}
                 alt="Unterschrift"
-                className="mt-3 w-full max-w-[520px] rounded border bg-white"
+                className="mt-3 w-full max-w-[520px] rounded-field border border-line-strong bg-white"
               />
             ) : (
-              <div className="mt-2 text-xs text-gray-600">
+              <div className="mt-2 text-xs text-muted">
                 (Kein Bild im Response gefunden – Signature ist gespeichert, aber Preview fehlt.)
               </div>
             )}
@@ -1823,13 +1821,13 @@ export default function AssignmentDetailClient({ id }: { id: string }) {
                     >
                       {sigSaving ? "Speichere…" : "Unterschrift speichern"}
                     </Button>
-                    {sigOk ? <div className="text-sm text-green-700 flex items-center">{sigOk}</div> : null}
+                    {sigOk ? <div className="text-sm text-st-green flex items-center">{sigOk}</div> : null}
                   </div>
 
                   {sigErr ? <div className="mt-2 text-sm text-red-600">{sigErr}</div> : null}
                 </>
               ) : (
-                <div className="mt-2 text-sm text-gray-600">
+                <div className="mt-2 text-sm text-muted">
                   Unterschrift ist möglich, sobald der Termin bestätigt wurde.
                 </div>
               )}

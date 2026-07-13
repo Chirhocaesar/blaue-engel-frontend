@@ -174,7 +174,7 @@ export default async function AssignmentsPage({
             <Link
               key={a.id}
               href={`/assignments/${a.id}`}
-              className="block rounded-2xl border p-4 shadow-sm hover:bg-gray-50 transition"
+              className="block rounded-2xl border p-4 shadow-sm hover:bg-tint transition"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -213,12 +213,12 @@ export default async function AssignmentsPage({
 
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white p-4">
         <div className="mx-auto flex max-w-xl items-center justify-between">
-          <Link className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50" href={dashboardPath}>
+          <Link className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-tint" href={dashboardPath}>
             Zurück
           </Link>
 
           {nextCursor ? (
-            <Link className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-gray-50" href={`/assignments?${nextParams.toString()}`}>
+            <Link className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-tint" href={`/assignments?${nextParams.toString()}`}>
               Nächste
             </Link>
           ) : (
