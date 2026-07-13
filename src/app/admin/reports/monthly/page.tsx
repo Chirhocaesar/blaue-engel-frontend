@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Alert, Card } from "@/components/ui";
+import { Alert, MetricCard, Panel, PanelHead, Select, StatusBadge } from "@/components/ui";
 import { isPlannedCountableStatus } from "@/lib/format";
-import StatusPill from "@/components/StatusPill";
-import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -263,38 +260,33 @@ export default function AdminMonthlyReportPage() {
   }, [filteredAssignments]);
 
   return (
-    <main className="space-y-4">
-      <PageHeader
-        title="Monatsübersicht (Admin)"
-        subtitle="Monatliche Auswertung je Mitarbeiter."
-        actions={
-          <Link href="/admin" className="rounded-xl border px-4 py-2 text-sm font-semibold">
-            Admin-Dashboard
-          </Link>
-        }
-      />
-
-      <div className="text-sm text-gray-600">
-        Zeitraum: {monthLabel} · Mitarbeiter: {employeeLabel} · Stand: {updatedLabel}
+    <main className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold leading-[1.1] text-ink">Monatsbericht</h1>
+          <div className="mt-1 text-[13.5px] text-muted">
+            Monatliche Auswertung je Mitarbeiter · Zeitraum: {monthLabel} · Mitarbeiter: {employeeLabel} · Stand: {updatedLabel}
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <Panel className="flex flex-wrap items-end gap-4 px-4 py-3">
         <label className="grid gap-1 text-sm">
-          <span className="text-gray-600">Monat</span>
+          <span className="text-xs font-medium text-muted">Monat</span>
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="min-h-[40px] rounded border px-3 py-2"
+            className="min-h-[40px] rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </label>
 
         <label className="grid gap-1 text-sm">
-          <span className="text-gray-600">Mitarbeiter</span>
-          <select
+          <span className="text-xs font-medium text-muted">Mitarbeiter</span>
+          <Select
             value={employeeFilter}
             onChange={(e) => setEmployeeFilter(e.target.value)}
-            className="min-h-[40px] rounded border px-3 py-2"
+            className="min-h-[40px] w-auto min-w-[220px]"
           >
             <option value="">Alle Mitarbeiter</option>
             {employees.map((e) => (
@@ -302,23 +294,14 @@ export default function AdminMonthlyReportPage() {
                 {e.fullName ? `${e.fullName} · ${e.email}` : e.email || e.id}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
-      </div>
+      </Panel>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-        <div className="rounded-xl border p-3">
-          <div className="text-gray-600">Geplant (Std.)</div>
-          <div className="text-lg font-semibold">{selectedTotals.planned.toFixed(2)}</div>
-        </div>
-        <div className="rounded-xl border p-3">
-          <div className="text-gray-600">Erledigt (Std.)</div>
-          <div className="text-lg font-semibold">{selectedTotals.done.toFixed(2)}</div>
-        </div>
-        <div className="rounded-xl border p-3">
-          <div className="text-gray-600">KM (Erledigt)</div>
-          <div className="text-lg font-semibold">{selectedTotals.km.toFixed(1)}</div>
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricCard accent="accent" label="Geplant (Std.)" value={selectedTotals.planned.toFixed(2)} />
+        <MetricCard accent="green" label="Erledigt (Std.)" value={selectedTotals.done.toFixed(2)} />
+        <MetricCard accent="blue" label="KM (Erledigt)" value={selectedTotals.km.toFixed(1)} />
       </div>
 
       {error ? (
@@ -328,88 +311,82 @@ export default function AdminMonthlyReportPage() {
       {loading ? (
         <Alert variant="info">Lade…</Alert>
       ) : employeeFilter ? (
-        <Card className="p-4">
-          <h2 className="text-base font-semibold">Einsätze</h2>
+        <Panel>
+          <PanelHead title="Einsätze" />
           {rows.length === 0 ? (
-            <div className="mt-2">
+            <div className="p-4">
               <Alert variant="info">Keine Einsätze im Zeitraum.</Alert>
             </div>
           ) : (
-            <div className="mt-3 overflow-x-auto">
-              <div className="min-w-[720px] overflow-hidden rounded-lg border">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-700">
-                    <tr>
-                      <th className="text-left p-2">Datum</th>
-                      <th className="text-left p-2">Zeit</th>
-                      <th className="text-left p-2">Kunde</th>
-                      <th className="text-left p-2">Mitarbeiter</th>
-                      <th className="text-left p-2">Status</th>
-                      <th className="text-right p-2">Dauer (Std.)</th>
-                      <th className="text-right p-2">KM (eingetragen)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr key={row.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                        <td className="p-2 align-top">{row.dateLabel}</td>
-                        <td className="p-2 align-top">{row.timeLabel}</td>
-                        <td className="p-2 align-top">{row.customerName}</td>
-                        <td className="p-2 align-top">{row.employeeLabel}</td>
-                        <td className="p-2 align-top">
-                          <StatusPill status={row.status} />
-                        </td>
-                        <td className="p-2 align-top text-right tabular-nums">{row.duration == null ? "—" : row.duration.toFixed(2)}</td>
-                        <td className="p-2 align-top text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </Card>
-      ) : (
-        <Card className="p-4">
-          <h2 className="text-base font-semibold">Mitarbeiterübersicht</h2>
-          <div className="mt-3 overflow-x-auto">
-            <div className="min-w-[520px] overflow-hidden rounded-lg border">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-700">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse text-sm">
+                <thead>
                   <tr>
-                    <th className="text-left p-2">Mitarbeiter</th>
-                    <th className="text-right p-2">Geplant (Std.)</th>
-                    <th className="text-right p-2">Erledigt (Std.)</th>
-                    <th className="text-right p-2">KM (eingetragen)</th>
+                    {["Datum", "Zeit", "Kunde", "Mitarbeiter", "Status"].map((h) => (
+                      <th key={h} className="border-b border-line bg-tint px-4 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">{h}</th>
+                    ))}
+                    <th className="border-b border-line bg-tint px-4 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Dauer (Std.)</th>
+                    <th className="border-b border-line bg-tint px-4 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">KM (eingetragen)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.length === 0 ? (
-                    <tr>
-                      <td className="p-2" colSpan={4}>
-                        Keine Mitarbeiter gefunden.
+                  {rows.map((row) => (
+                    <tr key={row.id} className="last:[&>td]:border-b-0 hover:bg-tint-hover">
+                      <td className="border-b border-line px-4 py-3 align-top tabular-nums">{row.dateLabel}</td>
+                      <td className="border-b border-line px-4 py-3 align-top tabular-nums">{row.timeLabel}</td>
+                      <td className="border-b border-line px-4 py-3 align-top font-semibold text-ink">{row.customerName}</td>
+                      <td className="border-b border-line px-4 py-3 align-top">{row.employeeLabel}</td>
+                      <td className="border-b border-line px-4 py-3 align-top">
+                        <StatusBadge status={row.status} />
                       </td>
+                      <td className="border-b border-line px-4 py-3 align-top text-right tabular-nums">{row.duration == null ? "—" : row.duration.toFixed(2)}</td>
+                      <td className="border-b border-line px-4 py-3 align-top text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
                     </tr>
-                  ) : (
-                    employees.map((e) => {
-                      const totals = totalsByEmployee.get(e.id) ?? { planned: 0, done: 0, km: 0 };
-                      return (
-                        <tr key={e.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                          <td className="p-2">
-                            {e.fullName ? `${e.fullName} · ${e.email}` : e.email || e.id}
-                          </td>
-                          <td className="p-2 text-right tabular-nums">{totals.planned.toFixed(2)}</td>
-                          <td className="p-2 text-right tabular-nums">{totals.done.toFixed(2)}</td>
-                          <td className="p-2 text-right tabular-nums">{totals.km.toFixed(1)}</td>
-                        </tr>
-                      );
-                    })
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
+          )}
+        </Panel>
+      ) : (
+        <Panel>
+          <PanelHead title="Mitarbeiterübersicht" />
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="border-b border-line bg-tint px-4 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Mitarbeiter</th>
+                  <th className="border-b border-line bg-tint px-4 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Geplant (Std.)</th>
+                  <th className="border-b border-line bg-tint px-4 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Erledigt (Std.)</th>
+                  <th className="border-b border-line bg-tint px-4 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">KM (eingetragen)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-4 text-muted" colSpan={4}>
+                      Keine Mitarbeiter gefunden.
+                    </td>
+                  </tr>
+                ) : (
+                  employees.map((e) => {
+                    const totals = totalsByEmployee.get(e.id) ?? { planned: 0, done: 0, km: 0 };
+                    return (
+                      <tr key={e.id} className="last:[&>td]:border-b-0 hover:bg-tint-hover">
+                        <td className="border-b border-line px-4 py-3 font-semibold text-ink">
+                          {e.fullName ? `${e.fullName} · ${e.email}` : e.email || e.id}
+                        </td>
+                        <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.planned.toFixed(2)}</td>
+                        <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.done.toFixed(2)}</td>
+                        <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.km.toFixed(1)}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        </Card>
+        </Panel>
       )}
     </main>
   );
