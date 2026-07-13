@@ -291,9 +291,9 @@ export default function CustomerDetailClient({ id }: { id: string }) {
             <Field label="Pflegegrad">{customer.careLevel || "—"}</Field>
             <Field label="Geburtsdatum">{formatDateLocal(customer.birthDate ?? null)}</Field>
             <Field label="Kundentyp">
-              {customer.customerType === "KASS"
+              {["KASS", "STATUTORY"].includes(String(customer.customerType ?? "").toUpperCase())
                 ? "Gesetzlich"
-                : customer.customerType === "PRIVAT"
+                : ["PRIVAT", "PRIVATE"].includes(String(customer.customerType ?? "").toUpperCase())
                   ? "Privat"
                   : "—"}
             </Field>
