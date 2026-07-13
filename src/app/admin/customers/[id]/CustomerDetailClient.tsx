@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui";
+import { ArrowLeft, Phone } from "lucide-react";
+import { MetricCard, Panel, PanelHead, StatusBadge } from "@/components/ui";
+import { cn } from "@/components/ui/cn";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,25 @@ function getErrorMessage(status: number, json?: any) {
 
 function sanitizePhone(value: string) {
   return value.replace(/[^\d+]/g, "");
+}
+
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("grid gap-1", className)}>
+      <span className="text-[11px] font-semibold uppercase tracking-[.06em] text-faint">
+        {label}
+      </span>
+      <div className="font-medium text-ink">{children}</div>
+    </div>
+  );
 }
 
 export default function CustomerDetailClient({ id }: { id: string }) {
@@ -174,223 +195,193 @@ export default function CustomerDetailClient({ id }: { id: string }) {
     };
   }, [id]);
 
-
   if (loading) {
-    return (
-      <main className="min-h-screen p-4">
-        <div className="text-sm text-gray-600">Lade…</div>
-      </main>
-    );
+    return <div className="text-sm text-muted">Lade…</div>;
   }
 
   if (error) {
     return (
-      <main className="min-h-screen p-4">
-        <Card className="p-4">
-          <div className="font-semibold">Fehler</div>
-          <div className="mt-1 text-sm text-gray-700">{error}</div>
-          <div className="mt-4">
-            <Link href="/admin/masterdata?tab=customers" className="rounded border px-3 py-2 text-sm inline-block">
-              ← Zurück
-            </Link>
-          </div>
-        </Card>
-      </main>
+      <Panel className="p-5">
+        <div className="font-serif text-[17px] font-bold text-ink">Fehler</div>
+        <div className="mt-1 text-sm text-muted">{error}</div>
+        <div className="mt-4">
+          <Link
+            href="/admin/masterdata?tab=customers"
+            className="inline-flex items-center gap-2 rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.8} />
+            Zurück zu den Stammdaten
+          </Link>
+        </div>
+      </Panel>
     );
   }
 
   if (!customer) {
     return (
-      <main className="min-h-screen p-4">
-        <Card className="p-4">
-          <div className="font-semibold">Nicht gefunden</div>
-        </Card>
-      </main>
+      <Panel className="p-5">
+        <div className="font-serif text-[17px] font-bold text-ink">Nicht gefunden</div>
+      </Panel>
     );
   }
 
   const isActive = customer.isActive ?? true;
 
   return (
-    <main className="min-h-screen p-4">
-      <div className="mx-auto max-w-4xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold">Kundendetails</h1>
-            <div className="text-sm text-gray-600">{customer.name || "—"}</div>
-          </div>
-          <Link href="/admin/masterdata?tab=customers" className="rounded border px-3 py-2 text-sm hover:bg-gray-50">
-            ← Stammdaten
+    <div className="flex flex-col gap-4">
+      {/* Topbar */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Link
+            href="/admin/masterdata?tab=customers"
+            className="mb-2 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-accent-deep hover:underline"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2} />
+            Stammdaten
           </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold leading-[1.1] text-ink">
+              {customer.name || "Kunde"}
+            </h1>
+            <StatusBadge tone={isActive ? "green" : "gray"}>
+              {isActive ? "Aktiv" : "Inaktiv"}
+            </StatusBadge>
+          </div>
+          <div className="mt-1 text-[13.5px] text-muted">{customer.address || "—"}</div>
         </div>
+      </div>
 
-        <Card className="p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">Auswertung</h2>
-            {statsLoading ? <span className="text-sm text-gray-600">Lade…</span> : null}
-          </div>
-          {statsError ? <div className="mt-2 text-sm text-red-600">{statsError}</div> : null}
-          {!statsLoading ? (
-            <>
-              <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-                <div className="rounded border p-3">
-                  <div className="text-gray-600">Geplant (Std.)</div>
-                  <div className="text-lg font-semibold">{(stats?.plannedHours ?? 0).toFixed(2)}</div>
-                </div>
-                <div className="rounded border p-3">
-                  <div className="text-gray-600">Erledigt (Std.)</div>
-                  <div className="text-lg font-semibold">{(stats?.doneHours ?? 0).toFixed(2)}</div>
-                </div>
-                <div className="rounded border p-3">
-                  <div className="text-gray-600">KM (Erledigt)</div>
-                  <div className="text-lg font-semibold">{(stats?.doneKilometers ?? 0).toFixed(1)}</div>
-                </div>
-                <div className="rounded border p-3">
-                  <div className="text-gray-600">Einsätze gesamt</div>
-                  <div className="text-lg font-semibold">{stats?.totalAssignments ?? 0}</div>
-                </div>
-                <div className="rounded border p-3">
-                  <div className="text-gray-600">Einsätze erledigt</div>
-                  <div className="text-lg font-semibold">{stats?.doneAssignments ?? 0}</div>
-                </div>
-                <div className="rounded border p-3">
-                  <div className="text-gray-600">Letzter Einsatz</div>
-                  <div className="text-lg font-semibold">{formatDateLocal(stats?.lastAssignmentAt ?? null)}</div>
-                </div>
-              </div>
+      {/* Stats */}
+      {statsError ? (
+        <div className="rounded-field border border-st-amber/20 bg-st-amber-bg px-3 py-2 text-sm text-st-amber">
+          {statsError}
+        </div>
+      ) : null}
+      {statsLoading ? (
+        <div className="text-sm text-muted">Auswertung lädt…</div>
+      ) : (
+        <section className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+          <MetricCard accent="accent" label="Geplant (Std.)" value={(stats?.plannedHours ?? 0).toFixed(2)} />
+          <MetricCard accent="green" label="Erledigt (Std.)" value={(stats?.doneHours ?? 0).toFixed(2)} />
+          <MetricCard accent="blue" label="KM (Erledigt)" value={(stats?.doneKilometers ?? 0).toFixed(1)} />
+          <MetricCard accent="ink" label="Einsätze gesamt" value={stats?.totalAssignments ?? 0} />
+          <MetricCard accent="green" label="Einsätze erledigt" value={stats?.doneAssignments ?? 0} />
+          <MetricCard
+            accent="accent"
+            label="Letzter Einsatz"
+            value={
+              <span className="text-[22px]">{formatDateLocal(stats?.lastAssignmentAt ?? null)}</span>
+            }
+          />
+        </section>
+      )}
 
-              <div className="mt-3 rounded border p-3 text-sm">
-                <div className="text-gray-600">Nächste Einsätze</div>
-                {stats?.upcomingAssignments?.length ? (
-                  <div className="mt-2 space-y-1">
-                    {stats.upcomingAssignments.map((a) => (
-                      <div key={a.id ?? `${a.startAt}-${a.endAt}`} className="flex items-center justify-between gap-3">
-                        <div className="min-w-0 truncate">
-                          {`${formatDateLocal(a.startAt)} ${formatTimeLocal(a.startAt)}–${formatTimeLocal(a.endAt)}`}
-                        </div>
-                        <div className="min-w-0 truncate text-gray-600">
-                          {a.employeeName || "—"}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="mt-2 text-sm text-gray-600">Keine geplant.</div>
-                )}
-              </div>
-            </>
-          ) : null}
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex flex-wrap items-center gap-3 justify-between">
-            <h2 className="text-lg font-semibold">Kundendaten</h2>
-          </div>
-          <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Name</span>
-              <div className="font-medium text-gray-900">{customer.name || "—"}</div>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Telefon</span>
-              <div className="font-medium text-gray-900">{customer.phone || "—"}</div>
-            </div>
-
-            <div className="grid gap-1 sm:col-span-2">
-              <span className="text-xs text-gray-600">Adresse</span>
-              <div className="font-medium text-gray-900 whitespace-pre-line">{customer.address || "—"}</div>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Versicherungsnummer</span>
-              <div className="font-medium text-gray-900">{customer.insuranceNumber || "—"}</div>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Krankenkasse</span>
-              <div className="font-medium text-gray-900">{customer.healthInsurance || "—"}</div>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Pflegegrad</span>
-              <div className="font-medium text-gray-900">{customer.careLevel || "—"}</div>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Geburtsdatum</span>
-              <div className="font-medium text-gray-900">{formatDateLocal(customer.birthDate ?? null)}</div>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Kundentyp</span>
-              <div className="font-medium text-gray-900">
-                {customer.customerType === "KASS"
-                  ? "Gesetzlich"
-                  : customer.customerType === "PRIVAT"
-                    ? "Privat"
-                    : "—"}
-              </div>
-            </div>
-
-            <div className="grid gap-1">
-              <span className="text-xs text-gray-600">Status</span>
-              <div className="font-medium text-gray-900">{isActive ? "Aktiv" : "Inaktiv"}</div>
-            </div>
-
-            <div className="grid gap-1 sm:col-span-2">
-              <span className="text-xs text-gray-600">Admin-Notizen</span>
-              <div className="min-h-[56px] rounded border bg-gray-50 px-3 py-2 text-gray-900 whitespace-pre-line">
+      {/* Content */}
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1fr_340px]">
+        <Panel>
+          <PanelHead title="Kundendaten" />
+          <div className="grid grid-cols-1 gap-4 p-5 text-sm sm:grid-cols-2">
+            <Field label="Name">{customer.name || "—"}</Field>
+            <Field label="Telefon">{customer.phone || "—"}</Field>
+            <Field label="Adresse" className="sm:col-span-2">
+              <span className="whitespace-pre-line">{customer.address || "—"}</span>
+            </Field>
+            <Field label="Versicherungsnummer">{customer.insuranceNumber || "—"}</Field>
+            <Field label="Krankenkasse">{customer.healthInsurance || "—"}</Field>
+            <Field label="Pflegegrad">{customer.careLevel || "—"}</Field>
+            <Field label="Geburtsdatum">{formatDateLocal(customer.birthDate ?? null)}</Field>
+            <Field label="Kundentyp">
+              {customer.customerType === "KASS"
+                ? "Gesetzlich"
+                : customer.customerType === "PRIVAT"
+                  ? "Privat"
+                  : "—"}
+            </Field>
+            <Field label="Status">
+              <StatusBadge tone={isActive ? "green" : "gray"}>
+                {isActive ? "Aktiv" : "Inaktiv"}
+              </StatusBadge>
+            </Field>
+            <Field label="Admin-Notizen" className="sm:col-span-2">
+              <div className="min-h-[56px] whitespace-pre-line rounded-field border border-line bg-tint px-3 py-2 font-normal">
                 {customer.adminNotes || "—"}
               </div>
-            </div>
+            </Field>
           </div>
-        </Card>
+        </Panel>
 
-        <Card className="p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">Notfallkontakte</h2>
-          </div>
-          {contactsError ? <div className="mt-2 text-sm text-red-600">{contactsError}</div> : null}
-
-          {contactsLoading ? (
-            <div className="mt-2 text-sm text-gray-600">Lade…</div>
-          ) : contacts.length === 0 ? (
-            <div className="mt-2 text-sm text-gray-600">Keine Notfallkontakte hinterlegt.</div>
-          ) : (
-            <div className="mt-3 space-y-2">
-              {contacts.map((contact) => {
-                const tel = sanitizePhone(contact.phone || "");
-                return (
+        <div className="flex flex-col gap-4">
+          <Panel>
+            <PanelHead title="Nächste Einsätze" titleClassName="text-[15px]" />
+            {stats?.upcomingAssignments?.length ? (
+              <div className="py-1">
+                {stats.upcomingAssignments.map((a, i) => (
                   <div
-                    key={contact.id}
-                    className="flex flex-col gap-2 rounded border bg-white px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+                    key={a.id ?? `${a.startAt}-${a.endAt}`}
+                    className={cn(
+                      "flex items-center justify-between gap-3 px-5 py-[9px] text-[12.5px]",
+                      i > 0 && "border-t border-line"
+                    )}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate">{contact.name}</div>
-                      <div className="text-xs text-gray-600">
-                        {contact.relation ? `${contact.relation} · ` : ""}
-                        {contact.phone || "—"}
-                      </div>
-                    </div>
+                    <span className="min-w-0 truncate font-medium tabular-nums">
+                      {`${formatDateLocal(a.startAt)} ${formatTimeLocal(a.startAt)}–${formatTimeLocal(a.endAt)}`}
+                    </span>
+                    <span className="min-w-0 truncate text-muted">{a.employeeName || "—"}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-5 py-4 text-sm text-muted">Keine geplant.</div>
+            )}
+          </Panel>
 
-                    <div className="flex flex-wrap gap-2">
+          <Panel>
+            <PanelHead title="Notfallkontakte" titleClassName="text-[15px]" />
+            {contactsError ? (
+              <div className="px-5 py-3 text-sm text-red-600">{contactsError}</div>
+            ) : null}
+            {contactsLoading ? (
+              <div className="px-5 py-4 text-sm text-muted">Lade…</div>
+            ) : contacts.length === 0 ? (
+              <div className="px-5 py-4 text-sm text-muted">Keine Notfallkontakte hinterlegt.</div>
+            ) : (
+              <div className="py-1">
+                {contacts.map((contact, i) => {
+                  const tel = sanitizePhone(contact.phone || "");
+                  return (
+                    <div
+                      key={contact.id}
+                      className={cn(
+                        "flex items-center justify-between gap-3 px-5 py-[10px]",
+                        i > 0 && "border-t border-line"
+                      )}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] font-semibold text-ink">
+                          {contact.name}
+                        </div>
+                        <div className="truncate text-xs text-muted">
+                          {contact.relation ? `${contact.relation} · ` : ""}
+                          {contact.phone || "—"}
+                        </div>
+                      </div>
                       {tel ? (
                         <a
-                          className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                           href={`tel:${tel}`}
                         >
+                          <Phone className="h-3.5 w-3.5" strokeWidth={1.8} />
                           Anrufen
                         </a>
                       ) : null}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Home,
   CalendarDays,
@@ -96,6 +96,22 @@ export default function AdminShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // The Stammdaten tabs live on /admin/masterdata?tab=… — map them onto the
+  // Kunden/Mitarbeiter nav entries.
+  const masterdataTab =
+    pathname === "/admin/masterdata" ? (searchParams.get("tab") ?? "employees") : null;
+
+  const isLeafActive = React.useCallback(
+    (item: NavLeaf) => {
+      if (leafActive(pathname, item)) return true;
+      if (masterdataTab === "customers" && item.href === "/admin/customers") return true;
+      if (masterdataTab === "employees" && item.href === "/admin/employees") return true;
+      return false;
+    },
+    [pathname, masterdataTab]
+  );
 
   // Groups containing the active route start expanded.
   const [open, setOpen] = React.useState<Record<string, boolean>>(() => {
@@ -103,7 +119,7 @@ export default function AdminShell({
     for (const section of NAV) {
       for (const entry of section.items) {
         if (isGroup(entry)) {
-          initial[entry.key] = entry.children.some((c) => leafActive(pathname, c));
+          initial[entry.key] = entry.children.some((c) => isLeafActive(c));
         }
       }
     }
@@ -119,7 +135,7 @@ export default function AdminShell({
     );
 
   const renderLeaf = (item: NavLeaf, sub = false) => {
-    const active = leafActive(pathname, item);
+    const active = isLeafActive(item);
     const Icon = item.icon;
     return (
       <Link
@@ -148,7 +164,7 @@ export default function AdminShell({
   };
 
   const renderGroup = (group: NavGroup) => {
-    const childActive = group.children.some((c) => leafActive(pathname, c));
+    const childActive = group.children.some((c) => isLeafActive(c));
     const expanded = open[group.key] ?? false;
     const Icon = group.icon;
     return (

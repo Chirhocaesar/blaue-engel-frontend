@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button, Card, Input, Select, Textarea } from "@/components/ui";
+import { Plus, Search } from "lucide-react";
+import { Button, Card, Input, Panel, Select, StatusBadge, Textarea } from "@/components/ui";
+import { cn } from "@/components/ui/cn";
 import StateNotice from "@/components/StateNotice";
 
 export const dynamic = "force-dynamic";
@@ -170,14 +172,14 @@ function EmergencyContactsPanel({
 
   return (
     <Card variant="subtle" className="p-3 space-y-2" onKeyDown={handlePanelKeyDown}>
-      <div className="text-sm font-semibold">Notfallkontakte</div>
+      <div className="font-serif text-[15px] font-bold text-ink">Notfallkontakte</div>
       {error ? <div className="text-xs text-red-600">{error}</div> : null}
-      {saved ? <div className="text-xs text-green-700">Kontakt gespeichert ✓</div> : null}
+      {saved ? <div className="text-xs text-st-green">Kontakt gespeichert ✓</div> : null}
       {editError ? <div className="text-xs text-red-600">{editError}</div> : null}
       {loading ? (
-        <div className="text-sm text-gray-600">Lade…</div>
+        <div className="text-sm text-muted">Lade…</div>
       ) : contacts.length === 0 ? (
-        <div className="text-sm text-gray-600">Keine Notfallkontakte.</div>
+        <div className="text-sm text-muted">Keine Notfallkontakte.</div>
       ) : (
         <div className="space-y-2">
           {contacts.map((c) => {
@@ -186,7 +188,7 @@ function EmergencyContactsPanel({
             return (
               <div
                 key={c.id}
-                className="flex flex-col gap-2 rounded border bg-white px-2 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 rounded-field border border-line bg-card px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0 flex-1">
                   {isEditing ? (
@@ -214,7 +216,7 @@ function EmergencyContactsPanel({
                   ) : (
                     <>
                       <div className="font-medium truncate">{c.name}</div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-muted">
                         {c.relation ? `${c.relation} · ` : ""}{c.phone}
                       </div>
                     </>
@@ -223,7 +225,7 @@ function EmergencyContactsPanel({
                 <div className="flex flex-wrap gap-2">
                   {tel && !isEditing ? (
                     <a
-                      className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                      className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                       href={`tel:${tel}`}
                     >
                       Anrufen
@@ -233,7 +235,7 @@ function EmergencyContactsPanel({
                     <>
                       <button
                         type="button"
-                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                         disabled={saving}
                         onClick={() => saveEdit(c.id)}
                       >
@@ -241,7 +243,7 @@ function EmergencyContactsPanel({
                       </button>
                       <button
                         type="button"
-                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                         disabled={saving}
                         onClick={cancelEdit}
                       >
@@ -252,7 +254,7 @@ function EmergencyContactsPanel({
                     <>
                       <button
                         type="button"
-                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                         disabled={saving}
                         onClick={() => startEdit(c)}
                       >
@@ -260,7 +262,7 @@ function EmergencyContactsPanel({
                       </button>
                       <button
                         type="button"
-                        className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                        className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                         disabled={saving}
                         onClick={() => onDelete(c.id)}
                       >
@@ -300,7 +302,7 @@ function EmergencyContactsPanel({
         <div className="sm:col-span-3">
           <button
             type="button"
-            className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
+            className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
             disabled={saving}
             onClick={(event) => onCreate(event)}
           >
@@ -316,6 +318,12 @@ export default function MasterdataPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<"employees" | "customers">("employees");
+
+  function switchTab(next: "employees" | "customers") {
+    setTab(next);
+    // Keep the URL in sync so the sidebar highlights the right entry.
+    router.replace(`/admin/masterdata?tab=${next}`, { scroll: false });
+  }
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -1008,74 +1016,102 @@ export default function MasterdataPage() {
   }
 
   return (
-    <main className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <main className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Stammdaten</h1>
-          <p className="mt-1 text-sm text-gray-600">Mitarbeiter und Kunden verwalten.</p>
+          <h1 className="text-3xl font-bold leading-[1.1] text-ink">Stammdaten</h1>
+          <p className="mt-1 text-[13.5px] text-muted">Mitarbeiter und Kunden verwalten.</p>
         </div>
+        {tab === "employees" ? (
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-field bg-ink px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-[0_8px_18px_-8px_rgba(18,18,18,.5)] hover:bg-black"
+            onClick={() => {
+              setEmpFormError(null);
+              setShowEmployeeModal(true);
+            }}
+          >
+            <Plus className="h-4 w-4 text-accent" strokeWidth={2} />
+            Mitarbeiter
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-field bg-ink px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-[0_8px_18px_-8px_rgba(18,18,18,.5)] hover:bg-black"
+            onClick={() => {
+              setCustFormError(null);
+              setCreatedCustomerId(null);
+              setCreatedCustomerName("");
+              setEmergencyContacts([]);
+              setEcError(null);
+              setEcName("");
+              setEcPhone("");
+              setEcRelation("");
+              setShowCustomerModal(true);
+            }}
+          >
+            <Plus className="h-4 w-4 text-accent" strokeWidth={2} />
+            Kunde
+          </button>
+        )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Input
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder={tab === "customers" ? "Kunden durchsuchen…" : "Mitarbeiter durchsuchen…"}
-          className="min-w-[240px] max-w-md"
-        />
-      </div>
+      <Panel className="flex flex-wrap items-center gap-3 px-4 py-3">
+        <div className="inline-flex rounded-field border border-line bg-tint p-1">
+          <button
+            type="button"
+            className={cn(
+              "rounded-[7px] px-3 py-1.5 text-[13px] font-semibold transition-colors sm:px-4",
+              tab === "employees" ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"
+            )}
+            onClick={() => switchTab("employees")}
+          >
+            Mitarbeiter
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "rounded-[7px] px-3 py-1.5 text-[13px] font-semibold transition-colors sm:px-4",
+              tab === "customers" ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"
+            )}
+            onClick={() => switchTab("customers")}
+          >
+            Kunden
+          </button>
+        </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className={`rounded-md border px-3 py-2 text-sm font-semibold ${
-            tab === "employees" ? "bg-gray-900 text-white" : "hover:bg-gray-50"
-          }`}
-          onClick={() => setTab("employees")}
-        >
-          Mitarbeiter
-        </button>
-        <button
-          type="button"
-          className={`rounded-md border px-3 py-2 text-sm font-semibold ${
-            tab === "customers" ? "bg-gray-900 text-white" : "hover:bg-gray-50"
-          }`}
-          onClick={() => setTab("customers")}
-        >
-          Kunden
-        </button>
-      </div>
+        <div className="relative min-w-[220px] max-w-md flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" strokeWidth={1.8} />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={tab === "customers" ? "Kunden durchsuchen…" : "Mitarbeiter durchsuchen…"}
+            className="pl-9"
+          />
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--color-accent-deep)]"
+            checked={tab === "employees" ? includeInactiveEmployees : includeInactiveCustomers}
+            onChange={(e) =>
+              tab === "employees"
+                ? setIncludeInactiveEmployees(e.target.checked)
+                : setIncludeInactiveCustomers(e.target.checked)
+            }
+          />
+          Inaktive anzeigen
+        </label>
+
+        {(tab === "employees" && (empSaved || resetSaved || editEmpSaved)) ||
+        (tab === "customers" && custSaved) ? (
+          <span className="text-sm font-medium text-st-green">Gespeichert ✓</span>
+        ) : null}
+      </Panel>
 
       {tab === "employees" ? (
         <section className="space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h2 className="text-lg font-semibold">Mitarbeiter</h2>
-            <div className="flex items-center gap-2 flex-wrap">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={includeInactiveEmployees}
-                  onChange={(e) => setIncludeInactiveEmployees(e.target.checked)}
-                />
-                Inaktive anzeigen
-              </label>
-              {empSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
-              {resetSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
-              {editEmpSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
-              <button
-                type="button"
-                className="rounded-md border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
-                onClick={() => {
-                  setEmpFormError(null);
-                  setShowEmployeeModal(true);
-                }}
-              >
-                + Mitarbeiter
-              </button>
-            </div>
-          </div>
-
           {usersError ? (
             <StateNotice variant="error" message={usersError} />
           ) : null}
@@ -1086,22 +1122,20 @@ export default function MasterdataPage() {
             <StateNotice variant="empty" message="Keine Eintraege vorhanden." />
           ) : (
             <>
-              <div className="space-y-3 sm:hidden max-h-[60vh] overflow-auto rounded border p-2">
+              <div className="space-y-3 sm:hidden max-h-[60vh] overflow-auto">
                 {filteredUserRows.map((u) => (
                   <Card key={u.id} className="space-y-2">
                     <div>
-                      <div className="text-sm text-gray-600">Name</div>
-                      <div className="flex items-center gap-2">
+                      <div className="text-xs font-medium text-muted">Name</div>
+                      <div className="flex items-center gap-2 font-semibold text-ink">
                         <span>{u.name}</span>
                         {includeInactiveEmployees && u.raw.isActive === false ? (
-                          <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
-                            Inaktiv
-                          </span>
+                          <StatusBadge tone="gray">Inaktiv</StatusBadge>
                         ) : null}
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">E-Mail</div>
+                      <div className="text-xs font-medium text-muted">E-Mail</div>
                       <div>{u.email}</div>
                     </div>
                     <Button
@@ -1153,48 +1187,44 @@ export default function MasterdataPage() {
                   </Card>
                 ))}
               </div>
-              <div className="hidden sm:block max-h-[60vh] overflow-auto rounded border">
-                <table className="min-w-full text-sm border">
-                  <thead className="sticky top-0 z-10 bg-white text-gray-700">
+              <Panel className="hidden max-h-[60vh] overflow-auto sm:block">
+                <table className="min-w-full border-collapse text-sm">
+                  <thead className="sticky top-0 z-10">
                     <tr>
-                      <th className="p-2 text-left border">Name</th>
-                      <th className="p-2 text-left border">E-Mail</th>
+                      <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Name</th>
+                      <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">E-Mail</th>
                       {includeInactiveEmployees ? (
-                        <th className="p-2 text-left border">Status</th>
+                        <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Status</th>
                       ) : null}
-                      <th className="p-2 text-left border">Aktionen</th>
+                      <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Aktionen</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredUserRows.map((u) => (
-                      <tr key={u.id} className="border-t odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                        <td className="p-2 border">{u.name}</td>
-                        <td className="p-2 border">{u.email}</td>
+                      <tr key={u.id} className="transition-colors last:[&>td]:border-b-0 hover:bg-tint-hover">
+                        <td className="border-b border-line px-5 py-3.5 font-semibold text-ink">{u.name}</td>
+                        <td className="border-b border-line px-5 py-3.5">{u.email}</td>
                         {includeInactiveEmployees ? (
-                          <td className="p-2 border">
+                          <td className="border-b border-line px-5 py-3.5">
                             {u.raw.isActive === false ? (
-                              <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
-                                Inaktiv
-                              </span>
+                              <StatusBadge tone="gray">Inaktiv</StatusBadge>
                             ) : (
-                              <span className="rounded-full border px-2 py-0.5 text-xs text-green-700">
-                                Aktiv
-                              </span>
+                              <StatusBadge tone="green">Aktiv</StatusBadge>
                             )}
                           </td>
                         ) : null}
-                        <td className="p-2 border">
-                          <div className="flex flex-wrap gap-2">
+                        <td className="border-b border-line px-5 py-3.5">
+                          <div className="flex flex-wrap gap-1.5">
                             <button
                               type="button"
-                              className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                              className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] font-medium text-fg hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                               onClick={() => openEmployeeEdit(u.raw)}
                             >
                               Bearbeiten
                             </button>
                             <button
                               type="button"
-                              className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                              className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] font-medium text-fg hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                               onClick={() => {
                                 setResetError(null);
                                 setResetUser(u.raw);
@@ -1207,7 +1237,7 @@ export default function MasterdataPage() {
                             {includeInactiveEmployees && u.raw.isActive === false ? (
                               <button
                                 type="button"
-                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] font-medium text-fg hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                                 disabled={userToggleId === u.id}
                                 onClick={() => reactivateUser(u.raw)}
                               >
@@ -1216,7 +1246,7 @@ export default function MasterdataPage() {
                             ) : (
                               <button
                                 type="button"
-                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] font-medium text-fg hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                                 disabled={userToggleId === u.id}
                                 onClick={() => deactivateUser(u.raw)}
                               >
@@ -1229,45 +1259,12 @@ export default function MasterdataPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </Panel>
             </>
           )}
         </section>
       ) : (
         <section className="space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h2 className="text-lg font-semibold">Kunden</h2>
-            <div className="flex items-center gap-2 flex-wrap">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={includeInactiveCustomers}
-                  onChange={(e) => setIncludeInactiveCustomers(e.target.checked)}
-                />
-                Inaktive anzeigen
-              </label>
-              {custSaved ? <span className="text-sm text-green-700">Gespeichert ✓</span> : null}
-              <button
-                type="button"
-                className="rounded-md border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
-                onClick={() => {
-                  setCustFormError(null);
-                  setCreatedCustomerId(null);
-                  setCreatedCustomerName("");
-                  setEmergencyContacts([]);
-                  setEcError(null);
-                  setEcName("");
-                  setEcPhone("");
-                  setEcRelation("");
-                  setShowCustomerModal(true);
-                }}
-              >
-                + Kunde
-              </button>
-            </div>
-          </div>
-
           {customersError ? (
             <StateNotice variant="error" message={customersError} />
           ) : null}
@@ -1278,7 +1275,7 @@ export default function MasterdataPage() {
             <StateNotice variant="empty" message="Keine Eintraege vorhanden." />
           ) : (
             <>
-              <div className="space-y-3 sm:hidden max-h-[60vh] overflow-auto rounded border p-2">
+              <div className="space-y-3 sm:hidden max-h-[60vh] overflow-auto">
                 {filteredCustomers.map((c) => (
                   <Card
                     key={c.id}
@@ -1310,27 +1307,25 @@ export default function MasterdataPage() {
                     }}
                   >
                     <div>
-                      <div className="text-sm text-gray-600">Name</div>
-                      <div className="flex items-center gap-2">
+                      <div className="text-xs font-medium text-muted">Name</div>
+                      <div className="flex items-center gap-2 font-semibold text-ink">
                         <span>{c.name}</span>
                         {!c.id ? (
-                          <span className="rounded-full border px-2 py-0.5 text-xs text-red-700 border-red-300">
+                          <span className="rounded-full border border-red-300 px-2 py-0.5 text-xs text-red-700">
                             Fehlende ID
                           </span>
                         ) : null}
                         {includeInactiveCustomers && c.isActive === false ? (
-                          <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
-                            Inaktiv
-                          </span>
+                          <StatusBadge tone="gray">Inaktiv</StatusBadge>
                         ) : null}
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">Adresse</div>
+                      <div className="text-xs font-medium text-muted">Adresse</div>
                       <div>{c.address || "—"}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">Telefon</div>
+                      <div className="text-xs font-medium text-muted">Telefon</div>
                       <div>{c.phone || "—"}</div>
                     </div>
                     <Button
@@ -1377,59 +1372,55 @@ export default function MasterdataPage() {
                   </Card>
                 ))}
               </div>
-              <div className="hidden sm:block max-h-[60vh] overflow-auto rounded border">
-                <table className="min-w-full text-sm border">
-                  <thead className="sticky top-0 z-10 bg-white text-gray-700">
+              <Panel className="hidden max-h-[60vh] overflow-auto sm:block">
+                <table className="min-w-full border-collapse text-sm">
+                  <thead className="sticky top-0 z-10">
                     <tr>
-                      <th className="p-2 text-left border">Name</th>
-                      <th className="p-2 text-left border">Adresse</th>
+                      <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Name</th>
+                      <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Adresse</th>
                       {includeInactiveCustomers ? (
-                        <th className="p-2 text-left border">Status</th>
+                        <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Status</th>
                       ) : null}
-                      <th className="p-2 text-left border">Telefon</th>
-                      <th className="p-2 text-left border">Aktionen</th>
+                      <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Telefon</th>
+                      <th className="border-b border-line bg-tint px-5 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Aktionen</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredCustomers.map((c) => (
-                      <tr key={c.id} className="border-t odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                        <td className="p-2 border">
+                      <tr key={c.id} className="transition-colors last:[&>td]:border-b-0 hover:bg-tint-hover">
+                        <td className="border-b border-line px-5 py-3.5">
                           {c.id ? (
                             <Link
                               href={`/admin/customers/${c.id}`}
-                              className="font-medium hover:underline"
+                              className="font-semibold text-ink hover:text-accent-deep hover:underline"
                             >
                               {c.name}
                             </Link>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{c.name}</span>
-                              <span className="rounded-full border px-2 py-0.5 text-xs text-red-700 border-red-300">
+                              <span className="font-semibold text-ink">{c.name}</span>
+                              <span className="rounded-full border border-red-300 px-2 py-0.5 text-xs text-red-700">
                                 Fehlende ID
                               </span>
                             </div>
                           )}
                         </td>
-                        <td className="p-2 border">{c.address || "—"}</td>
+                        <td className="border-b border-line px-5 py-3.5">{c.address || "—"}</td>
                         {includeInactiveCustomers ? (
-                          <td className="p-2 border">
+                          <td className="border-b border-line px-5 py-3.5">
                             {c.isActive === false ? (
-                              <span className="rounded-full border px-2 py-0.5 text-xs text-gray-600">
-                                Inaktiv
-                              </span>
+                              <StatusBadge tone="gray">Inaktiv</StatusBadge>
                             ) : (
-                              <span className="rounded-full border px-2 py-0.5 text-xs text-green-700">
-                                Aktiv
-                              </span>
+                              <StatusBadge tone="green">Aktiv</StatusBadge>
                             )}
                           </td>
                         ) : null}
-                        <td className="p-2 border">{c.phone || "—"}</td>
-                        <td className="p-2 border">
-                          <div className="flex flex-wrap gap-2">
+                        <td className="border-b border-line px-5 py-3.5">{c.phone || "—"}</td>
+                        <td className="border-b border-line px-5 py-3.5">
+                          <div className="flex flex-wrap gap-1.5">
                             <button
                               type="button"
-                              className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                              className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] font-medium text-fg hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                               onClick={() => openEditCustomer(c.id)}
                             >
                               Bearbeiten
@@ -1437,7 +1428,7 @@ export default function MasterdataPage() {
                             {includeInactiveCustomers && c.isActive === false ? (
                               <button
                                 type="button"
-                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] font-medium text-fg hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                                 disabled={customerToggleId === c.id}
                                 onClick={() => reactivateCustomer(c)}
                               >
@@ -1446,7 +1437,7 @@ export default function MasterdataPage() {
                             ) : (
                               <button
                                 type="button"
-                                className="rounded-md border px-2 py-1 text-xs font-semibold hover:bg-gray-50"
+                                className="rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-[12.5px] font-medium text-fg hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
                                 disabled={customerToggleId === c.id}
                                 onClick={() => deactivateCustomer(c)}
                               >
@@ -1459,20 +1450,20 @@ export default function MasterdataPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </Panel>
             </>
           )}
         </section>
       )}
 
       {showEmployeeModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="w-full max-w-md rounded-card border border-line bg-card p-5 shadow-card max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold">Mitarbeiter hinzufügen</h3>
+              <h3 className="font-serif text-[17px] font-bold text-ink">Mitarbeiter hinzufügen</h3>
               <button
                 type="button"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-muted hover:text-ink"
                 onClick={() => setShowEmployeeModal(false)}
               >
                 Schließen
@@ -1480,7 +1471,7 @@ export default function MasterdataPage() {
             </div>
 
             {empFormError ? (
-              <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
+              <div className="mt-3 rounded-field border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {empFormError}
               </div>
             ) : null}
@@ -1517,14 +1508,14 @@ export default function MasterdataPage() {
               <div className="flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                   onClick={() => setShowEmployeeModal(false)}
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white"
+                  className="rounded-field bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={empSaving || !empFormValid}
                 >
                   {empSaving ? "Speichern…" : "Speichern"}
@@ -1536,13 +1527,13 @@ export default function MasterdataPage() {
       ) : null}
 
       {showEmployeeEditModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="w-full max-w-md rounded-card border border-line bg-card p-5 shadow-card max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold">Mitarbeiter bearbeiten</h3>
+              <h3 className="font-serif text-[17px] font-bold text-ink">Mitarbeiter bearbeiten</h3>
               <button
                 type="button"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-muted hover:text-ink"
                 onClick={() => {
                   setShowEmployeeEditModal(false);
                   setEditingEmployee(null);
@@ -1553,7 +1544,7 @@ export default function MasterdataPage() {
             </div>
 
             {editEmpError ? (
-              <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
+              <div className="mt-3 rounded-field border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {editEmpError}
               </div>
             ) : null}
@@ -1580,7 +1571,7 @@ export default function MasterdataPage() {
               <div className="flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                   onClick={() => {
                     setShowEmployeeEditModal(false);
                     setEditingEmployee(null);
@@ -1590,7 +1581,7 @@ export default function MasterdataPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white"
+                  className="rounded-field bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={editEmpSaving}
                 >
                   {editEmpSaving ? "Speichern…" : "Speichern"}
@@ -1602,13 +1593,13 @@ export default function MasterdataPage() {
       ) : null}
 
       {showCustomerModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="w-full max-w-md rounded-card border border-line bg-card p-5 shadow-card max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold">Kunde hinzufügen</h3>
+              <h3 className="font-serif text-[17px] font-bold text-ink">Kunde hinzufügen</h3>
               <button
                 type="button"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-muted hover:text-ink"
                 onClick={() => {
                   setShowCustomerModal(false);
                   setCreatedCustomerId(null);
@@ -1622,13 +1613,13 @@ export default function MasterdataPage() {
             </div>
 
             {custFormError ? (
-              <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
+              <div className="mt-3 rounded-field border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {custFormError}
               </div>
             ) : null}
 
             {createdCustomerId ? (
-              <div className="mt-3 rounded border border-green-300 bg-green-50 p-2 text-sm text-green-700">
+              <div className="mt-3 rounded-field border border-st-green/20 bg-st-green-bg px-3 py-2 text-sm text-st-green">
                 Kunde erstellt ✓ {createdCustomerName ? `(${createdCustomerName})` : ""}
               </div>
             ) : null}
@@ -1719,17 +1710,17 @@ export default function MasterdataPage() {
                 />
               </div>
 
-              <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-white px-4 py-3">
+              <div className="sticky bottom-0 -mx-5 flex items-center justify-end gap-2 border-t border-line bg-card px-5 py-3">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                   onClick={() => setShowCustomerModal(false)}
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white"
+                  className="rounded-field bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={custSaving || !custFormValid || Boolean(createdCustomerId)}
                 >
                   {custSaving ? "Speichern…" : "Speichern"}
@@ -1764,7 +1755,7 @@ export default function MasterdataPage() {
               <div className="mt-4 flex items-center justify-end">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                   onClick={() => {
                     setShowCustomerModal(false);
                     setCreatedCustomerId(null);
@@ -1782,13 +1773,13 @@ export default function MasterdataPage() {
       ) : null}
 
       {showCustomerEditModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-xl bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="w-full max-w-2xl rounded-card border border-line bg-card p-5 shadow-card max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold">Kunde bearbeiten</h3>
+              <h3 className="font-serif text-[17px] font-bold text-ink">Kunde bearbeiten</h3>
               <button
                 type="button"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-muted hover:text-ink"
                 onClick={() => {
                   setShowCustomerEditModal(false);
                   setEditingCustomer(null);
@@ -1801,15 +1792,15 @@ export default function MasterdataPage() {
             </div>
 
             {editError ? (
-              <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
+              <div className="mt-3 rounded-field border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {editError}
               </div>
             ) : null}
 
-            {editSaved ? <div className="mt-2 text-sm text-green-700">Gespeichert ✓</div> : null}
+            {editSaved ? <div className="mt-2 text-sm text-st-green">Gespeichert ✓</div> : null}
 
             {editLoading ? (
-              <div className="mt-3 text-sm text-gray-600">Lade…</div>
+              <div className="mt-3 text-sm text-muted">Lade…</div>
             ) : editingCustomer ? (
               <form className="mt-3 space-y-3" onSubmit={submitCustomerUpdate}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1956,17 +1947,17 @@ export default function MasterdataPage() {
                   />
                 ) : null}
 
-                <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-white px-4 py-3">
+                <div className="sticky bottom-0 -mx-5 flex items-center justify-end gap-2 border-t border-line bg-card px-5 py-3">
                   <button
                     type="button"
-                    className="rounded-md border px-3 py-2 text-sm"
+                    className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                     onClick={() => setShowCustomerEditModal(false)}
                   >
                     Schließen
                   </button>
                   <button
                     type="submit"
-                    className="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white"
+                    className="rounded-field bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={editSaving}
                   >
                     {editSaving ? "Speichern…" : "Speichern"}
@@ -1979,25 +1970,25 @@ export default function MasterdataPage() {
       ) : null}
 
       {resetUser ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="w-full max-w-md rounded-card border border-line bg-card p-5 shadow-card max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold">Passwort zurücksetzen</h3>
+              <h3 className="font-serif text-[17px] font-bold text-ink">Passwort zurücksetzen</h3>
               <button
                 type="button"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-muted hover:text-ink"
                 onClick={() => setResetUser(null)}
               >
                 Schließen
               </button>
             </div>
 
-            <div className="mt-1 text-xs text-gray-600">
+            <div className="mt-1 text-xs text-muted">
               {resetUser.fullName || resetUser.email || "Mitarbeiter"}
             </div>
 
             {resetError ? (
-              <div className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
+              <div className="mt-3 rounded-field border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {resetError}
               </div>
             ) : null}
@@ -2027,14 +2018,14 @@ export default function MasterdataPage() {
               <div className="flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-2 text-sm"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                   onClick={() => setResetUser(null)}
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white"
+                  className="rounded-field bg-ink px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={resetSaving}
                 >
                   {resetSaving ? "Speichern…" : "Speichern"}
