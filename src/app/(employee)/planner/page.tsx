@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useMemo, useState, useEffect } from "react";
-import { getUpcomingBwHolidays, getBwHolidayLabelByIsoDate } from "@/lib/holidays-bw";
+import { getUpcomingHessenHolidays, getHessenHolidayLabelByIsoDate } from "@/lib/holidays-hessen";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatDate, formatDayMonth, formatMonthYear, formatTime, formatWeekdayShort } from "@/lib/format";
@@ -214,7 +214,7 @@ export default function PlannerPage() {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [dayStart, setDayStart] = useState<Date>(() => startOfDayLocal(new Date()));
 
-  const upcoming = useMemo(() => getUpcomingBwHolidays(new Date(), 6), []);
+  const upcoming = useMemo(() => getUpcomingHessenHolidays(new Date(), 6), []);
   const gridDays = useMemo(() => {
     if (viewMode === "month") return buildMonthGrid(viewMonth);
     if (viewMode === "day") return [dayStart];
@@ -926,7 +926,7 @@ export default function PlannerPage() {
                 const isWeekend = jsDay === 0 || jsDay === 6;
 
                 const iso = dayKeyLocal(d);
-                const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+                const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                 const dayAssignments = visibleAssignmentsByDate[iso] || [];
 
                 return (
@@ -996,7 +996,7 @@ export default function PlannerPage() {
               <div className="grid grid-cols-7 gap-px flex-1 bg-gray-200">
                 {gridDays.map((d) => {
                   const iso = dayKeyLocal(d);
-                  const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+                  const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                   return (
                     <div key={iso} className="bg-white px-2 py-1 text-sm flex items-center justify-between">
                       <div>
@@ -1039,7 +1039,7 @@ export default function PlannerPage() {
                 <div className="grid grid-cols-7 gap-px bg-gray-200" style={{ height: totalHeight }}>
                   {gridDays.map((d) => {
                     const iso = dayKeyLocal(d);
-                    const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+                    const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                     const dayAssignments = visibleAssignmentsByDate[iso] || [];
 
                     const now = new Date();
@@ -1139,7 +1139,7 @@ export default function PlannerPage() {
               <div className="grid grid-cols-1 gap-px bg-gray-200" style={{ height: totalHeight }}>
                 {gridDays.map((d) => {
                   const iso = dayKeyLocal(d);
-                  const holidayLabel = getBwHolidayLabelByIsoDate(iso);
+                  const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                   const dayAssignments = visibleAssignmentsByDate[iso] || [];
 
                   return (
@@ -1378,7 +1378,7 @@ export default function PlannerPage() {
       ) : null}
 
       <Card className="mt-6">
-        <h2 className="text-base font-semibold">Feiertage (Baden-Württemberg)</h2>
+        <h2 className="text-base font-semibold">Feiertage (Hessen)</h2>
         <p className="mt-1 text-sm text-gray-600">Nur visuelle Markierung (Testversion). Später direkt im Kalender.</p>
 
         {upcoming.length === 0 ? (

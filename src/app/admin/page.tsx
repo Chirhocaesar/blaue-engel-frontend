@@ -17,7 +17,7 @@ import {
   formatDayMonth,
 } from "@/lib/format";
 import { normalizeStatus, statusLabelDe } from "@/lib/status";
-import { getUpcomingBwHolidays } from "@/lib/holidays-bw";
+import { getUpcomingHessenHolidays } from "@/lib/holidays-hessen";
 import {
   MetricCard,
   Panel,
@@ -164,7 +164,7 @@ export default async function AdminDashboardPage() {
     )
     .slice(0, 4);
 
-  const holidays = getUpcomingBwHolidays(new Date(), 3);
+  const holidays = getUpcomingHessenHolidays(new Date(), 3);
 
   const columns: DataTableColumn<Assignment>[] = [
     {
@@ -354,7 +354,7 @@ export default async function AdminDashboardPage() {
           </Panel>
 
           <Panel>
-            <PanelHead title="Feiertage" titleClassName="text-[15px]" />
+            <PanelHead title="Feiertage · Hessen" titleClassName="text-[15px]" />
             <div className="py-1">
               {holidays.map((h, i) => (
                 <div
