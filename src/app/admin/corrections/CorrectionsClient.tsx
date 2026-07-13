@@ -376,28 +376,28 @@ export default function CorrectionsClient() {
   }
 
   return (
-    <main className="p-4 pb-24 space-y-4">
-      <PageHeader
-        title="Korrekturen (Admin)"
-        actions={
-          <Link
-            href="/planner"
-            className="rounded border px-3 py-2 text-sm font-semibold hover:bg-gray-50"
-          >
-            Zum Dienstplan
-          </Link>
-        }
-      />
-      <div className="text-xs text-gray-600">
-        Änderungen hier wirken sich auf Monatsberichte und Abrechnung aus.
+    <main className="flex flex-col gap-4 pb-24">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold leading-[1.1] text-ink">Korrekturen</h1>
+          <div className="mt-1 text-[13.5px] text-muted">
+            Änderungen hier wirken sich auf Monatsberichte und Abrechnung aus.
+          </div>
+        </div>
+        <Link
+          href="/planner"
+          className="inline-flex items-center rounded-field border border-line-strong bg-card px-4 py-2.5 text-[13.5px] font-semibold hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
+        >
+          Zum Dienstplan
+        </Link>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+      <div className="grid grid-cols-1 gap-3 rounded-card border border-line bg-card px-4 py-3 text-sm shadow-card sm:grid-cols-2">
         <label className="grid gap-1 min-w-0">
           <span>Mitarbeiter</span>
           <select
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
-            className="rounded border px-2 py-2 w-full min-w-0"
+            className="w-full min-w-0 rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
           >
             <option value="">Bitte wählen…</option>
             {employees.map((emp) => (
@@ -418,7 +418,7 @@ export default function CorrectionsClient() {
                 setDate(nextIso);
                 setDateDe(isoToDeDate(nextIso));
               }}
-              className="rounded border px-2 py-2 w-full min-w-0"
+              className="w-full min-w-0 rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           ) : (
             <input
@@ -432,17 +432,17 @@ export default function CorrectionsClient() {
                 const nextIso = deDateToIso(next);
                 setDate(nextIso || "");
               }}
-              className="rounded border px-2 py-2 w-full min-w-0"
+              className="w-full min-w-0 rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           )}
         </label>
       </div>
 
       {(bundle || loading || loadError) && canFetch ? (
-        <section className="rounded border p-4 text-sm space-y-2">
+        <section className="space-y-2 rounded-card border border-line bg-card p-4 text-sm shadow-card">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <div className="text-gray-600">Auswahl</div>
+              <div className="text-muted">Auswahl</div>
               <div className="font-medium">
                 {employeeId
                   ? employees.find((e) => e.id === employeeId)?.fullName ||
@@ -454,7 +454,7 @@ export default function CorrectionsClient() {
             <div className="flex items-center gap-2">
               {isLocked ? (
                 <span
-                  className="rounded border px-2 py-0.5 text-xs font-semibold text-red-700 border-red-300"
+                  className="rounded-full border border-red-300 px-2 py-0.5 text-xs font-semibold text-red-700"
                   aria-label="Gesperrt"
                   title="Gesperrt"
                 >
@@ -463,30 +463,30 @@ export default function CorrectionsClient() {
               ) : null}
             </div>
           </div>
-          <div className="rounded border p-4">
-            <h2 className="text-base font-semibold mb-3">Summen</h2>
+          <div className="rounded-field border border-line bg-tint p-4">
+            <h2 className="mb-3 text-base font-semibold text-ink">Summen</h2>
 
             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
               <div className="col-span-2 flex items-baseline justify-between">
-                <div className="text-gray-600">Geplant</div>
+                <div className="text-muted">Geplant</div>
                 <div className="font-medium">{formatMinutes(summary.planned)}</div>
               </div>
 
               <div className="flex items-baseline justify-between">
-                <div className="text-gray-600">Erfasst</div>
+                <div className="text-muted">Erfasst</div>
                 <div className="font-medium">{formatMinutes(summary.recorded)}</div>
               </div>
               <div className="flex items-baseline justify-between">
-                <div className="text-gray-600">KM erfasst</div>
+                <div className="text-muted">KM erfasst</div>
                 <div className="font-medium">{summary.kmRecorded ?? 0}</div>
               </div>
 
               <div className="flex items-baseline justify-between">
-                <div className="text-gray-600">Korrektur</div>
+                <div className="text-muted">Korrektur</div>
                 <div className="font-medium">{formatSignedMinutes(summary.adjustments)}</div>
               </div>
               <div className="flex items-baseline justify-between">
-                <div className="text-gray-600">KM Korrektur</div>
+                <div className="text-muted">KM Korrektur</div>
                 <div className="font-medium">
                   {(summary.kmAdjustments ?? 0) >= 0 ? "+" : ""}
                   {summary.kmAdjustments ?? 0}
@@ -494,17 +494,17 @@ export default function CorrectionsClient() {
               </div>
 
               <div className="flex items-baseline justify-between">
-                <div className="text-gray-600">Final</div>
+                <div className="text-muted">Final</div>
                 <div className="font-semibold">{formatMinutes(summary.final)}</div>
               </div>
               <div className="flex items-baseline justify-between">
-                <div className="text-gray-600">KM final</div>
+                <div className="text-muted">KM final</div>
                 <div className="font-semibold">{summary.kmFinal ?? summary.kmRecorded ?? 0}</div>
               </div>
             </div>
           </div>
           {isLocked ? (
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-muted">
               Tag ist nach Unterschrift gesperrt (für Mitarbeiter). Admin-Korrekturen sind weiterhin möglich.
             </div>
           ) : null}
@@ -517,7 +517,7 @@ export default function CorrectionsClient() {
           <button
             type="button"
             onClick={loadBundle}
-            className="mt-1 rounded border px-3 py-2 text-sm"
+            className="mt-1 rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
           >
             Erneut versuchen
           </button>
@@ -530,19 +530,19 @@ export default function CorrectionsClient() {
 
       {bundle ? (
         <>
-          <section className="rounded border p-4 space-y-3 min-h-[140px]">
-            <h2 className="text-base font-semibold">Einsätze</h2>
+          <section className="min-h-[140px] space-y-3 rounded-card border border-line bg-card p-4 shadow-card">
+            <h2 className="text-base font-semibold text-ink">Einsätze</h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-700">
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Kunde</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Zeit</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Status</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM (eingetragen)</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM Korrektur</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-right p-2 border">KM final</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Aktion</th>
+                  <tr className="">
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Kunde</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Zeit</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Status</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">KM (eingetragen)</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">KM Korrektur</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">KM final</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Aktion</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -558,31 +558,31 @@ export default function CorrectionsClient() {
                         key={a.id}
                         className={
                           highlightAID && a.id === highlightAID
-                            ? "bg-yellow-50 border-yellow-200"
-                            : "odd:bg-white even:bg-gray-50/60 hover:bg-gray-100"
+                            ? "bg-st-amber-bg"
+                            : "hover:bg-tint-hover"
                         }
                       >
-                        <td className="p-2 border">
+                        <td className="border-b border-line px-3 py-2.5">
                           <div className="font-medium">{a.customer?.name}</div>
-                          <div className="text-xs text-gray-600">{a.customer?.address}</div>
+                          <div className="text-xs text-muted">{a.customer?.address}</div>
                         </td>
-                        <td className="p-2 border">
+                        <td className="border-b border-line px-3 py-2.5">
                           {formatDateTimeRange(a.startAt, a.endAt)}
                         </td>
-                        <td className="p-2 border">
+                        <td className="border-b border-line px-3 py-2.5">
                           <StatusPill status={a.status} />
                         </td>
-                        <td className="p-2 border text-right tabular-nums">
+                        <td className="border-b border-line px-3 py-2.5 text-right tabular-nums">
                           {typeof a.kilometers === "number" ? formatKm(a.kilometers) : "—"}
                         </td>
-                        <td className="p-2 border text-right tabular-nums">{a.kmAdjusted ?? 0}</td>
-                        <td className="p-2 border text-right tabular-nums">
+                        <td className="border-b border-line px-3 py-2.5 text-right tabular-nums">{a.kmAdjusted ?? 0}</td>
+                        <td className="border-b border-line px-3 py-2.5 text-right tabular-nums">
                           {a.kmFinal ?? (a.kilometers ?? 0) + (a.kmAdjusted ?? 0)}
                         </td>
-                        <td className="p-2 border">
+                        <td className="border-b border-line px-3 py-2.5">
                           <button
                             type="button"
-                            className={`rounded border px-2 py-1 text-xs ${selectedKmAssignmentId === a.id ? "bg-gray-900 text-white" : "hover:bg-gray-50"}`}
+                            className={`rounded-lg border border-line-strong px-2.5 py-1.5 text-xs font-medium ${selectedKmAssignmentId === a.id ? "border-ink bg-ink text-white" : "bg-card hover:border-accent hover:bg-accent-soft hover:text-accent-deep"}`}
                             onClick={() => setSelectedKmAssignmentId(a.id)}
                             disabled={disableInputs}
                           >
@@ -599,9 +599,9 @@ export default function CorrectionsClient() {
 
           <div className="border-t" />
 
-          <section className="rounded border p-4 space-y-3 min-h-[220px]">
-            <h2 className="text-base font-semibold">Zeit</h2>
-            <div className="text-sm text-gray-700">
+          <section className="min-h-[220px] space-y-3 rounded-card border border-line bg-card p-4 shadow-card">
+            <h2 className="text-base font-semibold text-ink">Zeit</h2>
+            <div className="text-sm text-fg">
               Geplant: {formatMinutes(summary.planned)} · Erfasst: {formatMinutes(summary.recorded)} · Korrektur: {formatSignedMinutes(summary.adjustments)} · Final: {formatMinutes(summary.final)}
             </div>
 
@@ -612,7 +612,7 @@ export default function CorrectionsClient() {
                   value={selectedTimeAssignmentId}
                   onChange={(e) => setSelectedTimeAssignmentId(e.target.value)}
                   disabled={disableInputs || bundle.assignments.length === 0}
-                  className="rounded border px-2 py-2"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                 >
                   {bundle.assignments.length === 0 ? (
                     <option value="">Keine Einsätze verfügbar</option>
@@ -628,17 +628,17 @@ export default function CorrectionsClient() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-700">
+                  <tr className="">
                     {showTimeColumns ? (
                       <>
-                        <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Beginn</th>
-                        <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Ende</th>
+                        <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Beginn</th>
+                        <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Ende</th>
                       </>
                     ) : null}
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Dauer</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Notiz</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Dauer</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Notiz</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -650,19 +650,19 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     bundle.timeEntries.map((t) => (
-                      <tr key={t.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
+                      <tr key={t.id} className="hover:bg-tint-hover">
                         {showTimeColumns ? (
                           <>
-                            <td className="p-2 border">
-                              {t.startAt ? formatDateTime(t.startAt) : <span className="text-gray-500">—</span>}
+                            <td className="border-b border-line px-3 py-2.5">
+                              {t.startAt ? formatDateTime(t.startAt) : <span className="text-faint">—</span>}
                             </td>
-                            <td className="p-2 border">
-                              {t.endAt ? formatDateTime(t.endAt) : <span className="text-gray-500">—</span>}
+                            <td className="border-b border-line px-3 py-2.5">
+                              {t.endAt ? formatDateTime(t.endAt) : <span className="text-faint">—</span>}
                             </td>
                           </>
                         ) : null}
-                        <td className="p-2 border">{formatMinutes(t.minutes ?? 0)}</td>
-                        <td className="p-2 border">{t.notes ?? "—"}</td>
+                        <td className="border-b border-line px-3 py-2.5">{formatMinutes(t.minutes ?? 0)}</td>
+                        <td className="border-b border-line px-3 py-2.5">{t.notes ?? "—"}</td>
                       </tr>
                     ))
                   )}
@@ -671,12 +671,12 @@ export default function CorrectionsClient() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-700">
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Delta</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Grund</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Erstellt</th>
+                  <tr className="">
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Delta</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Grund</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Erstellt</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -688,10 +688,10 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     bundle.timeAdjustments.map((a) => (
-                      <tr key={a.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                        <td className="p-2 border">{a.deltaMinutes}</td>
-                        <td className="p-2 border">{a.reason}</td>
-                        <td className="p-2 border">{formatDateTime(a.createdAt)}</td>
+                      <tr key={a.id} className="hover:bg-tint-hover">
+                        <td className="border-b border-line px-3 py-2.5">{a.deltaMinutes}</td>
+                        <td className="border-b border-line px-3 py-2.5">{a.reason}</td>
+                        <td className="border-b border-line px-3 py-2.5">{formatDateTime(a.createdAt)}</td>
                       </tr>
                     ))
                   )}
@@ -710,7 +710,7 @@ export default function CorrectionsClient() {
                     setDeltaMinutes(e.target.value);
                   }}
                   disabled={disableInputs}
-                  className="rounded border px-2 py-2"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
@@ -723,7 +723,7 @@ export default function CorrectionsClient() {
                     if (next.trim()) setTimeFormError(null);
                   }}
                   disabled={disableInputs}
-                  className="rounded border px-2 py-2"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                   rows={3}
                 />
                 {timeFormError ? (
@@ -734,7 +734,7 @@ export default function CorrectionsClient() {
               </label>
             </div>
             {isLocked ? (
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-muted">
                 Tag ist nach Unterschrift gesperrt (für Mitarbeiter). Admin-Korrekturen sind weiterhin möglich.
               </div>
             ) : null}
@@ -744,30 +744,30 @@ export default function CorrectionsClient() {
                 type="button"
                 onClick={submitTimeAdjustment}
                 disabled={disableSubmitBase || timeDeltaInvalid || timeReasonMissing}
-                className="rounded border px-3 py-2 text-sm"
+                className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
               >
                 {timeSubmitting ? "Speichern…" : "Zeit-Korrektur erstellen"}
               </button>
-              {timeSavedAt ? <div className="text-sm text-green-700">Gespeichert ✓</div> : null}
+              {timeSavedAt ? <div className="text-sm text-st-green">Gespeichert ✓</div> : null}
             </div>
           </section>
 
           <div className="border-t" />
 
-          <section className="rounded border p-4 space-y-3 min-h-[180px]">
-            <h2 className="text-base font-semibold">KM</h2>
-            <div className="text-sm text-gray-700">
+          <section className="min-h-[180px] space-y-3 rounded-card border border-line bg-card p-4 shadow-card">
+            <h2 className="text-base font-semibold text-ink">KM</h2>
+            <div className="text-sm text-fg">
               KM (eingetragen): {summary.kmRecorded != null ? `${formatKm(summary.kmRecorded)} km` : "—"}
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-700">
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Bezug</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Delta</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Grund</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Erstellt</th>
+                  <tr className="">
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Bezug</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Delta</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Grund</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Erstellt</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -779,15 +779,15 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     bundle.kmAdjustments.map((a) => (
-                      <tr key={a.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                        <td className="p-2 border">
+                      <tr key={a.id} className="hover:bg-tint-hover">
+                        <td className="border-b border-line px-3 py-2.5">
                           {a.assignmentId
                             ? `${a.assignmentCustomerName ?? "Einsatz"}${a.assignmentStartAt && a.assignmentEndAt ? ` · ${formatDateTimeRange(a.assignmentStartAt, a.assignmentEndAt)}` : ""}`
                             : "Tag (Legacy)"}
                         </td>
-                        <td className="p-2 border">{a.deltaKm}</td>
-                        <td className="p-2 border">{a.reason}</td>
-                        <td className="p-2 border">{formatDateTime(a.createdAt)}</td>
+                        <td className="border-b border-line px-3 py-2.5">{a.deltaKm}</td>
+                        <td className="border-b border-line px-3 py-2.5">{a.reason}</td>
+                        <td className="border-b border-line px-3 py-2.5">{formatDateTime(a.createdAt)}</td>
                       </tr>
                     ))
                   )}
@@ -802,7 +802,7 @@ export default function CorrectionsClient() {
                   value={selectedKmAssignmentId}
                   onChange={(e) => setSelectedKmAssignmentId(e.target.value)}
                   disabled={disableInputs || bundle.assignments.length === 0}
-                  className="rounded border px-2 py-2"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                 >
                   {bundle.assignments.length === 0 ? (
                     <option value="">Keine Einsätze verfügbar</option>
@@ -825,7 +825,7 @@ export default function CorrectionsClient() {
                     setDeltaKm(e.target.value);
                   }}
                   disabled={disableInputs}
-                  className="rounded border px-2 py-2"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                 />
               </label>
               <label className="grid gap-1 sm:col-span-2">
@@ -838,7 +838,7 @@ export default function CorrectionsClient() {
                     if (next.trim()) setKmFormError(null);
                   }}
                   disabled={disableInputs}
-                  className="rounded border px-2 py-2"
+                  className="rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
                   rows={3}
                 />
                 {kmFormError ? (
@@ -849,7 +849,7 @@ export default function CorrectionsClient() {
               </label>
             </div>
             {isLocked ? (
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-muted">
                 Tag ist nach Unterschrift gesperrt (für Mitarbeiter). Admin-Korrekturen sind weiterhin möglich.
               </div>
             ) : null}
@@ -859,29 +859,29 @@ export default function CorrectionsClient() {
                 type="button"
                 onClick={submitKmAdjustment}
                 disabled={disableSubmitBase || kmDeltaInvalid || kmReasonMissing}
-                className="rounded border px-3 py-2 text-sm"
+                className="rounded-field border border-line-strong bg-card px-3 py-2 text-sm font-medium hover:border-accent hover:bg-accent-soft hover:text-accent-deep disabled:opacity-60"
               >
                 {kmSubmitting ? "Speichern…" : "KM-Korrektur erstellen"}
               </button>
-              {kmSavedAt ? <div className="text-sm text-green-700">Gespeichert ✓</div> : null}
+              {kmSavedAt ? <div className="text-sm text-st-green">Gespeichert ✓</div> : null}
             </div>
           </section>
 
           <div className="border-t" />
 
-          <section className="rounded border p-4 space-y-3">
-            <h2 className="text-base font-semibold">Audit-Protokoll</h2>
+          <section className="space-y-3 rounded-card border border-line bg-card p-4 shadow-card">
+            <h2 className="text-base font-semibold text-ink">Audit-Protokoll</h2>
             {(() => {
               const logs = Array.isArray(bundle?.auditLogs) ? bundle.auditLogs : [];
               return (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-700">
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Erstellt</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Aktion</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Entität</th>
-                    <th className="sticky top-0 z-10 bg-gray-50 text-left p-2 border">Grund</th>
+                  <tr className="">
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Erstellt</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Aktion</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Entität</th>
+                    <th className="sticky top-0 z-10 border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Grund</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -893,11 +893,11 @@ export default function CorrectionsClient() {
                     </tr>
                   ) : (
                     logs.map((log) => (
-                      <tr key={log.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                        <td className="p-2 border">{formatDateTime(log.createdAt)}</td>
-                        <td className="p-2 border">{log.action}</td>
-                        <td className="p-2 border">{log.entity}</td>
-                        <td className="p-2 border">{log.reason ?? "—"}</td>
+                      <tr key={log.id} className="hover:bg-tint-hover">
+                        <td className="border-b border-line px-3 py-2.5">{formatDateTime(log.createdAt)}</td>
+                        <td className="border-b border-line px-3 py-2.5">{log.action}</td>
+                        <td className="border-b border-line px-3 py-2.5">{log.entity}</td>
+                        <td className="border-b border-line px-3 py-2.5">{log.reason ?? "—"}</td>
                       </tr>
                     ))
                   )}
