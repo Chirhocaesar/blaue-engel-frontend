@@ -1,22 +1,56 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * DigitBoost Service App — design tokens
+ * Source of truth: approved dashboard blueprint (2026-07).
+ */
+@theme {
+  /* Typography */
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: "Playfair Display Variable", Georgia, serif;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Ink (dark rail / primary) */
+  --color-ink: #121212;
+  --color-ink-rail: #161514;
+  --color-ink-lift: #211f1d;
+  --color-ink-line: #2e2b28;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Accent */
+  --color-accent: #d99f6c;
+  --color-accent-deep: #c4854d;
+  --color-accent-soft: #f6ece1;
+
+  /* Surfaces & text */
+  --color-canvas: #f5f3f0;
+  --color-card: #ffffff;
+  --color-tint: #fbfaf8;
+  --color-tint-hover: #fcfbf9;
+  --color-line: #ebe8e3;
+  --color-line-strong: #ded9d2;
+  --color-fg: #2b2926;
+  --color-muted: #8b857c;
+  --color-faint: #b4aea4;
+
+  /* Dark-rail text */
+  --color-rail-fg: #ede9e3;
+  --color-rail-muted: #c9c4bc;
+  --color-rail-label: #726c63;
+
+  /* Status */
+  --color-st-amber: #9a6b12;
+  --color-st-amber-bg: #fbf1da;
+  --color-st-blue: #2860b4;
+  --color-st-blue-bg: #e5eefb;
+  --color-st-green: #2a7d48;
+  --color-st-green-bg: #e3f3e8;
+  --color-st-gray: #6b6660;
+  --color-st-gray-bg: #eeebe6;
+
+  /* Shape & elevation */
+  --radius-card: 14px;
+  --radius-field: 10px;
+  --shadow-card: 0 1px 2px rgba(18, 18, 18, 0.04),
+    0 8px 24px -12px rgba(18, 18, 18, 0.1);
 }
 
 html,
@@ -26,9 +60,18 @@ body {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
 }
 
 main {

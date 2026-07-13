@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/playfair-display": "^5.2.8",
     "lucide-react": "^0.538.0",
     "next": "16.1.2",
     "react": "19.2.3",
