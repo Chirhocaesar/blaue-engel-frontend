@@ -11,8 +11,8 @@ export default function LogoutPage() {
 
   return (
     <main className="space-y-2">
-      <h1 className="text-2xl font-bold">Abmelden…</h1>
-      <p className="text-sm text-gray-600">Bitte warten.</p>
+      <h1 className="text-2xl font-bold text-ink">Abmelden…</h1>
+      <p className="text-sm text-muted">Bitte warten.</p>
     </main>
   );
 }

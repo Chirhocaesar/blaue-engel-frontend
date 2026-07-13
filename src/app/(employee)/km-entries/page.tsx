@@ -7,8 +7,8 @@ export default async function KmEntriesPage() {
 
   return (
     <main className="space-y-3">
-      <h1 className="text-2xl font-bold">KM</h1>
-      <p className="text-sm text-gray-600">
+      <h1 className="text-2xl font-bold text-ink">KM</h1>
+      <p className="text-sm text-muted">
         Nächster Schritt: KM-Einträge aus der API laden und erstellen.
       </p>
     </main>

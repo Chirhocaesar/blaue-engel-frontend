@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 
 function CardLink({
@@ -15,10 +16,13 @@ function CardLink({
   return (
     <Link
       href={href}
-      className="block rounded-2xl border p-4 active:scale-[0.99]"
+      className="flex items-center gap-3 rounded-card border border-line bg-card p-4 shadow-card transition-colors hover:border-accent active:scale-[0.99]"
     >
-      <div className="text-lg font-semibold">{title}</div>
-      <div className="mt-1 text-sm text-gray-600">{desc}</div>
+      <div className="min-w-0 flex-1">
+        <div className="font-serif text-lg font-bold text-ink">{title}</div>
+        <div className="mt-0.5 text-sm text-muted">{desc}</div>
+      </div>
+      <ChevronRight className="h-5 w-5 flex-none text-faint" strokeWidth={1.8} />
     </Link>
   );
 }
@@ -56,7 +60,7 @@ export default async function DashboardPage() {
 
       <div className="pt-2">
         <form action="/logout">
-          <button className="w-full rounded-xl border px-4 py-3 text-base font-semibold">
+          <button className="w-full rounded-field border border-line-strong bg-card px-4 py-3 text-base font-semibold hover:border-accent hover:bg-accent-soft hover:text-accent-deep">
             Abmelden
           </button>
         </form>

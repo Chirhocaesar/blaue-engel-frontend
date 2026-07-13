@@ -7,8 +7,8 @@ export default async function TimeEntriesPage() {
 
   return (
     <main className="space-y-3">
-      <h1 className="text-2xl font-bold">Zeiterfassung</h1>
-      <p className="text-sm text-gray-600">
+      <h1 className="text-2xl font-bold text-ink">Zeiterfassung</h1>
+      <p className="text-sm text-muted">
         Nächster Schritt: Zeit-Einträge aus der API laden und erstellen.
       </p>
     </main>

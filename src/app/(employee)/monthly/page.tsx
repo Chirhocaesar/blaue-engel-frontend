@@ -198,40 +198,40 @@ export default function MonthlyPage() {
         title="Monatsübersicht"
         subtitle="Ihre Monatswerte."
         actions={
-          <Link href="/dashboard" className="rounded-xl border px-4 py-2 text-sm font-semibold">
+          <Link href="/dashboard" className="rounded-field border border-line-strong bg-card px-4 py-2 text-sm font-semibold hover:border-accent hover:bg-accent-soft hover:text-accent-deep">
             Dashboard
           </Link>
         }
       />
 
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-muted">
         Zeitraum: {monthLabel} · Mitarbeiter: Sie
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1 text-sm">
-          <span className="text-gray-600">Monat</span>
+          <span className="text-muted">Monat</span>
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="min-h-[40px] rounded border px-3 py-2"
+            className="min-h-[40px] rounded-field border border-line-strong bg-card px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </label>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-        <div className="rounded-xl border p-3">
-          <div className="text-gray-600">Geplant (Std.)</div>
-          <div className="text-lg font-semibold">{totals.planned.toFixed(2)}</div>
+        <div className="relative overflow-hidden rounded-card border border-line bg-card p-3 shadow-card">
+          <div className="text-muted">Geplant (Std.)</div>
+          <div className="font-serif text-lg font-bold text-ink">{totals.planned.toFixed(2)}</div>
         </div>
-        <div className="rounded-xl border p-3">
-          <div className="text-gray-600">Erledigt (Std.)</div>
-          <div className="text-lg font-semibold">{totals.done.toFixed(2)}</div>
+        <div className="relative overflow-hidden rounded-card border border-line bg-card p-3 shadow-card">
+          <div className="text-muted">Erledigt (Std.)</div>
+          <div className="font-serif text-lg font-bold text-ink">{totals.done.toFixed(2)}</div>
         </div>
-        <div className="rounded-xl border p-3">
-          <div className="text-gray-600">KM (Erledigt)</div>
-          <div className="text-lg font-semibold">{totals.km.toFixed(1)}</div>
+        <div className="relative overflow-hidden rounded-card border border-line bg-card p-3 shadow-card">
+          <div className="text-muted">KM (Erledigt)</div>
+          <div className="font-serif text-lg font-bold text-ink">{totals.km.toFixed(1)}</div>
         </div>
       </div>
 
@@ -250,34 +250,34 @@ export default function MonthlyPage() {
             </div>
           ) : (
             <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-sm border">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-700">
-                    <th className="text-left p-2 border">Datum</th>
-                    <th className="text-left p-2 border">Zeit</th>
-                    <th className="text-left p-2 border">Kunde</th>
-                    <th className="text-left p-2 border">Status</th>
-                    <th className="text-right p-2 border">Geplant (Std.)</th>
-                    <th className="text-right p-2 border">Erledigt (Std.)</th>
-                    <th className="text-right p-2 border">KM (eingetragen)</th>
+                  <tr>
+                    <th className="border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Datum</th>
+                    <th className="border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Zeit</th>
+                    <th className="border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Kunde</th>
+                    <th className="border-b border-line bg-tint px-3 py-[11px] text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Status</th>
+                    <th className="border-b border-line bg-tint px-3 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Geplant (Std.)</th>
+                    <th className="border-b border-line bg-tint px-3 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">Erledigt (Std.)</th>
+                    <th className="border-b border-line bg-tint px-3 py-[11px] text-right text-[11px] font-semibold uppercase tracking-[.06em] text-faint">KM (eingetragen)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.id} className="odd:bg-white even:bg-gray-50/60 hover:bg-gray-100">
-                      <td className="p-2 border">{row.dateLabel}</td>
-                      <td className="p-2 border">{row.timeLabel}</td>
-                      <td className="p-2 border">{row.customerName}</td>
-                      <td className="p-2 border">
+                    <tr key={row.id} className="last:[&>td]:border-b-0 hover:bg-tint-hover">
+                      <td className="border-b border-line px-3 py-2.5">{row.dateLabel}</td>
+                      <td className="border-b border-line px-3 py-2.5">{row.timeLabel}</td>
+                      <td className="border-b border-line px-3 py-2.5">{row.customerName}</td>
+                      <td className="border-b border-line px-3 py-2.5">
                         <StatusPill status={row.status} />
                       </td>
-                      <td className="p-2 border text-right tabular-nums">
+                      <td className="border-b border-line px-3 py-2.5 text-right tabular-nums">
                         {row.plannedHours == null ? "—" : row.plannedHours.toFixed(2)}
                       </td>
-                      <td className="p-2 border text-right tabular-nums">
+                      <td className="border-b border-line px-3 py-2.5 text-right tabular-nums">
                         {row.doneHours == null ? "—" : row.doneHours.toFixed(2)}
                       </td>
-                      <td className="p-2 border text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
+                      <td className="border-b border-line px-3 py-2.5 text-right tabular-nums">{row.km == null ? "—" : row.km.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
