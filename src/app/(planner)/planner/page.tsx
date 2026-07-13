@@ -6,12 +6,22 @@ import { useMemo, useState, useEffect } from "react";
 import { getUpcomingHessenHolidays, getHessenHolidayLabelByIsoDate } from "@/lib/holidays-hessen";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { formatDate, formatDayMonth, formatMonthYear, formatTime, formatWeekdayShort } from "@/lib/format";
 import { deDateToIso, isoToDeDate } from "@/lib/datetime-de";
 import { useNativePickers } from "@/lib/useNativePickers";
-import { statusPillClass } from "@/lib/status";
-import StatusPill from "@/components/StatusPill";
-import { Alert, Button, Card } from "@/components/ui";
+import { normalizeStatus, statusLabelDe, type NormalizedStatus } from "@/lib/status";
+import {
+  Alert,
+  Button,
+  Input,
+  Panel,
+  Select,
+  StatusBadge,
+  Textarea,
+  statusTone,
+  type BadgeTone,
+} from "@/components/ui";
 import { cn } from "@/components/ui/cn";
 
 function monthLabel(d: Date) {
@@ -203,6 +213,23 @@ const ROW_H = 28; // px per 30 minutes
 const START_HOUR = 0;
 const END_HOUR = 24;
 
+/** Event block styling per status tone (amber/blue/green/gray). */
+const eventToneClasses: Record<BadgeTone, string> = {
+  amber: "border-st-amber bg-st-amber-bg text-st-amber",
+  blue: "border-st-blue bg-st-blue-bg text-st-blue",
+  green: "border-st-green bg-st-green-bg text-st-green",
+  gray: "border-st-gray bg-st-gray-bg text-st-gray",
+};
+
+const FILTERABLE_STATUSES: NormalizedStatus[] = ["ASSIGNED", "CONFIRMED", "DONE", "CANCELLED"];
+
+function getStatusString(a: Assignment) {
+  const st = (a as any).status ?? (a as any).state;
+  if (!st) return "ASSIGNED";
+  if (typeof st === "string") return st;
+  return st.type ?? st.status ?? "ASSIGNED";
+}
+
 export default function PlannerPage() {
   const searchParams = useSearchParams();
   const [viewMonth, setViewMonth] = useState(() => {
@@ -228,6 +255,8 @@ export default function PlannerPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [employeeFilterId, setEmployeeFilterId] = useState("");
   const [employeeOptionsAll, setEmployeeOptionsAll] = useState<EmployeeOption[]>([]);
+  // Status chips act as a client-side visibility filter; empty = show all.
+  const [statusFilter, setStatusFilter] = useState<Set<NormalizedStatus>>(new Set());
   const showNativeInputs = useNativePickers();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -246,14 +275,6 @@ export default function PlannerPage() {
   const [createSaved, setCreateSaved] = useState(false);
   const [createCustomerOptions, setCreateCustomerOptions] = useState<CustomerOption[]>([]);
   const [createCustomerLoading, setCreateCustomerLoading] = useState(false);
-
-  const segBtn = (key: "month" | "week" | "day") =>
-    cn(
-      "flex-1 rounded-none border transition-colors",
-      viewMode === key
-        ? "bg-slate-900 text-white border-slate-900 hover:bg-slate-900"
-        : "bg-white text-slate-900 hover:bg-slate-100"
-    );
 
   // km today mini-form state
   const [kmDate, setKmDate] = useState<string>(() => isoTodayLocal());
@@ -315,17 +336,26 @@ export default function PlannerPage() {
   }
 
   const visibleAssignmentsByDate = useMemo(() => {
-    if (!isAdmin || !employeeFilterId) return assignmentsByDate;
+    const employeeActive = isAdmin && employeeFilterId;
+    const statusActive = statusFilter.size > 0;
+    if (!employeeActive && !statusActive) return assignmentsByDate;
     const filtered: Record<string, Assignment[]> = {};
     Object.entries(assignmentsByDate).forEach(([key, items]) => {
       const next = items.filter((a) => {
-        const id = a.employee?.id ?? (a as any).employeeId;
-        return id === employeeFilterId;
+        if (employeeActive) {
+          const id = a.employee?.id ?? (a as any).employeeId;
+          if (id !== employeeFilterId) return false;
+        }
+        if (statusActive) {
+          const st = normalizeStatus(getStatusString(a)) || "ASSIGNED";
+          if (!statusFilter.has(st)) return false;
+        }
+        return true;
       });
       if (next.length > 0) filtered[key] = next;
     });
     return filtered;
-  }, [assignmentsByDate, employeeFilterId, isAdmin]);
+  }, [assignmentsByDate, employeeFilterId, isAdmin, statusFilter]);
 
   const assignmentsCount = useMemo(
     () => Object.values(visibleAssignmentsByDate).reduce((sum, arr) => sum + arr.length, 0),
@@ -634,6 +664,13 @@ export default function PlannerPage() {
     else setWeekStart((w) => startOfWeek(addWeeks(w, 1)));
   }
 
+  function goToday() {
+    const now = new Date();
+    if (viewMode === "month") setViewMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    else if (viewMode === "day") setDayStart(startOfDayLocal(now));
+    else setWeekStart(startOfWeek(now));
+  }
+
   function switchToWeek() {
     setWeekStart(startOfWeek(viewMode === "month" ? viewMonth : weekStart));
     setViewMode("week");
@@ -656,11 +693,17 @@ export default function PlannerPage() {
     return d.getHours() * 60 + d.getMinutes();
   }
 
-  function getStatusString(a: Assignment) {
-    const st = (a as any).status ?? (a as any).state;
-    if (!st) return "ASSIGNED";
-    if (typeof st === "string") return st;
-    return st.type ?? st.status ?? "ASSIGNED";
+  function eventTone(a: Assignment): BadgeTone {
+    return statusTone(getStatusString(a));
+  }
+
+  function toggleStatusFilter(status: NormalizedStatus) {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
   }
 
   async function handleKmSave() {
@@ -713,213 +756,229 @@ export default function PlannerPage() {
     }
   }
 
+  const todayIso = dayKeyLocal(new Date());
+
+  function customerNameOf(a: Assignment) {
+    return a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+  }
+
+  function customerAddressOf(a: Assignment) {
+    return (a as any).customerAddress || (a as any).address || (a.customer as any)?.address || "";
+  }
+
+  /** Full-width readable event block (mobile week agenda). */
+  function EventBlock({ a }: { a: Assignment }) {
+    const tone = eventTone(a);
+    return (
+      <Link
+        href={assignmentDetailHref(a.id)}
+        className={cn(
+          "block rounded-[10px] border-l-[3px] px-3 py-2 transition-opacity hover:opacity-80",
+          eventToneClasses[tone]
+        )}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[13px] font-semibold tabular-nums">
+            {formatTime(a.startAt)}–{formatTime(a.endAt)}
+          </span>
+          <span className="text-[11px] font-medium opacity-80">
+            {statusLabelDe(getStatusString(a))}
+          </span>
+        </div>
+        <div className="mt-0.5 truncate text-[13px] font-semibold">{customerNameOf(a)}</div>
+        {customerAddressOf(a) ? (
+          <div className="truncate text-xs opacity-75">{customerAddressOf(a)}</div>
+        ) : null}
+      </Link>
+    );
+  }
+
+  function HolidayBadge({ label }: { label: string }) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-st-amber-bg px-2 py-0.5 text-[10px] font-semibold text-st-amber"
+        title={label}
+      >
+        <span aria-hidden className="h-1 w-1 rounded-full bg-current" />
+        Feiertag
+      </span>
+    );
+  }
+
+  const segBtnClasses = (active: boolean) =>
+    cn(
+      "rounded-[7px] px-3 py-1.5 text-[13px] font-semibold transition-colors sm:px-4",
+      active ? "bg-ink text-white shadow-sm" : "text-muted hover:text-ink"
+    );
+
   return (
-    <main className="min-h-screen p-4">
-      <div className="mx-auto flex flex-col gap-3 max-w-4xl">
-        {plannerError ? (
-          <Alert variant="warn">
-            {plannerError}
-          </Alert>
-        ) : null}
-        {createSaved ? (
-          <Alert variant="success">
-            Termin erstellt ✓
-          </Alert>
-        ) : null}
-        <div className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur pb-2">
-          <div className="mx-auto w-full max-w-2xl flex flex-col gap-3 sm:gap-4">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <h1 className="text-2xl font-semibold">Einsatzplanung</h1>
-              <div className="text-xs text-gray-600">
-                <span className="font-medium">Termine:</span> <span>{assignmentsCount}</span>
-              </div>
-            </div>
+    <div className="flex flex-col gap-4">
+      {plannerError ? <Alert variant="warn">{plannerError}</Alert> : null}
+      {createSaved ? <Alert variant="success">Termin erstellt ✓</Alert> : null}
 
-            <div className="w-full flex items-center justify-between gap-3">
-              <div className="max-w-[48%]">
-                {isAdmin ? (
-                  <Link
-                    href="/admin/assignments/new"
-                    className="rounded-md border px-2 py-1 text-sm font-semibold hover:bg-gray-50 sm:px-3 sm:py-2 whitespace-nowrap truncate"
-                  >
-                    <span className="sm:hidden">+ Termin</span>
-                    <span className="hidden sm:inline">Neuen Termin erstellen</span>
-                  </Link>
-                ) : (
-                  <Button
-                    type="button"
-                    onClick={openCreateModal}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-md whitespace-nowrap truncate"
-                  >
-                    <span className="sm:hidden">+ Termin</span>
-                    <span className="hidden sm:inline">Termin erstellen</span>
-                  </Button>
-                )}
-              </div>
+      {/* Topbar */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold leading-[1.1] text-ink">Einsatzplanung</h1>
+          <div className="mt-1 text-[13.5px] text-muted">
+            {assignmentsCount} {assignmentsCount === 1 ? "Termin" : "Termine"} im angezeigten
+            Zeitraum
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {isAdmin ? (
+            <Link
+              href="/admin/assignments/new"
+              className="inline-flex items-center gap-2 rounded-field bg-ink px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-[0_8px_18px_-8px_rgba(18,18,18,.5)] hover:bg-black"
+            >
+              <Plus className="h-4 w-4 text-accent" strokeWidth={2} />
+              Neuer Termin
+            </Link>
+          ) : (
+            <>
+              <Button type="button" onClick={openCreateModal} variant="primary">
+                <Plus className="h-4 w-4" strokeWidth={2} />
+                Termin erstellen
+              </Button>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center rounded-field border border-line-strong bg-card px-4 py-2.5 text-[13.5px] font-semibold hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
+              >
+                Dashboard
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
 
-              <div className="max-w-[48%] flex justify-end">
-                <Link
-                  href={isAdmin ? "/admin" : "/dashboard"}
-                  className="rounded-md border px-2 py-1 text-sm font-semibold hover:bg-gray-50 sm:px-3 sm:py-2 whitespace-nowrap truncate"
-                >
-                  Dashboard
-                </Link>
-              </div>
-            </div>
-
-            <div className="flex w-full overflow-hidden rounded-lg border">
-              <button type="button" className={segBtn("month")} onClick={switchToMonth}>
+      {/* Toolbar */}
+      <div className="sticky top-0 z-20 -my-1 bg-canvas/95 py-1 backdrop-blur">
+        <Panel className="flex flex-col gap-3 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* View switch */}
+            <div className="inline-flex rounded-field border border-line bg-tint p-1">
+              <button type="button" className={segBtnClasses(viewMode === "month")} onClick={switchToMonth}>
                 Monat
               </button>
-              <button type="button" className={segBtn("week")} onClick={switchToWeek}>
+              <button type="button" className={segBtnClasses(viewMode === "week")} onClick={switchToWeek}>
                 Woche
               </button>
-              <button type="button" className={segBtn("day")} onClick={switchToDay}>
+              <button type="button" className={segBtnClasses(viewMode === "day")} onClick={switchToDay}>
                 Tag
               </button>
             </div>
 
+            {/* Date nav */}
+            <div className="flex min-w-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={goPrev}
+                aria-label="Vorheriger"
+                className="grid h-9 w-9 flex-none place-items-center rounded-field border border-line-strong bg-card text-muted hover:border-accent hover:text-accent-deep"
+              >
+                <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+              </button>
+              <div className="min-w-0 truncate px-2 text-center font-serif text-[17px] font-bold text-ink sm:min-w-[210px]">
+                {viewMode === "month"
+                  ? monthLabel(viewMonth)
+                  : viewMode === "day"
+                    ? `${formatWeekdayShort(gridDays[0])}, ${formatDate(gridDays[0])}`
+                    : `${formatDayMonth(gridDays[0])} – ${formatDate(gridDays[6])}`}
+              </div>
+              <button
+                type="button"
+                onClick={goNext}
+                aria-label="Nächster"
+                className="grid h-9 w-9 flex-none place-items-center rounded-field border border-line-strong bg-card text-muted hover:border-accent hover:text-accent-deep"
+              >
+                <ChevronRight className="h-4 w-4" strokeWidth={2} />
+              </button>
+              <Button type="button" variant="outline" size="sm" className="ml-1" onClick={goToday}>
+                Heute
+              </Button>
+            </div>
+
+            {/* Employee filter (admin) */}
             {isAdmin ? (
-              <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-                <label className="grid gap-1 text-xs text-gray-600">
-                  <span>Mitarbeiter</span>
-                  <select
-                    value={employeeFilterId}
-                    onChange={(e) => setEmployeeFilterId(e.target.value)}
-                    className="min-h-[36px] rounded border px-2 py-1 text-sm"
-                  >
-                    <option value="">Alle Mitarbeiter</option>
-                    {(employeeOptionsAll.length > 0 ? employeeOptionsAll : employeeOptions).map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <div className="flex items-center gap-2 sm:ml-auto">
+                <Select
+                  value={employeeFilterId}
+                  onChange={(e) => setEmployeeFilterId(e.target.value)}
+                  className="w-auto min-w-[180px] py-2"
+                  aria-label="Mitarbeiter filtern"
+                >
+                  <option value="">Alle Mitarbeiter</option>
+                  {(employeeOptionsAll.length > 0 ? employeeOptionsAll : employeeOptions).map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
                 {employeeFilterId ? (
-                  <button
-                    type="button"
-                    className="rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                    onClick={() => setEmployeeFilterId("")}
-                  >
-                    Filter zurücksetzen
-                  </button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEmployeeFilterId("")}>
+                    Zurücksetzen
+                  </Button>
                 ) : null}
               </div>
             ) : null}
-
-            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
-              <span>Status:</span>
-              <StatusPill status="ASSIGNED" />
-              <StatusPill status="CONFIRMED" />
-              <StatusPill status="DONE" />
-              <StatusPill status="CANCELLED" />
-            </div>
-
-            <div className="flex flex-col items-center gap-2 text-center">
-              <div className="text-xs text-gray-500">Status</div>
-              <div className="flex flex-wrap justify-center gap-2">
-                  <StatusPill status="ASSIGNED" className="px-3 py-1 text-sm" />
-                  <StatusPill status="CONFIRMED" className="px-3 py-1 text-sm" />
-                  <StatusPill status="DONE" className="px-3 py-1 text-sm" />
-              </div>
-
-              {viewMode === "day" ? (
-                <div className="flex w-full flex-wrap items-center justify-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-md whitespace-nowrap"
-                    onClick={() => setDayStart(startOfDayLocal(new Date()))}
-                  >
-                    Heute
-                  </Button>
-                  <div className="w-full inline-flex items-center justify-center gap-2 rounded-lg border bg-white px-2 py-1 shadow-sm">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-md whitespace-nowrap"
-                      onClick={goPrev}
-                      aria-label="Vorheriger"
-                    >
-                      ←
-                    </Button>
-
-                    <div className="min-w-[200px] text-center text-base font-semibold sm:text-xl truncate">
-                      {`${formatWeekdayShort(gridDays[0])}, ${formatDate(gridDays[0])}`}
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-md whitespace-nowrap"
-                      onClick={goNext}
-                      aria-label="Nächster"
-                    >
-                      →
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-2 rounded-lg border bg-white px-2 py-1 shadow-sm">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-md whitespace-nowrap"
-                    onClick={goPrev}
-                    aria-label="Vorheriger"
-                  >
-                    ←
-                  </Button>
-
-                  <div className="min-w-[170px] text-center text-base font-semibold sm:text-xl truncate">
-                    {viewMode === "month"
-                      ? monthLabel(viewMonth)
-                      : `${formatDate(gridDays[0])} – ${formatDate(gridDays[6])}`}
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-md whitespace-nowrap"
-                    onClick={goNext}
-                    aria-label="Nächster"
-                  >
-                    →
-                  </Button>
-                </div>
-              )}
-            </div>
           </div>
-        </div>
 
-        {!loading && !plannerError && assignmentsCount === 0 ? (
-          <Card className="border-dashed bg-gray-50 p-6 text-center text-sm text-gray-600">
-            Keine Termine in diesem Zeitraum.
-          </Card>
-        ) : null}
+          {/* Status filter chips — single row */}
+          <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+            <span className="text-xs font-medium text-muted">Status</span>
+            {FILTERABLE_STATUSES.map((st) => {
+              const active = statusFilter.size === 0 || statusFilter.has(st);
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => toggleStatusFilter(st)}
+                  aria-pressed={statusFilter.has(st)}
+                  className={cn(
+                    "rounded-full transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                    active ? "opacity-100" : "opacity-35 grayscale"
+                  )}
+                  title={statusFilter.size === 0 ? "Klicken zum Filtern" : undefined}
+                >
+                  <StatusBadge status={st} />
+                </button>
+              );
+            })}
+            {statusFilter.size > 0 ? (
+              <button
+                type="button"
+                onClick={() => setStatusFilter(new Set())}
+                className="text-xs font-semibold text-accent-deep hover:underline"
+              >
+                Alle anzeigen
+              </button>
+            ) : null}
+          </div>
+        </Panel>
       </div>
 
-      {/* Month or Week Grid */}
-      <Card className="mt-3 p-2 sm:p-4">
+      {!loading && !plannerError && assignmentsCount === 0 ? (
+        <Panel className="border-dashed bg-tint p-6 text-center text-sm text-muted shadow-none">
+          Keine Termine in diesem Zeitraum.
+        </Panel>
+      ) : null}
+
+      {/* Calendar */}
+      <Panel className="overflow-hidden">
         {viewMode === "month" ? (
           <>
-            <div className="grid grid-cols-7 text-xs font-semibold text-gray-600">
+            <div className="grid grid-cols-7 border-b border-line bg-tint">
               {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-                <div key={d} className="p-2">
+                <div
+                  key={d}
+                  className="px-2 py-2 text-[11px] font-semibold uppercase tracking-[.06em] text-faint"
+                >
                   {d}
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-px bg-gray-200">
+            <div className="grid grid-cols-7 gap-px bg-line">
               {gridDays.map((d) => {
                 const inMonth = d.getMonth() === viewMonth.getMonth();
                 const jsDay = d.getDay();
@@ -928,61 +987,56 @@ export default function PlannerPage() {
                 const iso = dayKeyLocal(d);
                 const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                 const dayAssignments = visibleAssignmentsByDate[iso] || [];
+                const isToday = iso === todayIso;
 
                 return (
                   <div
                     key={iso}
-                    className={[
-                      "relative overflow-hidden min-h-[64px] bg-white p-1.5",
-                      !inMonth ? "opacity-50" : "",
-                      isWeekend ? "bg-gray-50" : "",
-                    ].join(" ")}
+                    className={cn(
+                      "relative min-h-[76px] overflow-hidden p-1.5 sm:min-h-[96px]",
+                      isWeekend || holidayLabel ? "bg-tint" : "bg-card",
+                      !inMonth && "opacity-45"
+                    )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="text-base font-semibold leading-none">{d.getDate()}</div>
+                    <div className="flex items-start justify-between gap-1">
+                      <div
+                        className={cn(
+                          "grid h-6 w-6 place-items-center text-[13px] font-semibold leading-none",
+                          isToday ? "rounded-full bg-ink text-white" : "text-ink"
+                        )}
+                      >
+                        {d.getDate()}
+                      </div>
                       {holidayLabel ? (
-                        <span
-                          className="rounded-full border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-500"
-                          title={holidayLabel}
-                        >
-                          Feiertag
+                        <span className="hidden sm:inline-flex">
+                          <HolidayBadge label={holidayLabel} />
                         </span>
                       ) : null}
                     </div>
 
-                    <div className="mt-1">
-                      {dayAssignments.length > 0 ? (
-                        <div className="min-w-0 space-y-1">
-                          {dayAssignments.map((a) => {
-                            const start = formatTime(a.startAt);
-                            const end = formatTime(a.endAt);
-                            const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
-
-                            const customerAddress = (a as any).customerAddress || (a as any).address || (a.customer as any)?.address || "";
-                            const status = getStatusString(a);
-                            const colorCls = statusPillClass(status);
-                            return (
-                              <Link
-                                key={a.id}
-                                href={assignmentDetailHref(a.id)}
-                                className={`w-full min-w-0 truncate rounded-md border-l-4 px-2 py-1 text-[11px] leading-tight hover:bg-gray-200 ${colorCls}`}
-                                title={`${start}–${end} ${customerName}`}
-                              >
-                                {`${start}–${end} ${customerName}`}
-                              </Link>
-                            );
-                          })}
-
-                        </div>
-                      ) : (
-                        <div className="text-[11px] text-gray-400">—</div>
-                      )}
-
+                    <div className="mt-1 space-y-1">
                       {holidayLabel ? (
-                        <div className="mt-1 text-[11px] text-gray-500" title={holidayLabel}>
+                        <div className="truncate text-[10px] text-st-amber" title={holidayLabel}>
                           {holidayLabel}
                         </div>
                       ) : null}
+                      {dayAssignments.map((a) => {
+                        const tone = eventTone(a);
+                        return (
+                          <Link
+                            key={a.id}
+                            href={assignmentDetailHref(a.id)}
+                            className={cn(
+                              "block truncate rounded-[6px] border-l-[3px] px-1.5 py-1 text-[11px] font-medium leading-tight transition-opacity hover:opacity-80",
+                              eventToneClasses[tone]
+                            )}
+                            title={`${formatTime(a.startAt)}–${formatTime(a.endAt)} ${customerNameOf(a)}`}
+                          >
+                            <span className="tabular-nums">{formatTime(a.startAt)}</span>{" "}
+                            {customerNameOf(a)}
+                          </Link>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -990,132 +1044,199 @@ export default function PlannerPage() {
             </div>
           </>
         ) : viewMode === "week" ? (
-          <div className="relative w-full overflow-auto scroll-smooth" style={{ maxHeight: 560 }}>
-            <div className="sticky top-0 z-20 flex border-b bg-white">
-              <div className="w-12 sm:w-16 shrink-0 pr-2 bg-white" />
-              <div className="grid grid-cols-7 gap-px flex-1 bg-gray-200">
-                {gridDays.map((d) => {
-                  const iso = dayKeyLocal(d);
-                  const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
-                  return (
-                    <div key={iso} className="bg-white px-2 py-1 text-sm flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold">{formatWeekdayShort(d)}</div>
-                        <div className="text-xs text-gray-600">{d.getDate()}</div>
-                      </div>
-                      {holidayLabel ? (
-                        <div className="text-[10px] rounded-full border px-2 py-0.5" title={holidayLabel}>
-                          Feiertag
+          <>
+            {/* Mobile: stacked day agenda (readable full-width blocks) */}
+            <div className="md:hidden">
+              {gridDays.map((d) => {
+                const iso = dayKeyLocal(d);
+                const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
+                const dayAssignments = visibleAssignmentsByDate[iso] || [];
+                const isToday = iso === todayIso;
+
+                return (
+                  <div key={iso} className="border-b border-line last:border-b-0">
+                    <div
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2",
+                        isToday ? "bg-accent-soft" : "bg-tint"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "grid h-8 w-8 flex-none place-items-center rounded-[9px] font-serif text-[17px] font-bold",
+                          isToday ? "bg-ink text-white" : "text-ink"
+                        )}
+                      >
+                        {d.getDate()}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-semibold text-ink">
+                          {formatWeekdayShort(d)} {formatDayMonth(d)}
                         </div>
-                      ) : null}
+                        {holidayLabel ? (
+                          <div className="truncate text-[11px] text-st-amber">{holidayLabel}</div>
+                        ) : null}
+                      </div>
+                      <span className="ml-auto text-xs text-faint tabular-nums">
+                        {dayAssignments.length > 0
+                          ? `${dayAssignments.length} Termin${dayAssignments.length === 1 ? "" : "e"}`
+                          : ""}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="space-y-2 px-3 py-2.5">
+                      {dayAssignments.length === 0 ? (
+                        <div className="px-1 text-sm text-faint">Keine Termine</div>
+                      ) : (
+                        dayAssignments.map((a) => <EventBlock key={a.id} a={a} />)
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="flex w-full">
-              <div className="w-12 sm:w-16 shrink-0 pr-2 sticky left-0 z-10 bg-white">
-                <div className="relative" style={{ height: totalHeight }}>
-                  {Array.from({ length: totalRows + 1 }).map((_, idx) => {
-                    const minutes = START_HOUR * 60 + idx * 30;
-                    const hour = Math.floor(minutes / 60);
-                    const minute = minutes % 60;
-                    const label = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-                    return (
-                      <div
-                        key={idx}
-                        className="absolute left-0 text-[10px] text-gray-500"
-                        style={{ top: idx * ROW_H - 8, height: ROW_H }}
-                      >
-                        {label}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <div className="grid grid-cols-7 gap-px bg-gray-200" style={{ height: totalHeight }}>
+            {/* Desktop: 7-column timeline */}
+            <div className="relative hidden w-full overflow-auto scroll-smooth md:block" style={{ maxHeight: 560 }}>
+              <div className="sticky top-0 z-20 flex border-b border-line bg-card">
+                <div className="w-16 shrink-0 bg-card pr-2" />
+                <div className="grid flex-1 grid-cols-7 gap-px bg-line">
                   {gridDays.map((d) => {
                     const iso = dayKeyLocal(d);
                     const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
-                    const dayAssignments = visibleAssignmentsByDate[iso] || [];
-
-                    const now = new Date();
-                    const todayIso = dayKeyLocal(now);
-                    const nowMinutes = minutesSinceStartOfDayLocal(now);
-                    const nowVisible = nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
-                    const nowTop = ((nowMinutes - START_HOUR * 60) / 30) * ROW_H;
-
+                    const isToday = iso === todayIso;
                     return (
-                      <div key={iso} className="relative bg-white">
-                        <div className="relative" style={{ height: totalHeight }}>
-                          {Array.from({ length: totalRows + 1 }).map((_, ri) => (
-                            <div
-                              key={ri}
-                              className="absolute left-0 right-0 bg-gray-50"
-                              style={{ top: ri * ROW_H - 1, height: 1 }}
-                            />
-                          ))}
-
-                          {iso === todayIso && nowVisible ? (
-                            <div
-                              className="absolute left-0 right-0 h-px bg-gray-400/70 pointer-events-none z-10"
-                              style={{ top: nowTop }}
-                            />
-                          ) : null}
-
-                          {dayAssignments.map((a) => {
-                            const startDate = new Date(a.startAt);
-                            const endDate = new Date(a.endAt);
-
-                            const startMinutes = minutesSinceStartOfDayLocal(startDate);
-                            const endMinutes = minutesSinceStartOfDayLocal(endDate);
-
-                            const visibleStart = Math.max(startMinutes, START_HOUR * 60);
-                            const visibleEnd = Math.min(endMinutes, END_HOUR * 60);
-                            if (visibleEnd <= visibleStart) return null;
-
-                            const topPx = ((visibleStart - START_HOUR * 60) / 30) * ROW_H;
-                            const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
-
-                            const status = getStatusString(a);
-                            const colorCls = statusPillClass(status);
-
-                            const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
-                            const customerAddressLine = (a as any).customerAddressLine || (a as any).address || (a.customer as any)?.address || "";
-
-                            const startLabel = formatTime(startDate);
-                            const endLabel = formatTime(endDate);
-
-                            return (
-                              <Link
-                                key={a.id}
-                                href={assignmentDetailHref(a.id)}
-                                className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-1 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
-                                style={{ top: topPx, height: Math.max(58, heightPx) }}
-                                title={`${startLabel}–${endLabel} ${customerName}`}
-                              >
-                                <div className="whitespace-normal break-words">{`${startLabel}–${endLabel}`}</div>
-                                <div className="whitespace-normal break-words">{customerName}</div>
-                                {customerAddressLine ? (
-                                  <div className="whitespace-normal break-words text-[10px] text-gray-600">{customerAddressLine}</div>
-                                ) : null}
-                              </Link>
-                            );
-                          })}
+                      <div
+                        key={iso}
+                        className={cn(
+                          "flex items-center justify-between gap-1 px-2 py-1.5",
+                          isToday ? "bg-accent-soft" : "bg-card"
+                        )}
+                      >
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-[13px] font-semibold text-ink">
+                            {formatWeekdayShort(d)}
+                          </span>
+                          <span
+                            className={cn(
+                              "grid h-[22px] w-[22px] place-items-center text-xs font-semibold",
+                              isToday ? "rounded-full bg-ink text-white" : "text-muted"
+                            )}
+                          >
+                            {d.getDate()}
+                          </span>
                         </div>
+                        {holidayLabel ? <HolidayBadge label={holidayLabel} /> : null}
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              <div className="flex w-full">
+                <div className="sticky left-0 z-10 w-16 shrink-0 bg-card pr-2">
+                  <div className="relative" style={{ height: totalHeight }}>
+                    {Array.from({ length: totalRows + 1 }).map((_, idx) => {
+                      const minutes = START_HOUR * 60 + idx * 30;
+                      const hour = Math.floor(minutes / 60);
+                      const minute = minutes % 60;
+                      const label = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                      return (
+                        <div
+                          key={idx}
+                          className="absolute left-2 text-[10px] text-faint tabular-nums"
+                          style={{ top: idx * ROW_H - 8, height: ROW_H }}
+                        >
+                          {label}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  <div className="grid grid-cols-7 gap-px bg-line" style={{ height: totalHeight }}>
+                    {gridDays.map((d) => {
+                      const iso = dayKeyLocal(d);
+                      const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
+                      const dayAssignments = visibleAssignmentsByDate[iso] || [];
+
+                      const now = new Date();
+                      const nowMinutes = minutesSinceStartOfDayLocal(now);
+                      const nowVisible = nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
+                      const nowTop = ((nowMinutes - START_HOUR * 60) / 30) * ROW_H;
+
+                      return (
+                        <div
+                          key={iso}
+                          className={cn("relative", holidayLabel ? "bg-tint" : "bg-card")}
+                        >
+                          <div className="relative" style={{ height: totalHeight }}>
+                            {Array.from({ length: totalRows + 1 }).map((_, ri) => (
+                              <div
+                                key={ri}
+                                className="absolute left-0 right-0 bg-line/60"
+                                style={{ top: ri * ROW_H - 1, height: 1 }}
+                              />
+                            ))}
+
+                            {iso === todayIso && nowVisible ? (
+                              <div
+                                className="pointer-events-none absolute left-0 right-0 z-10 h-[2px] bg-accent-deep"
+                                style={{ top: nowTop }}
+                              />
+                            ) : null}
+
+                            {dayAssignments.map((a) => {
+                              const startDate = new Date(a.startAt);
+                              const endDate = new Date(a.endAt);
+
+                              const startMinutes = minutesSinceStartOfDayLocal(startDate);
+                              const endMinutes = minutesSinceStartOfDayLocal(endDate);
+
+                              const visibleStart = Math.max(startMinutes, START_HOUR * 60);
+                              const visibleEnd = Math.min(endMinutes, END_HOUR * 60);
+                              if (visibleEnd <= visibleStart) return null;
+
+                              const topPx = ((visibleStart - START_HOUR * 60) / 30) * ROW_H;
+                              const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
+
+                              const tone = eventTone(a);
+
+                              return (
+                                <Link
+                                  key={a.id}
+                                  href={assignmentDetailHref(a.id)}
+                                  className={cn(
+                                    "absolute left-1 right-1 overflow-hidden rounded-[8px] border-l-[3px] px-2 py-1 text-xs leading-tight transition-opacity hover:opacity-80",
+                                    eventToneClasses[tone]
+                                  )}
+                                  style={{ top: topPx, height: Math.max(58, heightPx) }}
+                                  title={`${formatTime(startDate)}–${formatTime(endDate)} ${customerNameOf(a)}`}
+                                >
+                                  <div className="truncate font-semibold tabular-nums">
+                                    {formatTime(startDate)}–{formatTime(endDate)}
+                                  </div>
+                                  <div className="truncate font-semibold">{customerNameOf(a)}</div>
+                                  {customerAddressOf(a) ? (
+                                    <div className="truncate text-[10px] opacity-75">
+                                      {customerAddressOf(a)}
+                                    </div>
+                                  ) : null}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         ) : (
-          <div className="flex overflow-y-auto w-full" style={{ maxHeight: 560 }}>
-            <div className="w-12 sm:w-16 shrink-0 pr-2">
+          <div className="flex w-full overflow-y-auto" style={{ maxHeight: 560 }}>
+            <div className="w-14 shrink-0 pr-2 sm:w-16">
               <div className="relative" style={{ height: totalHeight }}>
                 {Array.from({ length: totalRows + 1 }).map((_, idx) => {
                   const minutes = START_HOUR * 60 + idx * 30;
@@ -1125,7 +1246,7 @@ export default function PlannerPage() {
                   return (
                     <div
                       key={idx}
-                      className="absolute left-0 text-[10px] text-gray-500"
+                      className="absolute left-2 text-[10px] text-faint tabular-nums"
                       style={{ top: idx * ROW_H - 8, height: ROW_H }}
                     >
                       {label}
@@ -1136,31 +1257,29 @@ export default function PlannerPage() {
             </div>
 
             <div className="flex-1">
-              <div className="grid grid-cols-1 gap-px bg-gray-200" style={{ height: totalHeight }}>
+              <div className="grid grid-cols-1" style={{ height: totalHeight }}>
                 {gridDays.map((d) => {
                   const iso = dayKeyLocal(d);
                   const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                   const dayAssignments = visibleAssignmentsByDate[iso] || [];
 
                   return (
-                    <div key={iso} className="relative bg-white">
-                      <div className="sticky top-0 z-10 bg-white border-b px-2 py-1 text-sm flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold">{formatWeekdayShort(d)}</div>
-                          <div className="text-xs text-gray-600">{formatDayMonth(d)}</div>
+                    <div key={iso} className={cn("relative", holidayLabel ? "bg-tint" : "bg-card")}>
+                      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-card px-2 py-1.5">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[13px] font-semibold text-ink">
+                            {formatWeekdayShort(d)}
+                          </span>
+                          <span className="text-xs text-muted tabular-nums">{formatDayMonth(d)}</span>
                         </div>
-                        {holidayLabel ? (
-                          <div className="text-[10px] rounded-full border px-2 py-0.5" title={holidayLabel}>
-                            Feiertag
-                          </div>
-                        ) : null}
+                        {holidayLabel ? <HolidayBadge label={holidayLabel} /> : null}
                       </div>
 
                       <div className="relative" style={{ height: totalHeight }}>
                         {Array.from({ length: totalRows + 1 }).map((_, ri) => (
                           <div
                             key={ri}
-                            className="absolute left-0 right-0 bg-gray-50"
+                            className="absolute left-0 right-0 bg-line/60"
                             style={{ top: ri * ROW_H - 1, height: 1 }}
                           />
                         ))}
@@ -1179,27 +1298,29 @@ export default function PlannerPage() {
                           const topPx = ((visibleStart - START_HOUR * 60) / 30) * ROW_H;
                           const heightPx = ((visibleEnd - visibleStart) / 30) * ROW_H;
 
-                          const status = getStatusString(a);
-                          const colorCls = statusPillClass(status);
-
-                          const customerName = a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
-                            const customerAddress = (a as any).customerAddress || (a as any).address || (a.customer as any)?.address || "";
-
-
-                          const startLabel = formatTime(startDate);
-                          const endLabel = formatTime(endDate);
+                          const tone = eventTone(a);
 
                           return (
                             <Link
                               key={a.id}
                               href={assignmentDetailHref(a.id)}
-                              className={`absolute left-1 right-1 rounded-md border-l-4 px-2 py-1 text-xs leading-tight overflow-hidden ${colorCls} hover:bg-gray-200`}
+                              className={cn(
+                                "absolute left-1 right-1 overflow-hidden rounded-[8px] border-l-[3px] px-2 py-1 text-xs leading-tight transition-opacity hover:opacity-80",
+                                eventToneClasses[tone]
+                              )}
                               style={{ top: topPx, height: Math.max(42, heightPx) }}
-                              title={`${startLabel}–${endLabel} ${customerName}`}
+                              title={`${formatTime(startDate)}–${formatTime(endDate)} ${customerNameOf(a)}`}
                             >
-                              <div className="truncate">{`${startLabel}–${endLabel} ${customerName}`}</div>
-                              {customerAddress ? (
-                                <div className="truncate text-[10px] text-gray-600">{customerAddress}</div>
+                              <div className="truncate font-semibold">
+                                <span className="tabular-nums">
+                                  {formatTime(startDate)}–{formatTime(endDate)}
+                                </span>{" "}
+                                {customerNameOf(a)}
+                              </div>
+                              {customerAddressOf(a) ? (
+                                <div className="truncate text-[10px] opacity-75">
+                                  {customerAddressOf(a)}
+                                </div>
                               ) : null}
                             </Link>
                           );
@@ -1212,13 +1333,14 @@ export default function PlannerPage() {
             </div>
           </div>
         )}
-      </Card>
+      </Panel>
 
+      {/* Create modal */}
       {showCreateModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-lg bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card border border-line bg-card p-5 shadow-card">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold">Termin erstellen</h2>
+              <h2 className="font-serif text-[17px] font-bold text-ink">Termin erstellen</h2>
             </div>
 
             {createError ? (
@@ -1227,29 +1349,27 @@ export default function PlannerPage() {
               </Alert>
             ) : null}
             {createCustomerLoading ? (
-              <div className="mt-2 text-xs text-gray-600">Kunden werden geladen…</div>
+              <div className="mt-2 text-xs text-muted">Kunden werden geladen…</div>
             ) : null}
             {!createCustomerLoading && createCustomerOptions.length === 0 ? (
-              <div className="mt-2 text-xs text-gray-600">
+              <div className="mt-2 text-xs text-muted">
                 Keine Kunden gefunden. Bitte Admin kontaktieren.
               </div>
             ) : null}
 
-            <form className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3" onSubmit={handleCreateAssignment}>
+            <form className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2" onSubmit={handleCreateAssignment}>
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs text-gray-600">Kunde</span>
-                <input
+                <span className="text-xs font-medium text-muted">Kunde</span>
+                <Input
                   type="text"
                   value={createCustomerQuery}
                   onChange={(e) => setCreateCustomerQuery(e.target.value)}
                   placeholder="Kunden suchen…"
-                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                   disabled={createSaving || createCustomerLoading}
                 />
-                <select
+                <Select
                   value={createCustomerId}
                   onChange={(e) => setCreateCustomerId(e.target.value)}
-                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                   disabled={createSaving || createCustomerOptions.length === 0 || createCustomerLoading}
                 >
                   <option value="">Bitte wählen…</option>
@@ -1258,54 +1378,50 @@ export default function PlannerPage() {
                       {c.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
 
               <label className="grid gap-1">
-                <span className="text-xs text-gray-600">Datum</span>
-                <input
+                <span className="text-xs font-medium text-muted">Datum</span>
+                <Input
                   type="date"
                   value={createDate}
                   onChange={(e) => setCreateDate(e.target.value)}
-                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                   disabled={createSaving}
                 />
               </label>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Beginn</span>
-                  <input
+                  <span className="text-xs font-medium text-muted">Beginn</span>
+                  <Input
                     type="time"
                     lang="de-DE"
                     step={1800}
                     value={createStartTime}
                     onChange={(e) => setCreateStartTime(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                     disabled={createSaving}
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Ende</span>
-                  <input
+                  <span className="text-xs font-medium text-muted">Ende</span>
+                  <Input
                     type="time"
                     lang="de-DE"
                     step={1800}
                     value={createEndTime}
                     onChange={(e) => setCreateEndTime(e.target.value)}
-                    className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                     disabled={createSaving}
                   />
                 </label>
               </div>
 
               <label className="grid gap-1 sm:col-span-2">
-                <span className="text-xs text-gray-600">Notiz (optional)</span>
-                <textarea
+                <span className="text-xs font-medium text-muted">Notiz (optional)</span>
+                <Textarea
                   rows={2}
                   value={createNotes}
                   onChange={(e) => setCreateNotes(e.target.value)}
-                  className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                   disabled={createSaving}
                 />
               </label>
@@ -1316,6 +1432,7 @@ export default function PlannerPage() {
                   checked={createRecurring}
                   onChange={(e) => setCreateRecurring(e.target.checked)}
                   disabled={createSaving}
+                  className="accent-[var(--color-accent-deep)]"
                 />
                 Serientermin
               </label>
@@ -1323,47 +1440,40 @@ export default function PlannerPage() {
               {createRecurring ? (
                 <>
                   <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Frequenz</span>
-                    <select
+                    <span className="text-xs font-medium text-muted">Frequenz</span>
+                    <Select
                       value={createFrequency}
                       onChange={(e) => setCreateFrequency(e.target.value as "WEEKLY" | "BIWEEKLY")}
-                      className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                       disabled={createSaving}
                     >
                       <option value="WEEKLY">Wöchentlich</option>
                       <option value="BIWEEKLY">Alle 2 Wochen</option>
-                    </select>
+                    </Select>
                   </label>
 
                   <label className="grid gap-1">
-                    <span className="text-xs text-gray-600">Wiederholen bis</span>
-                    <input
+                    <span className="text-xs font-medium text-muted">Wiederholen bis</span>
+                    <Input
                       type="date"
                       value={createRepeatUntil}
                       onChange={(e) => {
                         setCreateRepeatUntilTouched(true);
                         setCreateRepeatUntil(e.target.value);
                       }}
-                      className="min-h-[40px] w-full rounded border px-3 py-2 text-sm"
                       disabled={createSaving}
                     />
                   </label>
                 </>
               ) : null}
 
-              <div className="sm:col-span-2 sticky bottom-0 -mx-4 mt-2 border-t bg-white px-4 pt-3">
+              <div className="sticky bottom-0 -mx-5 mt-2 border-t border-line bg-card px-5 pt-3 sm:col-span-2">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={closeCreateModal}
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={closeCreateModal}>
                     Schließen
                   </Button>
                   <Button
                     type="submit"
-                    variant="outline"
+                    variant="primary"
                     size="sm"
                     className="w-full sm:w-auto"
                     disabled={createSaving || createCustomerOptions.length === 0 || createCustomerLoading}
@@ -1377,23 +1487,31 @@ export default function PlannerPage() {
         </div>
       ) : null}
 
-      <Card className="mt-6">
-        <h2 className="text-base font-semibold">Feiertage (Hessen)</h2>
-        <p className="mt-1 text-sm text-gray-600">Nur visuelle Markierung (Testversion). Später direkt im Kalender.</p>
-
+      {/* Holidays */}
+      <Panel>
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <h2 className="font-serif text-[15px] font-bold text-ink">Feiertage · Hessen</h2>
+          <span className="text-xs text-muted">werden im Kalender markiert</span>
+        </div>
         {upcoming.length === 0 ? (
-          <p className="mt-3 text-sm">Keine weiteren Feiertage gefunden.</p>
+          <p className="px-5 py-4 text-sm text-muted">Keine weiteren Feiertage gefunden.</p>
         ) : (
-          <ul className="mt-3 space-y-2 text-sm">
-            {upcoming.map((h) => (
-              <li key={h.date} className="flex items-center justify-between">
+          <div className="py-1">
+            {upcoming.map((h, i) => (
+              <div
+                key={h.date}
+                className={cn(
+                  "flex items-center justify-between px-5 py-[9px] text-[12.5px]",
+                  i > 0 && "border-t border-line"
+                )}
+              >
                 <span>{h.label}</span>
-                <span className="text-gray-600">{formatDate(h.date)}</span>
-              </li>
+                <span className="text-muted tabular-nums">{formatDate(h.date)}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
-      </Card>
-    </main>
+      </Panel>
+    </div>
   );
 }
