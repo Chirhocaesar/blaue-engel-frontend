@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,18 +12,28 @@ import {
   PencilLine,
   Database,
   LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 
-type NavItem = {
+type NavLeaf = {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   /** Active on exact match only (e.g. /admin) instead of prefix match. */
   exact?: boolean;
 };
 
-type NavSection = { label: string; items: NavItem[] };
+type NavGroup = {
+  key: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  children: NavLeaf[];
+};
+
+type NavEntry = NavLeaf | NavGroup;
+
+type NavSection = { label: string; items: NavEntry[] };
 
 const NAV: NavSection[] = [
   {
@@ -35,14 +46,38 @@ const NAV: NavSection[] = [
   {
     label: "Verwaltung",
     items: [
-      { href: "/admin/customers", label: "Kunden", icon: Users },
-      { href: "/admin/employees", label: "Mitarbeiter", icon: Contact },
-      { href: "/admin/masterdata", label: "Stammdaten", icon: Database },
-      { href: "/admin/reports/week", label: "Berichte", icon: BarChart3 },
+      {
+        key: "stammdaten",
+        label: "Stammdaten",
+        icon: Database,
+        children: [
+          { href: "/admin/customers", label: "Kunden", icon: Users },
+          { href: "/admin/employees", label: "Mitarbeiter", icon: Contact },
+        ],
+      },
+      {
+        key: "berichte",
+        label: "Berichte",
+        icon: BarChart3,
+        children: [
+          { href: "/admin/reports/week", label: "Wochenbericht" },
+          { href: "/admin/reports/monthly", label: "Monatsbericht" },
+        ],
+      },
       { href: "/admin/corrections", label: "Korrekturen", icon: PencilLine },
     ],
   },
 ];
+
+function isGroup(entry: NavEntry): entry is NavGroup {
+  return (entry as NavGroup).children !== undefined;
+}
+
+function leafActive(pathname: string, item: NavLeaf): boolean {
+  return item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(item.href + "/");
+}
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -62,11 +97,93 @@ export default function AdminShell({
 }) {
   const pathname = usePathname();
 
-  const isActive = (item: NavItem) =>
-    item.exact
-      ? pathname === item.href
-      : pathname === item.href || pathname.startsWith(item.href + "/") ||
-        (item.href === "/admin/reports/week" && pathname.startsWith("/admin/reports"));
+  // Groups containing the active route start expanded.
+  const [open, setOpen] = React.useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const section of NAV) {
+      for (const entry of section.items) {
+        if (isGroup(entry)) {
+          initial[entry.key] = entry.children.some((c) => leafActive(pathname, c));
+        }
+      }
+    }
+    return initial;
+  });
+
+  const leafClasses = (active: boolean) =>
+    cn(
+      "flex items-center gap-3 rounded-[10px] px-[11px] py-2 text-[13.5px] font-medium transition-colors lg:py-[10px]",
+      active
+        ? "bg-gradient-to-r from-accent/[.18] to-accent/[.06] text-white shadow-[inset_3px_0_0_var(--color-accent)]"
+        : "text-rail-muted hover:bg-ink-lift hover:text-white"
+    );
+
+  const renderLeaf = (item: NavLeaf, sub = false) => {
+    const active = leafActive(pathname, item);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={cn(leafClasses(active), sub && "py-[7px] pl-[41px] text-[13px] lg:py-[7px]")}
+      >
+        {Icon ? (
+          <Icon
+            className={cn("h-[18px] w-[18px] flex-none", active && "text-accent", sub && "hidden")}
+            strokeWidth={1.7}
+          />
+        ) : null}
+        {sub ? (
+          <span
+            aria-hidden
+            className={cn(
+              "h-1 w-1 flex-none rounded-full",
+              active ? "bg-accent" : "bg-rail-label"
+            )}
+          />
+        ) : null}
+        {item.label}
+      </Link>
+    );
+  };
+
+  const renderGroup = (group: NavGroup) => {
+    const childActive = group.children.some((c) => leafActive(pathname, c));
+    const expanded = open[group.key] ?? false;
+    const Icon = group.icon;
+    return (
+      <div key={group.key}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => ({ ...o, [group.key]: !expanded }))}
+          aria-expanded={expanded}
+          className={cn(
+            "w-full",
+            leafClasses(false),
+            childActive && !expanded && "text-white"
+          )}
+        >
+          <Icon
+            className={cn("h-[18px] w-[18px] flex-none", childActive && "text-accent")}
+            strokeWidth={1.7}
+          />
+          {group.label}
+          <ChevronDown
+            className={cn(
+              "ml-auto h-4 w-4 flex-none text-rail-label transition-transform",
+              expanded && "rotate-180"
+            )}
+            strokeWidth={1.7}
+          />
+        </button>
+        {expanded ? (
+          <div className="flex flex-row flex-wrap gap-1 lg:mt-0.5 lg:block lg:space-y-0.5">
+            {group.children.map((c) => renderLeaf(c, true))}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[248px_1fr] bg-canvas">
@@ -94,28 +211,9 @@ export default function AdminShell({
               <div className="hidden px-[10px] pb-2 pt-[14px] text-[10.5px] uppercase tracking-[.16em] text-rail-label lg:block">
                 {section.label}
               </div>
-              {section.items.map((item) => {
-                const active = isActive(item);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-[10px] px-[11px] py-2 text-[13.5px] font-medium transition-colors lg:py-[10px]",
-                      active
-                        ? "bg-gradient-to-r from-accent/[.18] to-accent/[.06] text-white shadow-[inset_3px_0_0_var(--color-accent)]"
-                        : "text-rail-muted hover:bg-ink-lift hover:text-white"
-                    )}
-                  >
-                    <Icon
-                      className={cn("h-[18px] w-[18px] flex-none", active && "text-accent")}
-                      strokeWidth={1.7}
-                    />
-                    {item.label}
-                  </Link>
-                );
-              })}
+              {section.items.map((entry) =>
+                isGroup(entry) ? renderGroup(entry) : renderLeaf(entry)
+              )}
             </div>
           ))}
         </nav>
