@@ -240,27 +240,27 @@ export default function AdminAssignmentNewClient() {
   return (
     <main className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Einsatz planen</h1>
-        <p className="mt-1 text-sm text-gray-600">Neuen Termin erstellen.</p>
+        <h1 className="text-3xl font-bold leading-[1.1] text-ink">Einsatz planen</h1>
+        <p className="mt-1 text-[13.5px] text-muted">Neuen Termin erstellen.</p>
       </div>
 
       {error ? (
-        <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-field border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       ) : null}
       {customerLoadError ? (
-        <div className="rounded border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+        <div className="rounded-field border border-st-amber/20 bg-st-amber-bg px-3 py-2 text-sm text-st-amber">
           Konnte Kunden/Mitarbeiter nicht laden.
         </div>
       ) : null}
       {seriesSuccess ? (
-        <div className="rounded border border-green-300 bg-green-50 p-3 text-sm text-green-700">
+        <div className="rounded-field border border-st-green/20 bg-st-green-bg px-3 py-2 text-sm text-st-green">
           {seriesSuccess}
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 rounded-card border border-line bg-card p-5 shadow-card sm:grid-cols-2">
         <label className="grid gap-1">
-          <span className="text-sm text-gray-700">Kunde</span>
+          <span className="text-sm text-fg">Kunde</span>
           <Input
             placeholder="Kunden suchen…"
             value={customerQuery}
@@ -284,11 +284,11 @@ export default function AdminAssignmentNewClient() {
               </option>
             ))}
           </Select>
-          {loading ? <div className="text-xs text-gray-600">Lade Daten…</div> : null}
+          {loading ? <div className="text-xs text-muted">Lade Daten…</div> : null}
         </label>
 
         <label className="grid gap-1 min-w-0">
-          <span className="text-sm text-gray-700">Mitarbeiter</span>
+          <span className="text-sm text-fg">Mitarbeiter</span>
           <Select
             value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)}
@@ -302,11 +302,11 @@ export default function AdminAssignmentNewClient() {
               </option>
             ))}
           </Select>
-          {loading ? <div className="text-xs text-gray-600">Lade Daten…</div> : null}
+          {loading ? <div className="text-xs text-muted">Lade Daten…</div> : null}
         </label>
 
           <label className="grid gap-1">
-            <span className="text-sm text-gray-700">Datum</span>
+            <span className="text-sm text-fg">Datum</span>
             {showNativeInputs ? (
               <Input
                 type="date"
@@ -334,7 +334,7 @@ export default function AdminAssignmentNewClient() {
           </label>
 
           <label className="grid gap-1">
-            <span className="text-sm text-gray-700">Beginnzeit</span>
+            <span className="text-sm text-fg">Beginnzeit</span>
             {showNativeInputs ? (
               <Input
                 type="time"
@@ -359,7 +359,7 @@ export default function AdminAssignmentNewClient() {
           </label>
 
           <label className="grid gap-1">
-            <span className="text-sm text-gray-700">Endzeit</span>
+            <span className="text-sm text-fg">Endzeit</span>
             {showNativeInputs ? (
               <Input
                 type="time"
@@ -384,7 +384,7 @@ export default function AdminAssignmentNewClient() {
           </label>
 
           <label className="grid gap-1 sm:col-span-2">
-            <span className="text-sm text-gray-700">Notiz (optional)</span>
+            <span className="text-sm text-fg">Notiz (optional)</span>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -404,7 +404,7 @@ export default function AdminAssignmentNewClient() {
             {seriesEnabled ? (
               <div className="flex flex-wrap items-center gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Frequenz</span>
+                  <span className="text-xs text-muted">Frequenz</span>
                   <Select
                     value={seriesFrequency}
                     onChange={(e) => setSeriesFrequency(e.target.value as "WEEKLY" | "BIWEEKLY")}
@@ -414,7 +414,7 @@ export default function AdminAssignmentNewClient() {
                   </Select>
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs text-gray-600">Enddatum (max. 3 Monate)</span>
+                  <span className="text-xs text-muted">Enddatum (max. 3 Monate)</span>
                   {showNativeInputs ? (
                     <Input
                       type="date"
