@@ -29,23 +29,27 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
       <div
         role="dialog"
         aria-modal="true"
         className={cn(
-          "w-full rounded-xl bg-white p-4 shadow-lg max-h-[85vh] overflow-y-auto",
+          "max-h-[85vh] w-full overflow-y-auto rounded-card border border-line bg-card p-5 shadow-card",
           sizeClasses[size],
           className
         )}
       >
         {(title || onClose) && (
           <div className="flex items-start justify-between gap-2">
-            {title ? <h3 className="text-base font-semibold">{title}</h3> : <div />}
+            {title ? (
+              <h3 className="font-serif text-[17px] font-bold text-ink">{title}</h3>
+            ) : (
+              <div />
+            )}
             {onClose ? (
               <button
                 type="button"
-                className="rounded-lg border px-2 py-1 text-sm hover:bg-gray-50"
+                className="rounded-field border border-line-strong px-2 py-1 text-sm hover:border-accent hover:bg-accent-soft hover:text-accent-deep"
                 onClick={onClose}
                 aria-label="Schliessen"
               >

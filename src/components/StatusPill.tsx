@@ -1,16 +1,14 @@
-import { normalizeStatus, statusLabelDe, statusPillClass } from "@/lib/status";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 type StatusPillProps = {
   status?: string | null;
   className?: string;
 };
 
+/**
+ * Legacy wrapper kept for existing screens — renders the design-system
+ * StatusBadge. Prefer importing StatusBadge directly in new code.
+ */
 export default function StatusPill({ status, className }: StatusPillProps) {
-  const normalized = normalizeStatus(status);
-  const label = normalized ? statusLabelDe(normalized) : "—";
-  const baseClass = "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium";
-  const statusClass = statusPillClass(normalized);
-  const extra = className ? ` ${className}` : "";
-
-  return <span className={`${baseClass} ${statusClass}${extra}`}>{label}</span>;
+  return <StatusBadge status={status ?? undefined} className={className} />;
 }
