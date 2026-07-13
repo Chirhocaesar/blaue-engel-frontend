@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { getUpcomingHessenHolidays, getHessenHolidayLabelByIsoDate } from "@/lib/holidays-hessen";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -693,6 +693,21 @@ export default function PlannerPage() {
     return d.getHours() * 60 + d.getMinutes();
   }
 
+  // Scroll week/day timeline to the first event (or 07:00) instead of 00:00.
+  const timelineScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (viewMode === "month") return;
+    const el = timelineScrollRef.current;
+    if (!el) return;
+    let earliest = 7 * 60;
+    gridDays.forEach((d) => {
+      (visibleAssignmentsByDate[dayKeyLocal(d)] || []).forEach((a) => {
+        earliest = Math.min(earliest, minutesSinceStartOfDayLocal(new Date(a.startAt)));
+      });
+    });
+    el.scrollTop = (Math.max(earliest - 30, 0) / 30) * ROW_H;
+  }, [viewMode, visibleAssignmentsByDate, gridDays]);
+
   function eventTone(a: Assignment): BadgeTone {
     return statusTone(getStatusString(a));
   }
@@ -788,6 +803,9 @@ export default function PlannerPage() {
         <div className="mt-0.5 truncate text-[13px] font-semibold">{customerNameOf(a)}</div>
         {customerAddressOf(a) ? (
           <div className="truncate text-xs opacity-75">{customerAddressOf(a)}</div>
+        ) : null}
+        {a.employee?.fullName ? (
+          <div className="truncate text-xs opacity-75">{a.employee.fullName}</div>
         ) : null}
       </Link>
     );
@@ -1020,7 +1038,7 @@ export default function PlannerPage() {
                           {holidayLabel}
                         </div>
                       ) : null}
-                      {dayAssignments.map((a) => {
+                      {dayAssignments.slice(0, 4).map((a) => {
                         const tone = eventTone(a);
                         return (
                           <Link
@@ -1037,6 +1055,18 @@ export default function PlannerPage() {
                           </Link>
                         );
                       })}
+                      {dayAssignments.length > 4 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDayStart(startOfDayLocal(d));
+                            setViewMode("day");
+                          }}
+                          className="block w-full rounded-[6px] px-1.5 py-0.5 text-left text-[11px] font-semibold text-accent-deep hover:bg-accent-soft"
+                        >
+                          +{dayAssignments.length - 4} weitere
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -1096,7 +1126,11 @@ export default function PlannerPage() {
             </div>
 
             {/* Desktop: 7-column timeline */}
-            <div className="relative hidden w-full overflow-auto scroll-smooth md:block" style={{ maxHeight: 560 }}>
+            <div
+              ref={timelineScrollRef}
+              className="relative hidden w-full overflow-auto md:block"
+              style={{ maxHeight: 560 }}
+            >
               <div className="sticky top-0 z-20 flex border-b border-line bg-card">
                 <div className="w-16 shrink-0 bg-card pr-2" />
                 <div className="grid flex-1 grid-cols-7 gap-px bg-line">
@@ -1104,12 +1138,14 @@ export default function PlannerPage() {
                     const iso = dayKeyLocal(d);
                     const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                     const isToday = iso === todayIso;
+                    const jsDay = d.getDay();
+                    const isWeekend = jsDay === 0 || jsDay === 6;
                     return (
                       <div
                         key={iso}
                         className={cn(
                           "flex items-center justify-between gap-1 px-2 py-1.5",
-                          isToday ? "bg-accent-soft" : "bg-card"
+                          isToday ? "bg-accent-soft" : isWeekend ? "bg-tint" : "bg-card"
                         )}
                       >
                         <div className="flex items-baseline gap-1.5">
@@ -1159,6 +1195,8 @@ export default function PlannerPage() {
                       const iso = dayKeyLocal(d);
                       const holidayLabel = getHessenHolidayLabelByIsoDate(iso);
                       const dayAssignments = visibleAssignmentsByDate[iso] || [];
+                      const jsDay = d.getDay();
+                      const isWeekend = jsDay === 0 || jsDay === 6;
 
                       const now = new Date();
                       const nowMinutes = minutesSinceStartOfDayLocal(now);
@@ -1168,7 +1206,7 @@ export default function PlannerPage() {
                       return (
                         <div
                           key={iso}
-                          className={cn("relative", holidayLabel ? "bg-tint" : "bg-card")}
+                          className={cn("relative", holidayLabel || isWeekend ? "bg-tint" : "bg-card")}
                         >
                           <div className="relative" style={{ height: totalHeight }}>
                             {Array.from({ length: totalRows + 1 }).map((_, ri) => (
@@ -1183,7 +1221,9 @@ export default function PlannerPage() {
                               <div
                                 className="pointer-events-none absolute left-0 right-0 z-10 h-[2px] bg-accent-deep"
                                 style={{ top: nowTop }}
-                              />
+                              >
+                                <span className="absolute -top-[3px] left-0 h-2 w-2 rounded-full bg-accent-deep" />
+                              </div>
                             ) : null}
 
                             {dayAssignments.map((a) => {
@@ -1222,6 +1262,11 @@ export default function PlannerPage() {
                                       {customerAddressOf(a)}
                                     </div>
                                   ) : null}
+                                  {a.employee?.fullName ? (
+                                    <div className="truncate text-[10px] opacity-75">
+                                      {a.employee.fullName}
+                                    </div>
+                                  ) : null}
                                 </Link>
                               );
                             })}
@@ -1235,7 +1280,7 @@ export default function PlannerPage() {
             </div>
           </>
         ) : (
-          <div className="flex w-full overflow-y-auto" style={{ maxHeight: 560 }}>
+          <div ref={timelineScrollRef} className="flex w-full overflow-y-auto" style={{ maxHeight: 560 }}>
             <div className="w-14 shrink-0 pr-2 sm:w-16">
               <div className="relative" style={{ height: totalHeight }}>
                 {Array.from({ length: totalRows + 1 }).map((_, idx) => {
@@ -1320,6 +1365,11 @@ export default function PlannerPage() {
                               {customerAddressOf(a) ? (
                                 <div className="truncate text-[10px] opacity-75">
                                   {customerAddressOf(a)}
+                                </div>
+                              ) : null}
+                              {a.employee?.fullName ? (
+                                <div className="truncate text-[10px] opacity-75">
+                                  {a.employee.fullName}
                                 </div>
                               ) : null}
                             </Link>
