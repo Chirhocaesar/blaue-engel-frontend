@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   Home,
@@ -207,9 +208,14 @@ export default function AdminShell({
       <aside className="flex flex-row flex-wrap items-center gap-2 bg-ink-rail px-4 py-3 text-rail-fg lg:sticky lg:top-0 lg:h-screen lg:flex-col lg:flex-nowrap lg:items-stretch lg:gap-0 lg:px-4 lg:py-[22px]">
         {/* Brand */}
         <div className="flex items-center gap-[11px] px-2 lg:pb-[22px] lg:pt-1">
-          <div className="grid h-[38px] w-[38px] flex-none place-items-center rounded-[10px] bg-gradient-to-br from-accent to-accent-deep font-serif text-[19px] font-bold text-ink shadow-[0_6px_16px_-6px_rgba(217,159,108,.6)]">
-            B
-          </div>
+          <Image
+            src="/digitboost-logo.png"
+            alt=""
+            width={250}
+            height={255}
+            priority
+            className="h-[42px] w-auto flex-none"
+          />
           <div>
             <div className="font-serif text-lg font-bold tracking-[.2px] text-white">
               DigitBoost

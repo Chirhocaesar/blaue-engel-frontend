@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -69,9 +70,14 @@ export default function LoginPage() {
   return (
     <main className="space-y-6 pt-4">
       <div className="flex flex-col items-center text-center">
-        <div className="grid h-12 w-12 place-items-center rounded-[12px] bg-gradient-to-br from-accent to-accent-deep font-serif text-2xl font-bold text-ink shadow-[0_6px_16px_-6px_rgba(217,159,108,.6)]">
-          B
-        </div>
+        <Image
+          src="/digitboost-logo.png"
+          alt="DigitBoost"
+          width={250}
+          height={255}
+          priority
+          className="h-20 w-auto"
+        />
         <h1 className="mt-3 text-2xl font-bold text-ink">Anmelden</h1>
         <p className="mt-1 text-sm text-muted">
           Bitte melden Sie sich mit Ihren Zugangsdaten an.

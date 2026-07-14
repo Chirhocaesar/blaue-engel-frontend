@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import Image from "next/image";
 
 export default async function EmployeeLayout({
   children,
@@ -12,11 +13,20 @@ export default async function EmployeeLayout({
     <>
       <header className="border-b border-line">
         <div className="mx-auto max-w-md px-4 py-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-lg font-semibold font-serif text-ink">
-              DigitBoost Service App Demo
+          <div className="flex items-center gap-3">
+            <Image
+              src="/digitboost-logo.png"
+              alt=""
+              width={250}
+              height={255}
+              className="h-9 w-auto flex-none"
+            />
+            <div>
+              <div className="text-lg font-semibold font-serif text-ink">
+                DigitBoost Service App Demo
+              </div>
+              <div className="text-sm text-muted">Mitarbeiter-App</div>
             </div>
-            <div className="text-sm text-muted">Mitarbeiter-App</div>
           </div>
           {isLoggedIn ? (
             <a
