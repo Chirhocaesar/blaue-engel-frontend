@@ -109,10 +109,11 @@ export default function AdminAssignmentNewClient() {
   }, []);
 
   const canSubmit = useMemo(() => {
-    const baseReady = !!(customerId && employeeId && date && startTime && endTime);
+    // Employee is optional — without one the job is created as "Geplant" (offen).
+    const baseReady = !!(customerId && date && startTime && endTime);
     if (!seriesEnabled) return baseReady;
     return baseReady && !!seriesRepeatUntil;
-  }, [customerId, employeeId, date, startTime, endTime, seriesEnabled, seriesRepeatUntil]);
+  }, [customerId, date, startTime, endTime, seriesEnabled, seriesRepeatUntil]);
 
   useEffect(() => {
     if (canSubmit && formError) setFormError(null);
@@ -187,7 +188,7 @@ export default function AdminAssignmentNewClient() {
             }
             return {
               customerId,
-              employeeId,
+              employeeId: employeeId || undefined,
               startAt: startIso,
               endAt: endIso,
               notes: notes.trim() || undefined,
@@ -198,7 +199,7 @@ export default function AdminAssignmentNewClient() {
           })()
         : {
             customerId,
-            employeeId,
+            employeeId: employeeId || undefined,
             startAt: startIso,
             endAt: endIso,
             notes: notes.trim() || undefined,
@@ -295,13 +296,18 @@ export default function AdminAssignmentNewClient() {
             className="w-full min-w-0"
             disabled={loading || employees.length === 0}
           >
-            <option value="">Bitte wählen…</option>
+            <option value="">— Später zuweisen (offen) —</option>
             {employees.map((e) => (
               <option key={e.id} value={e.id}>
                 {(e.fullName ? `${e.fullName} · ` : "") + e.email}
               </option>
             ))}
           </Select>
+          {!employeeId ? (
+            <div className="text-xs text-st-amber">
+              Ohne Mitarbeiter wird der Einsatz als „Geplant" in den offenen Einsätzen geführt.
+            </div>
+          ) : null}
           {loading ? <div className="text-xs text-muted">Lade Daten…</div> : null}
         </label>
 

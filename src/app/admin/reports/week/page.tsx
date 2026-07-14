@@ -186,7 +186,7 @@ export default function AdminWeeklyReportPage() {
       if (id) ids.add(id);
     });
 
-    return Array.from(ids)
+    const rows = Array.from(ids)
       .map((id) => {
         const e = employeesById.get(id);
         const label = e?.fullName
@@ -195,13 +195,22 @@ export default function AdminWeeklyReportPage() {
         return { id, label };
       })
       .sort((a, b) => a.label.localeCompare(b.label, "de-DE"));
+
+    // Unassigned jobs get their own row so the matrix matches the totals.
+    if (
+      !employeeFilter &&
+      filteredAssignments.some((a) => !(a.employeeId || a.employee?.id))
+    ) {
+      rows.push({ id: "__unassigned", label: "Nicht zugewiesen" });
+    }
+
+    return rows;
   }, [employeeFilter, employees, employeesById, filteredAssignments]);
 
   const assignmentsByEmployeeDay = useMemo(() => {
     const map = new Map<string, Map<string, Assignment[]>>();
     filteredAssignments.forEach((a) => {
-      const empId = a.employeeId || a.employee?.id;
-      if (!empId) return;
+      const empId = a.employeeId || a.employee?.id || "__unassigned";
       const day = ymdLocal(new Date(a.startAt));
       if (!map.has(empId)) map.set(empId, new Map());
       const dayMap = map.get(empId)!;
@@ -351,7 +360,7 @@ export default function AdminWeeklyReportPage() {
                 <tbody>
                   {employeeRows.map((row) => (
                     <tr key={row.id} className="align-top last:[&>td]:border-b-0 hover:bg-tint-hover">
-                      <td className="border-b border-line px-4 py-3 font-semibold text-ink">{row.label}</td>
+                      <td className={`border-b border-line px-4 py-3 font-semibold ${row.id === "__unassigned" ? "text-st-amber" : "text-ink"}`}>{row.label}</td>
                       {weekDays.map((day) => {
                         const dayKey = ymdLocal(day);
                         const list = assignmentsByEmployeeDay.get(row.id)?.get(dayKey) ?? [];

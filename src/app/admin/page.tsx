@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   CalendarDays,
@@ -18,6 +18,7 @@ import {
 } from "@/lib/format";
 import { normalizeStatus, statusLabelDe } from "@/lib/status";
 import { getUpcomingHessenHolidays } from "@/lib/holidays-hessen";
+import OpenAssignmentsQueue from "@/components/OpenAssignmentsQueue";
 import {
   MetricCard,
   Panel,
@@ -54,6 +55,8 @@ type AdminUser = {
   id: string;
   email?: string | null;
   fullName?: string | null;
+  role?: string | null;
+  isActive?: boolean | null;
 };
 
 function ymdLocal(d: Date) {
@@ -94,22 +97,20 @@ export default async function AdminDashboardPage() {
   if (!token) redirect("/login");
 
   let userMap = new Map<string, { fullName?: string | null; email?: string | null }>();
+  let queueEmployees: { id: string; label: string }[] = [];
   try {
-    const headerList = await headers();
-    const host = headerList.get("host");
-    if (host) {
-      const protocol = host.includes("localhost") ? "http" : "https";
-      const baseUrl = `${protocol}://${host}`;
-      const usersRes = await fetch(`${baseUrl}/api/admin/users`, {
-        headers: { cookie: `be_access=${token}` },
-        cache: "no-store",
-      });
-      if (usersRes.ok) {
-        const usersJson = await usersRes.json().catch(() => ([]));
-        const users = Array.isArray(usersJson) ? (usersJson as AdminUser[]) : [];
-        userMap = new Map(users.map((u) => [u.id, { fullName: u.fullName, email: u.email }]));
-      }
-    }
+    const usersJson = await apiGet<AdminUser[] | { items?: AdminUser[] }>(
+      "/admin/users",
+      token,
+    );
+    const users = Array.isArray(usersJson)
+      ? usersJson
+      : (usersJson?.items ?? []);
+    userMap = new Map(users.map((u) => [u.id, { fullName: u.fullName, email: u.email }]));
+    queueEmployees = users
+      .filter((u) => (!u.role || u.role === "EMPLOYEE") && u.isActive !== false)
+      .map((u) => ({ id: u.id, label: u.fullName || u.email || u.id }))
+      .sort((a, b) => a.label.localeCompare(b.label, "de-DE"));
   } catch {
     userMap = new Map();
   }
@@ -154,6 +155,20 @@ export default async function AdminDashboardPage() {
 
   const customerLabel = (a: Assignment) =>
     a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+
+  const openItems = items
+    .filter(
+      (a) =>
+        !(a.employeeId || a.employee?.id) &&
+        normalizeStatus(a.status) !== "CANCELLED",
+    )
+    .map((a) => ({
+      id: a.id,
+      startAt: a.startAt,
+      endAt: a.endAt,
+      customerName: customerLabel(a),
+      customerAddress: a.customer?.address ?? null,
+    }));
 
   const weekAhead = items
     .filter(
@@ -289,6 +304,11 @@ export default async function AdminDashboardPage() {
           {assignmentsWarning}
         </div>
       ) : null}
+
+      {/* Dispatch queue */}
+      <div className="mb-4">
+        <OpenAssignmentsQueue items={openItems} employees={queueEmployees} />
+      </div>
 
       {/* Content grid */}
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1fr_340px]">

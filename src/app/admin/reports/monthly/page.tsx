@@ -179,8 +179,8 @@ export default function AdminMonthlyReportPage() {
     const map = new Map<string, { planned: number; done: number; km: number }>();
     employees.forEach((e) => map.set(e.id, { planned: 0, done: 0, km: 0 }));
     monthAssignments.forEach((a) => {
-      const empId = a.employeeId || a.employee?.id || "";
-      if (!empId) return;
+      // Unassigned jobs are tracked under their own key so totals stay consistent.
+      const empId = a.employeeId || a.employee?.id || "__unassigned";
       const row = map.get(empId) ?? { planned: 0, done: 0, km: 0 };
       const hours = hoursBetween(a.startAt, a.endAt);
       if (isPlannedCountableStatus(a.status)) {
@@ -369,19 +369,35 @@ export default function AdminMonthlyReportPage() {
                     </td>
                   </tr>
                 ) : (
-                  employees.map((e) => {
-                    const totals = totalsByEmployee.get(e.id) ?? { planned: 0, done: 0, km: 0 };
-                    return (
-                      <tr key={e.id} className="last:[&>td]:border-b-0 hover:bg-tint-hover">
-                        <td className="border-b border-line px-4 py-3 font-semibold text-ink">
-                          {e.fullName ? `${e.fullName} · ${e.email}` : e.email || e.id}
-                        </td>
-                        <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.planned.toFixed(2)}</td>
-                        <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.done.toFixed(2)}</td>
-                        <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.km.toFixed(1)}</td>
-                      </tr>
-                    );
-                  })
+                  <>
+                    {employees.map((e) => {
+                      const totals = totalsByEmployee.get(e.id) ?? { planned: 0, done: 0, km: 0 };
+                      return (
+                        <tr key={e.id} className="last:[&>td]:border-b-0 hover:bg-tint-hover">
+                          <td className="border-b border-line px-4 py-3 font-semibold text-ink">
+                            {e.fullName ? `${e.fullName} · ${e.email}` : e.email || e.id}
+                          </td>
+                          <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.planned.toFixed(2)}</td>
+                          <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.done.toFixed(2)}</td>
+                          <td className="border-b border-line px-4 py-3 text-right tabular-nums">{totals.km.toFixed(1)}</td>
+                        </tr>
+                      );
+                    })}
+                    {(() => {
+                      const unassigned = totalsByEmployee.get("__unassigned");
+                      if (!unassigned) return null;
+                      return (
+                        <tr key="__unassigned" className="bg-st-amber-bg/40 last:[&>td]:border-b-0">
+                          <td className="border-b border-line px-4 py-3 font-semibold text-st-amber">
+                            Nicht zugewiesen
+                          </td>
+                          <td className="border-b border-line px-4 py-3 text-right tabular-nums">{unassigned.planned.toFixed(2)}</td>
+                          <td className="border-b border-line px-4 py-3 text-right tabular-nums">{unassigned.done.toFixed(2)}</td>
+                          <td className="border-b border-line px-4 py-3 text-right tabular-nums">{unassigned.km.toFixed(1)}</td>
+                        </tr>
+                      );
+                    })()}
+                  </>
                 )}
               </tbody>
             </table>
