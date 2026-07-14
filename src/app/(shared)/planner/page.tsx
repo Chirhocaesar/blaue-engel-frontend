@@ -213,15 +213,22 @@ const ROW_H = 28; // px per 30 minutes
 const START_HOUR = 0;
 const END_HOUR = 24;
 
-/** Event block styling per status tone (amber/blue/green/gray). */
+/** Event block styling per status tone (violet/amber/blue/green/gray). */
 const eventToneClasses: Record<BadgeTone, string> = {
   amber: "border-st-amber bg-st-amber-bg text-st-amber",
   blue: "border-st-blue bg-st-blue-bg text-st-blue",
   green: "border-st-green bg-st-green-bg text-st-green",
   gray: "border-st-gray bg-st-gray-bg text-st-gray",
+  violet: "border-st-violet bg-st-violet-bg text-st-violet",
 };
 
-const FILTERABLE_STATUSES: NormalizedStatus[] = ["ASSIGNED", "CONFIRMED", "DONE", "CANCELLED"];
+const FILTERABLE_STATUSES: NormalizedStatus[] = [
+  "PLANNED",
+  "ASSIGNED",
+  "CONFIRMED",
+  "DONE",
+  "CANCELLED",
+];
 
 function getStatusString(a: Assignment) {
   const st = (a as any).status ?? (a as any).state;

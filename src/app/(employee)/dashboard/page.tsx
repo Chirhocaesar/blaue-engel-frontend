@@ -22,6 +22,7 @@ const tickColor: Record<BadgeTone, string> = {
   blue: "bg-st-blue",
   green: "bg-st-green",
   gray: "bg-st-gray",
+  violet: "bg-st-violet",
 };
 
 function ymdLocal(d: Date) {

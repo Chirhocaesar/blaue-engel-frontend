@@ -2,20 +2,22 @@ import * as React from "react";
 import { cn } from "./cn";
 import { normalizeStatus, statusLabelDe } from "@/lib/status";
 
-export type BadgeTone = "amber" | "blue" | "green" | "gray";
+export type BadgeTone = "amber" | "blue" | "green" | "gray" | "violet";
 
 const toneClasses: Record<BadgeTone, string> = {
   amber: "text-st-amber bg-st-amber-bg",
   blue: "text-st-blue bg-st-blue-bg",
   green: "text-st-green bg-st-green-bg",
   gray: "text-st-gray bg-st-gray-bg",
+  violet: "text-st-violet bg-st-violet-bg",
 };
 
 /** Maps an assignment status (raw or normalized) to its badge tone. */
 export function statusTone(status?: string | null): BadgeTone {
   switch (normalizeStatus(status)) {
-    case "ASSIGNED":
     case "PLANNED":
+      return "violet";
+    case "ASSIGNED":
       return "amber";
     case "CONFIRMED":
       return "blue";

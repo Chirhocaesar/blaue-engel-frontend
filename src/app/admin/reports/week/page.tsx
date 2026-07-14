@@ -360,7 +360,7 @@ export default function AdminWeeklyReportPage() {
                 <tbody>
                   {employeeRows.map((row) => (
                     <tr key={row.id} className="align-top last:[&>td]:border-b-0 hover:bg-tint-hover">
-                      <td className={`border-b border-line px-4 py-3 font-semibold ${row.id === "__unassigned" ? "text-st-amber" : "text-ink"}`}>{row.label}</td>
+                      <td className={`border-b border-line px-4 py-3 font-semibold ${row.id === "__unassigned" ? "text-st-violet" : "text-ink"}`}>{row.label}</td>
                       {weekDays.map((day) => {
                         const dayKey = ymdLocal(day);
                         const list = assignmentsByEmployeeDay.get(row.id)?.get(dayKey) ?? [];

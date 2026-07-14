@@ -88,6 +88,7 @@ const tickColor: Record<string, string> = {
   blue: "bg-st-blue",
   green: "bg-st-green",
   gray: "bg-st-gray",
+  violet: "bg-st-violet",
 };
 
 export default async function AdminDashboardPage() {

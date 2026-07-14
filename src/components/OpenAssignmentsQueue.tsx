@@ -86,7 +86,7 @@ export default function OpenAssignmentsQueue({
         <h2 className="flex items-center gap-2 font-serif text-[17px] font-bold text-ink">
           Offene Einsätze
           {items.length > 0 ? (
-            <span className="rounded-full bg-st-amber-bg px-2 py-0.5 font-sans text-xs font-semibold text-st-amber tabular-nums">
+            <span className="rounded-full bg-st-violet-bg px-2 py-0.5 font-sans text-xs font-semibold text-st-violet tabular-nums">
               {items.length}
             </span>
           ) : null}
@@ -119,7 +119,7 @@ export default function OpenAssignmentsQueue({
                     >
                       {item.customerName}
                     </Link>
-                    <StatusBadge tone="amber">Geplant</StatusBadge>
+                    <StatusBadge tone="violet">Geplant</StatusBadge>
                   </div>
                   {item.customerAddress ? (
                     <div className="mt-0.5 truncate text-xs text-muted">

@@ -387,8 +387,8 @@ export default function AdminMonthlyReportPage() {
                       const unassigned = totalsByEmployee.get("__unassigned");
                       if (!unassigned) return null;
                       return (
-                        <tr key="__unassigned" className="bg-st-amber-bg/40 last:[&>td]:border-b-0">
-                          <td className="border-b border-line px-4 py-3 font-semibold text-st-amber">
+                        <tr key="__unassigned" className="bg-st-violet-bg/40 last:[&>td]:border-b-0">
+                          <td className="border-b border-line px-4 py-3 font-semibold text-st-violet">
                             Nicht zugewiesen
                           </td>
                           <td className="border-b border-line px-4 py-3 text-right tabular-nums">{unassigned.planned.toFixed(2)}</td>
