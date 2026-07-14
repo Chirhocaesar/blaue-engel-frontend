@@ -3,6 +3,33 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import { apiGet } from "@/lib/api";
+import { formatDate, formatTime, formatWeekdayShort } from "@/lib/format";
+import { statusLabelDe } from "@/lib/status";
+import { Panel, StatusBadge, statusTone, type BadgeTone } from "@/components/ui";
+
+type TodayAssignment = {
+  id: string;
+  startAt: string;
+  endAt: string;
+  status?: string;
+  customer?: { name?: string | null; companyName?: string | null; address?: string | null } | null;
+  customerName?: string | null;
+};
+
+const tickColor: Record<BadgeTone, string> = {
+  amber: "bg-st-amber",
+  blue: "bg-st-blue",
+  green: "bg-st-green",
+  gray: "bg-st-gray",
+};
+
+function ymdLocal(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 function CardLink({
   href,
@@ -33,12 +60,84 @@ export default async function DashboardPage() {
 
   if (!token) redirect("/login");
 
+  const today = ymdLocal(new Date());
+  let todayJobs: TodayAssignment[] = [];
+  let todayError = false;
+  try {
+    // `to` must reach end-of-day: the API parses bare dates as midnight.
+    const raw = await apiGet<{ items?: TodayAssignment[] } | TodayAssignment[]>(
+      `/me/assignments?from=${today}&to=${encodeURIComponent(`${today}T23:59:59.999`)}&limit=50`,
+      token,
+    );
+    const items = Array.isArray(raw) ? raw : raw?.items ?? [];
+    todayJobs = items
+      .filter((a) => String(a.status ?? "").toUpperCase() !== "CANCELLED")
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+  } catch {
+    todayError = true;
+  }
+
   return (
     <main className="space-y-4">
       <PageHeader
         title="Dashboard"
         subtitle="Bitte wählen Sie eine Funktion aus."
       />
+
+      {/* Heute */}
+      <Panel>
+        <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <h2 className="font-serif text-[15px] font-bold text-ink">Heute</h2>
+          <span className="text-xs text-muted tabular-nums">
+            {formatWeekdayShort(new Date())}, {formatDate(new Date())}
+          </span>
+        </div>
+        {todayError ? (
+          <div className="px-4 py-4 text-sm text-muted">
+            Einsätze konnten nicht geladen werden.
+          </div>
+        ) : todayJobs.length === 0 ? (
+          <div className="px-4 py-4 text-sm text-muted">
+            Keine Einsätze heute. Genießen Sie den Tag!
+          </div>
+        ) : (
+          <div className="py-1">
+            {todayJobs.map((a, i) => {
+              const name =
+                a.customer?.companyName || a.customer?.name || a.customerName || "Kunde";
+              const tone = statusTone(a.status);
+              return (
+                <Link
+                  key={a.id}
+                  href={`/assignments/${a.id}`}
+                  className={`flex items-stretch gap-3 px-4 py-[10px] transition-colors hover:bg-tint-hover ${i > 0 ? "border-t border-line" : ""}`}
+                >
+                  <span
+                    aria-hidden
+                    className={`w-[3px] flex-none self-stretch rounded-full ${tickColor[tone]}`}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-ink">
+                      <span className="tabular-nums">
+                        {formatTime(a.startAt)}–{formatTime(a.endAt)}
+                      </span>{" "}
+                      · {name}
+                    </span>
+                    {a.customer?.address ? (
+                      <span className="mt-0.5 block truncate text-xs text-muted">
+                        {a.customer.address}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="flex flex-none items-center">
+                    <StatusBadge status={a.status}>{statusLabelDe(a.status)}</StatusBadge>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </Panel>
 
       <div className="space-y-3">
         <CardLink
